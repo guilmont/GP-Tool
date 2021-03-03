@@ -1,0 +1,36 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../include/mailbox.hpp
+iostream
+-
+chrono
+-
+list
+-
+mutex
+-
+
+../include/threadpool.hpp
+iostream
+-
+vector
+-
+thread
+-
+atomic
+-
+mutex
+-
+mailbox.hpp
+-
+
+/home/gstark/Dropbox/gp_fbm_library/src/threadpool.cpp
+threadpool.hpp
+-
+

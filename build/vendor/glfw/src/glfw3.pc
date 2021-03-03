@@ -1,0 +1,13 @@
+prefix=/home/gstark/Desktop/GPTool
+exec_prefix=${prefix}
+includedir=/home/gstark/Desktop/GPTool/include
+libdir=/home/gstark/Desktop/GPTool/lib
+
+Name: GLFW
+Description: A multi-platform library for OpenGL, window and input
+Version: 3.4.0
+URL: https://www.glfw.org/
+Requires.private: 
+Libs: -L${libdir} -lglfw3
+Libs.private:  -lrt -lm -ldl
+Cflags: -I${includedir}

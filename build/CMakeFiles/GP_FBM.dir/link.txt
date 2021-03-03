@@ -1,0 +1,2 @@
+/usr/bin/ar qc libGP_FBM.a CMakeFiles/GP_FBM.dir/src/gp_fbm.cpp.o
+/usr/bin/ranlib libGP_FBM.a

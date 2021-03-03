@@ -1,0 +1,2 @@
+/usr/bin/ar qc libRENDERER.a CMakeFiles/RENDERER.dir/gui/renderer/src/shader.cpp.o CMakeFiles/RENDERER.dir/gui/renderer/src/texture.cpp.o CMakeFiles/RENDERER.dir/gui/renderer/src/framebuffer.cpp.o CMakeFiles/RENDERER.dir/gui/renderer/src/camera.cpp.o CMakeFiles/RENDERER.dir/gui/renderer/src/quad.cpp.o CMakeFiles/RENDERER.dir/gui/renderer/src/fonts.cpp.o CMakeFiles/RENDERER.dir/gui/renderer/src/fileDialog.cpp.o CMakeFiles/RENDERER.dir/gui/renderer/src/ui.cpp.o
+/usr/bin/ranlib libRENDERER.a

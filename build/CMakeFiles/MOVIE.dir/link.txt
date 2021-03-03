@@ -1,0 +1,2 @@
+/usr/bin/ar qc libMOVIE.a CMakeFiles/MOVIE.dir/src/movie.cpp.o
+/usr/bin/ranlib libMOVIE.a
