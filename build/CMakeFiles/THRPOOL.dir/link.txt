@@ -1,2 +1,0 @@
-/usr/bin/ar qc libTHRPOOL.a CMakeFiles/THRPOOL.dir/src/threadpool.cpp.o
-/usr/bin/ranlib libTHRPOOL.a

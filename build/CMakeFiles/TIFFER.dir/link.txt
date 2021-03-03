@@ -1,2 +1,0 @@
-/usr/bin/ar qc libTIFFER.a CMakeFiles/TIFFER.dir/src/tiffer.cpp.o
-/usr/bin/ranlib libTIFFER.a

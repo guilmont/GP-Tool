@@ -1,2 +1,0 @@
-/usr/bin/ar qc libALIGN.a CMakeFiles/ALIGN.dir/src/align.cpp.o
-/usr/bin/ranlib libALIGN.a

@@ -1,2 +1,0 @@
-/usr/bin/ar qc libMETA.a CMakeFiles/META.dir/src/metadata.cpp.o
-/usr/bin/ranlib libMETA.a
