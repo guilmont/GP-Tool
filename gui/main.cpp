@@ -1,5 +1,7 @@
 #include "ui.h"
 
+#include <iostream>
+
 #include "structure.hpp"
 #include "childWindows.h"
 
@@ -250,9 +252,11 @@ static void saveHDF5(const String &path, UI *ui)
 
         for (auto &[ch, id] : gp.getParticleID())
         {
-            String txt = "trajectory_" + std::to_string(counter++);
+            String ch_name = meta.nameCH[ch],
+                   txt = "trajectory_" + std::to_string(counter++);
+
             MatrixXd mat = data.track->getTrack(ch).traj[id].transpose();
-            traj[txt].createFromPointer(mat.data(), mat.rows(), mat.cols());
+            traj[ch_name][txt].createFromPointer(mat.data(), mat.rows(), mat.cols());
         } // loop-trajectories
 
         // Now we save information about D and alpha
@@ -261,14 +265,17 @@ static void saveHDF5(const String &path, UI *ui)
             GHDF5 &single = cell["without_substrate"];
 
             single.setAttribute("point_at_zero_units", "pixels");
-            single.setAttribute("columns", "{D, A, zero_x, zero_y}");
+            single.setAttribute("columns", "{channel, D, A, zero_x, zero_y}");
             single.setAttribute("D_units", meta.PhysicalSizeXYUnit + "^2/" +
                                                meta.TimeIncrementUnit + "^A");
 
             const ParamDA *da = gp.getSingleParameters();
-            MatrixXd mat(nParticles, 4);
-            for (uint32_t k = 0; k < nParticles; k++)
-                mat.row(k) << (Dcalib * da[k].D), da[k].A, da[k].mu[0], da[k].mu[1];
+            MatrixXd mat(nParticles, 5);
+            for (auto &[ch, id] : gp.getParticleID())
+            {
+                uint32_t k = ch * (meta.SizeC - 1) + id;
+                mat.row(k) << ch, (Dcalib * da[k].D), da[k].A, da[k].mu[0], da[k].mu[1];
+            }
 
             MatrixXd trans = mat.transpose();
             single["dynamics"].createFromPointer(trans.data(),
@@ -280,14 +287,18 @@ static void saveHDF5(const String &path, UI *ui)
         {
             GHDF5 &coupled = cell["with_substrate"];
 
-            coupled.setAttribute("columns", "{D, A}");
+            coupled.setAttribute("columns", "{channel, D, A}");
             coupled.setAttribute("D_units", meta.PhysicalSizeXYUnit + "^2/" +
                                                 meta.TimeIncrementUnit + "^A");
 
-            MatrixXd mat(nParticles, 2);
+            MatrixXd mat(nParticles, 3);
             const ParamCDA &cda = gp.getCoupledParameters();
-            for (uint32_t k = 0; k < nParticles; k++)
-                mat.row(k) << (Dcalib * cda.particle[k].D), cda.particle[k].A;
+            for (auto &[ch, id] : gp.getParticleID())
+            {
+                uint32_t k = ch * (meta.SizeC - 1) + id;
+                mat.row(k) << ch, (Dcalib * cda.particle[k].D), cda.particle[k].A;
+                std::cout << ch << "/" << k << " " << (Dcalib * cda.particle[k].D) << " " << cda.particle[k].A << std::endl;
+            }
 
             MatrixXd trans = mat.transpose();
             coupled["dynamics"].createFromPointer(trans.data(),
