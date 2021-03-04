@@ -86,6 +86,15 @@ static void saveJSON(const String &path, UI *ui)
     };
 
     Json::Value output;
+    const Metadata &meta = data.movie->getMetadata();
+    output["movie_name"] = meta.movie_name;
+    output["numChannels"] = meta.SizeC;
+
+    String chNames = "";
+    for (uint32_t k = 0; k < meta.SizeC; k++)
+        chNames += meta.nameCH[k] + (k + 1 < meta.SizeC ? ", " : "");
+
+    output["channels"] = "{" + chNames + "}";
 
     // First let's check if we have alignement matrix to store
     if (data.align)
@@ -105,7 +114,6 @@ static void saveJSON(const String &path, UI *ui)
     } // if-align
 
     // Storing cells
-    const Metadata &meta = data.movie->getMetadata();
 
     const uint32_t nCells = data.vecGP.size();
     const double Dcalib = meta.PhysicalSizeXY * meta.PhysicalSizeXY;
@@ -130,7 +138,7 @@ static void saveJSON(const String &path, UI *ui)
         for (auto &[ch, id] : gp.getParticleID())
         {
             const MatrixXd &mat = data.track->getTrack(ch).traj[id];
-            traj["trajectory_" + std::to_string(counter++)] = convertEigenJSON(mat);
+            traj["channel_" + std::to_string(ch)]["trajectory_" + std::to_string(counter++)] = convertEigenJSON(mat);
         } // loop-trajectories
 
         cell["trajectories"] = std::move(traj);
@@ -142,13 +150,16 @@ static void saveJSON(const String &path, UI *ui)
             single["D_units"] = meta.PhysicalSizeXYUnit + "^2/" +
                                 meta.TimeIncrementUnit + "^A";
             single["point_at_zero_units"] = "pixels";
-            single["columns"] = "{D, A, zero_x, zero_y}";
+            single["columns"] = "{channel, particle_id, D, A, zero_x, zero_y}";
 
+            uint32_t k = 0;
+            MatrixXd mat(nParticles, 6);
             const ParamDA *da = gp.getSingleParameters();
-            MatrixXd mat(nParticles, 4);
-            for (uint32_t k = 0; k < nParticles; k++)
-                mat.row(k) << (Dcalib * da[k].D), da[k].A, da[k].mu[0], da[k].mu[1];
-
+            for (auto &[ch, id] : gp.getParticleID())
+            {
+                mat.row(k) << ch, id, (Dcalib * da[k].D), da[k].A, da[k].mu[0], da[k].mu[1];
+                k++;
+            }
             single["dynamics"] = convertEigenJSON(mat);
 
             cell["without_substrate"] = std::move(single);
@@ -159,12 +170,16 @@ static void saveJSON(const String &path, UI *ui)
             Json::Value coupled;
             coupled["D_units"] = meta.PhysicalSizeXYUnit + "^2/" +
                                  meta.TimeIncrementUnit + "^A";
-            coupled["columns"] = "{D, A}";
+            coupled["columns"] = "{channel, particle_id, D, A}";
 
-            MatrixXd mat(nParticles, 2);
+            uint32_t k = 0;
+            MatrixXd mat(nParticles, 4);
             const ParamCDA &cda = gp.getCoupledParameters();
-            for (uint32_t k = 0; k < nParticles; k++)
-                mat.row(k) << (Dcalib * cda.particle[k].D), cda.particle[k].A;
+            for (auto &[ch, id] : gp.getParticleID())
+            {
+                mat.row(k) << ch, id, (Dcalib * cda.particle[k].D), cda.particle[k].A;
+                k++;
+            }
 
             coupled["dynamics"] = convertEigenJSON(mat);
 
@@ -202,6 +217,17 @@ static void saveHDF5(const String &path, UI *ui)
 
     GHDF5 output;
 
+    // Saving channel names
+    const Metadata &meta = data.movie->getMetadata();
+    output.setAttribute<String>("movie_name", meta.movie_name);
+    output.setAttribute<uint32_t>("numChannels", meta.SizeC);
+
+    String chNames = "";
+    for (uint32_t k = 0; k < meta.SizeC; k++)
+        chNames += meta.nameCH[k] + (k + 1 < meta.SizeC ? ", " : "");
+
+    output.setAttribute<String>("channels", "{" + chNames + "}");
+
     // First let's check if we have alignement matrix to store
     if (data.align)
     {
@@ -228,8 +254,6 @@ static void saveHDF5(const String &path, UI *ui)
     } // if-align
 
     // Storing cells
-    const Metadata &meta = data.movie->getMetadata();
-
     const uint32_t nCells = data.vecGP.size();
     const double Dcalib = meta.PhysicalSizeXY * meta.PhysicalSizeXY;
 
@@ -252,7 +276,7 @@ static void saveHDF5(const String &path, UI *ui)
 
         for (auto &[ch, id] : gp.getParticleID())
         {
-            String ch_name = meta.nameCH[ch],
+            String ch_name = "channel_" + std::to_string(ch),
                    txt = "trajectory_" + std::to_string(counter++);
 
             MatrixXd mat = data.track->getTrack(ch).traj[id].transpose();
@@ -264,22 +288,26 @@ static void saveHDF5(const String &path, UI *ui)
         {
             GHDF5 &single = cell["without_substrate"];
 
-            single.setAttribute("point_at_zero_units", "pixels");
-            single.setAttribute("columns", "{channel, D, A, zero_x, zero_y}");
-            single.setAttribute("D_units", meta.PhysicalSizeXYUnit + "^2/" +
-                                               meta.TimeIncrementUnit + "^A");
-
+            uint32_t k = 0;
+            MatrixXd mat(nParticles, 6);
             const ParamDA *da = gp.getSingleParameters();
-            MatrixXd mat(nParticles, 5);
             for (auto &[ch, id] : gp.getParticleID())
             {
-                uint32_t k = ch * (meta.SizeC - 1) + id;
-                mat.row(k) << ch, (Dcalib * da[k].D), da[k].A, da[k].mu[0], da[k].mu[1];
+                mat.row(k) << ch, id, (Dcalib * da[k].D), da[k].A, da[k].mu[0], da[k].mu[1];
+                k++;
             }
 
             MatrixXd trans = mat.transpose();
             single["dynamics"].createFromPointer(trans.data(),
                                                  trans.rows(), trans.cols());
+
+            single["dynamics"].setAttribute("point_at_zero_units", "pixels");
+            single["dynamics"].setAttribute("columns",
+                                            "{channel, particle_id, D, A, zero_x, zero_y}");
+
+            single["dynamics"].setAttribute("D_units",
+                                            meta.PhysicalSizeXYUnit + "^2/" +
+                                                meta.TimeIncrementUnit + "^A");
 
         } // single-model
 
@@ -287,26 +315,31 @@ static void saveHDF5(const String &path, UI *ui)
         {
             GHDF5 &coupled = cell["with_substrate"];
 
-            coupled.setAttribute("columns", "{channel, D, A}");
-            coupled.setAttribute("D_units", meta.PhysicalSizeXYUnit + "^2/" +
-                                                meta.TimeIncrementUnit + "^A");
-
-            MatrixXd mat(nParticles, 3);
+            uint32_t k = 0;
+            MatrixXd mat(nParticles, 4);
             const ParamCDA &cda = gp.getCoupledParameters();
             for (auto &[ch, id] : gp.getParticleID())
             {
-                uint32_t k = ch * (meta.SizeC - 1) + id;
-                mat.row(k) << ch, (Dcalib * cda.particle[k].D), cda.particle[k].A;
-                std::cout << ch << "/" << k << " " << (Dcalib * cda.particle[k].D) << " " << cda.particle[k].A << std::endl;
+                mat.row(k) << ch, id, (Dcalib * cda.particle[k].D), cda.particle[k].A;
+                k++;
             }
 
             MatrixXd trans = mat.transpose();
             coupled["dynamics"].createFromPointer(trans.data(),
                                                   trans.rows(), trans.cols());
 
+            coupled["dynamics"].setAttribute("columns", "{channel, particle_id, D, A}");
+            coupled["dynamics"].setAttribute("D_units", meta.PhysicalSizeXYUnit + "^2/" +
+                                                            meta.TimeIncrementUnit + "^A");
+
             // Substrate
             double arr[] = {Dcalib * cda.DR, cda.AR};
             coupled["substrate"]["dynamics"].createFromPointer(arr, 2);
+
+            coupled["substrate"]["dynamics"].setAttribute("columns", "{D, A}");
+            coupled["substrate"]["dynamics"].setAttribute("D_units",
+                                                          meta.PhysicalSizeXYUnit + "^2/" +
+                                                              meta.TimeIncrementUnit + "^A");
 
             if (!gp.hasSubstrate())
                 gp.estimateSubstrateMovement();
