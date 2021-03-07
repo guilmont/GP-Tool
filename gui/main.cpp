@@ -113,6 +113,35 @@ static void saveJSON(const String &path, UI *ui)
 
     } // if-align
 
+    ///////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////
+    // Storing trajectories
+
+    if (data.track)
+    {
+        Json::Value traj;
+        traj["PhysicalSizeXY"] = meta.PhysicalSizeXY;
+        traj["PhysicalSizeXYUnit"] = meta.PhysicalSizeXYUnit;
+        traj["TimeIncrementUnit"] = meta.TimeIncrementUnit;
+        traj["columns"] = "{frame, time, pos_x, error_x, pos_y, error_y,"
+                          "size_x, size_y, signal, background}";
+
+        for (uint32_t ch = 0; ch < meta.SizeC; ch++)
+        {
+            const String ch_name = "channel_" + std::to_string(ch);
+            std::vector<MatrixXd> &vTraj = data.track->getTrack(ch).traj;
+
+            for (uint32_t k = 0; k < vTraj.size(); k++)
+                traj[ch_name]["traj_" + std::to_string(k)] = convertEigenJSON(vTraj[k]);
+
+        } // loop-channels
+
+        output["Trajectories"] = std::move(traj);
+    } // if-trajectories
+
+    ///////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////
+
     // Storing cells
 
     const uint32_t nCells = data.vecGP.size();
@@ -124,24 +153,6 @@ static void saveJSON(const String &path, UI *ui)
 
         Json::Value cell;
         const uint32_t nParticles = gp.getNumParticles();
-
-        // First let's save trajectories
-        uint32_t counter = 0;
-
-        Json::Value traj;
-        traj["PhysicalSizeXY"] = meta.PhysicalSizeXY;
-        traj["PhysicalSizeXYUnit"] = meta.PhysicalSizeXYUnit;
-        traj["TimeIncrementUnit"] = meta.TimeIncrementUnit;
-        traj["columns"] = "{frame, time, pos_x, error_x, pos_y, error_y,"
-                          "size_x, size_y, signal, background}";
-
-        for (auto &[ch, id] : gp.getParticleID())
-        {
-            const MatrixXd &mat = data.track->getTrack(ch).traj[id];
-            traj["channel_" + std::to_string(ch)]["trajectory_" + std::to_string(counter++)] = convertEigenJSON(mat);
-        } // loop-trajectories
-
-        cell["trajectories"] = std::move(traj);
 
         // Now we save information about D and alpha
         if (gp.hasSingle())
@@ -253,6 +264,38 @@ static void saveHDF5(const String &path, UI *ui)
 
     } // if-align
 
+    ///////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////
+
+    // Storing trajectories
+    if (data.track)
+    {
+        GHDF5 &traj = output["Trajectories"];
+        traj.setAttribute("PhysicalSizeXY", meta.PhysicalSizeXY);
+        traj.setAttribute("PhysicalSizeXYUnit", meta.PhysicalSizeXYUnit);
+        traj.setAttribute("TimeIncrementUnit", meta.TimeIncrementUnit);
+        traj.setAttribute("columns", "{frame, time, pos_x, error_x, pos_y, error_y,"
+                                     "size_x, size_y, signal, background}");
+
+        for (uint32_t ch = 0; ch < meta.SizeC; ch++)
+        {
+            const String ch_name = "channel_" + std::to_string(ch);
+            std::vector<MatrixXd> &vTraj = data.track->getTrack(ch).traj;
+
+            for (uint32_t k = 0; k < vTraj.size(); k++)
+            {
+                String txt = "traj_" + std::to_string(k);
+                MatrixXd mat = vTraj.at(k).transpose();
+                traj[ch_name][txt].createFromPointer(mat.data(), mat.rows(), mat.cols());
+            } // loop-trajectories
+
+        } // loop-channels
+
+    } // if-trajectories
+
+    ///////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////
+
     // Storing cells
     const uint32_t nCells = data.vecGP.size();
     const double Dcalib = meta.PhysicalSizeXY * meta.PhysicalSizeXY;
@@ -265,23 +308,6 @@ static void saveHDF5(const String &path, UI *ui)
 
         // First let's save trajectories
         const uint32_t nParticles = gp.getNumParticles();
-        uint32_t counter = 0;
-
-        GHDF5 &traj = cell["trajectories"];
-        traj.setAttribute("PhysicalSizeXY", meta.PhysicalSizeXY);
-        traj.setAttribute("PhysicalSizeXYUnit", meta.PhysicalSizeXYUnit);
-        traj.setAttribute("TimeIncrementUnit", meta.TimeIncrementUnit);
-        traj.setAttribute("columns", "{frame, time, pos_x, error_x, pos_y, error_y,"
-                                     "size_x, size_y, signal, background}");
-
-        for (auto &[ch, id] : gp.getParticleID())
-        {
-            String ch_name = "channel_" + std::to_string(ch),
-                   txt = "trajectory_" + std::to_string(counter++);
-
-            MatrixXd mat = data.track->getTrack(ch).traj[id].transpose();
-            traj[ch_name][txt].createFromPointer(mat.data(), mat.rows(), mat.cols());
-        } // loop-trajectories
 
         // Now we save information about D and alpha
         if (gp.hasSingle())
