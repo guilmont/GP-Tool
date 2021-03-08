@@ -255,9 +255,9 @@ void winTrajectory::display(void)
     ImGui::Spacing();
 
     MatrixXd mat = data.track->getTrack(ch).traj[id];
-    if (data.align && ch == data.alignChannel)
+    if (data.align && ch > 0)
     {
-        MatrixXd trf = data.align->getTransformData().trf;
+        MatrixXd trf = data.align->getTransformData(ch).trf;
         for (uint32_t k = 0; k < mat.rows(); k++)
         {
             double posx = mat(k, TrajColumns::POSX),

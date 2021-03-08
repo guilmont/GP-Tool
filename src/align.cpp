@@ -41,8 +41,8 @@ static MatrixXd inverseMatrix3x3(const MatrixXd &m)
     return minv;
 } // inverseMatrix3x3
 
-MatrixXd treatImage(MatrixXd img, int medianSize, double clipLimit,
-                    uint32_t tileSizeX, uint32_t tileSizeY, Mailbox *mail)
+static MatrixXd treatImage(MatrixXd img, int medianSize, double clipLimit,
+                           uint32_t tileSizeX, uint32_t tileSizeY, Mailbox *mail)
 {
 
     if (medianSize % 2 == 0)
@@ -213,6 +213,24 @@ MatrixXd treatImage(MatrixXd img, int medianSize, double clipLimit,
 /*******************************************************************/
 /*******************************************************************/
 
+void TransformData::reset(uint32_t width, uint32_t height)
+{
+    this->width = width;
+    this->height = height;
+
+    dx = 0.0;
+    dy = 0.0;
+    cx = 0.0;
+    cy = 0.0;
+    angle = 0.0;
+    sx = 1.0;
+    sy = 1.0;
+    trf = MatrixXd::Identity(3, 3);
+    cx = 0.5 * width;
+    cy = 0.5 * height;
+    updateTransform();
+} // reset
+
 void TransformData::updateTransform(void)
 {
     // Creating transform matrix
@@ -242,41 +260,55 @@ void TransformData::updateTransform(void)
 
 } // updateTransform
 
-Align::Align(Mailbox *mailbox) : mail(mailbox)
+Align::Align(Mailbox *mailbox, uint32_t nChannels) : mail(mailbox)
 {
-    // Setup number of workers
-    const uint32_t nThr = pool.getNumThreads();
-    global_energy.resize(nThr);
-
     // Initializing TranformData values
-    RT.dx = 0.0;
-    RT.dy = 0.0;
-    RT.cx = 0.0;
-    RT.cy = 0.0;
-    RT.angle = 0.0;
-    RT.sx = 1.0;
-    RT.sy = 1.0;
-    RT.trf = MatrixXd::Identity(3, 3);
+    vecRT.resize(nChannels - 1);
+    for (uint32_t ch = 0; ch < nChannels - 1; ch++)
+    {
+        TransformData rt;
+
+        vecRT.emplace_back(rt);
+
+    } // loop-channels
 
 } // constructor
 
-void Align::setImageData(const uint32_t numDir, Image<uint8_t> *im1, Image<uint8_t> *im2)
+void Align::setImageData(const uint32_t nFrames, MatrixXd *im1, MatrixXd *im2)
 {
-    // Import images dimensions
+    using Frame = std::tuple<MatrixXd, MatrixXd, Mailbox *>;
+
+    // Initialize input data
+    numFrames = nFrames < 20 ? nFrames : 0.05f * nFrames;
     width = im1[0].cols();
     height = im1[0].rows();
 
-    // Setup some transform properties
-    RT.width = width;
-    RT.height = height;
-    RT.cx = 0.5 * width;
-    RT.cy = 0.5 * height;
-    RT.updateTransform();
+    // Setup transform properties
+    TransformData &RT = vecRT[chAligning];
+    RT.reset(width, height);
 
-    // Initialize input data
-    numFrames = numDir;
-    img1 = im1;
-    img2 = im2;
+    std::vector<Frame> vFrame;
+    for (uint32_t k = 0; k < numFrames; k++)
+        vFrame.emplace_back(im1[k], im2[k], mail);
+
+    auto parallel_image_treatment = [](const uint32_t id, void *ptr) -> void {
+        auto &[ch0, ch1, mail] = reinterpret_cast<Frame *>(ptr)[id];
+        ch0 = (255.0 * treatImage(ch0, 3, 5.0, 64, 64, mail)).array().round();
+        ch1 = (255.0 * treatImage(ch1, 3, 5.0, 64, 64, mail)).array().round();
+    };
+
+    MSG_Progress *msg = mail->createMessage<MSG_Progress>("Treating images");
+
+    Threadpool pool(msg);
+    pool.run(parallel_image_treatment, vFrame.size(), vFrame.data());
+
+    vImg0.clear();
+    vImg1.clear();
+    for (auto &[ch0, ch1, ptr] : vFrame)
+    {
+        vImg0.emplace_back(ch0.cast<uint8_t>());
+        vImg1.emplace_back(ch1.cast<uint8_t>());
+    } // loop-frames
 
 } // setImageData
 
@@ -284,7 +316,9 @@ void Align::calcEnergy(const uint32_t id)
 {
     global_energy.at(id) = 0.0;
 
+    Threadpool pool;
     const uint32_t nThr = pool.getNumThreads();
+
     for (uint32_t fr = id; fr < numFrames; fr += nThr)
     {
         // Evaluating transformed img2
@@ -294,9 +328,9 @@ void Align::calcEnergy(const uint32_t id)
                 int i = itrf(0, 0) * (x + 0.5) + itrf(0, 1) * (y + 0.5) + itrf(0, 2),
                     j = itrf(1, 0) * (x + 0.5) + itrf(1, 1) * (y + 0.5) + itrf(1, 2);
 
-                double dr = double(img1[fr](y, x));
-                if (i >= 0 && i < img1[fr].cols() && j >= 0 && j < img1[fr].rows())
-                    dr -= double(img2[fr](j, i));
+                double dr = double(vImg0[fr](y, x));
+                if (i >= 0 && i < int(width) && j >= 0 && j < int(height))
+                    dr -= double(vImg1[fr](j, i));
 
                 global_energy.at(id) += dr * dr;
             }
@@ -333,7 +367,9 @@ double Align::weightTransRot(const VectorXd &p)
                                          "Transformation cannot be inverted!");
 
     // Splitting log-likelihood calculationg to threads
+    Threadpool pool;
     const uint32_t nThr = pool.getNumThreads();
+    global_energy.resize(nThr);
     pool.run(&transferEnergy, nThr, this);
 
     double energy = 0.0;
@@ -355,11 +391,13 @@ double Align::weightScale(const VectorXd &p)
         0.0f, 0.0f, 1.0f;
 
     // Inverse of transfomation for mapping
-    MatrixXd trf = A * RT.trf;
+    MatrixXd trf = A * vecRT[chAligning].trf;
     itrf = inverseMatrix3x3(trf);
 
     // Splitting log-likelihood calculationg to threads
+    Threadpool pool;
     const uint32_t nThr = pool.getNumThreads();
+    global_energy.resize(nThr);
     pool.run(&transferEnergy, nThr, this);
 
     double energy = 0.0f;
@@ -372,7 +410,7 @@ double Align::weightScale(const VectorXd &p)
 
 bool Align::alignCameras(void)
 {
-    if (!img1 || !img2)
+    if (vImg0.empty() || vImg1.empty())
     {
         mail->createMessage<MSG_Error>("(Align::alignCameras): "
                                        "Image data not set properly!");
@@ -380,6 +418,8 @@ bool Align::alignCameras(void)
     }
 
     // Optimizing translation and rotation
+    TransformData &RT = vecRT[chAligning];
+
     VectorXd vec(5);
     vec << RT.dx, RT.dy, RT.cx, RT.cy, RT.angle;
 
@@ -410,13 +450,14 @@ bool Align::alignCameras(void)
 
 bool Align::correctAberrations(void)
 {
-    if (!img1 || !img2)
+    if (vImg0.empty() || vImg1.empty())
     {
         mail->createMessage<MSG_Error>("(Align::correctAberrations): "
                                        "Image data not set properly!");
         return false;
     }
 
+    TransformData &RT = vecRT[chAligning];
     VectorXd vec(2);
     vec << RT.sx, RT.sy;
 

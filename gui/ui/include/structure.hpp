@@ -9,24 +9,6 @@
 
 #include <unordered_map>
 
-/*
-
-// reset function
-    data.show_substrate = {false, 0};
-    data.show_plotTrajectory = {false, nullptr, "Movement"};
-    data.show_plotDistribution = {false, 0};
-    data.cam.reset();
-
-    //windows
-
-std::tuple<bool, uint32_t, uint32_t> show_trajectory;
-std::pair<bool, uint32_t> show_substrate;
-
-std::tuple<bool, const MatrixXd *, String> show_plotTrajectory;
-std::pair<bool, uint32_t> show_plotDistribution;
-
-*/
-
 struct Plugin
 {
     bool active = false;
@@ -42,9 +24,7 @@ struct Roi
 struct MainStruct
 {
     std::mutex mtx;
-    uint32_t frame = 0,
-             alignOrig = 0,
-             alignChannel = 1;
+    uint32_t frame = 0;
 
     //////////////////////
     // plugins

@@ -3,50 +3,49 @@
 
 struct TransformData
 {
-    uint32_t width, height; // image dimensions
-    double dx, dy;          // translation
-    double cx, cy, angle;   // angle
-    double sx, sy;          // scaling
+    uint32_t width, height;
+    double dx, dy;        // translation
+    double cx, cy, angle; // angle
+    double sx, sy;        // scaling
 
     MatrixXd trf;  // Transform matrix
     MatrixXd itrf; // Inverse transform
 
+    void reset(uint32_t width, uint32_t height);
     void updateTransform(void);
 
 }; // TransformData -- struct
 
-MatrixXd treatImage(MatrixXd img, int medianSize, double clipLimit,
-                    uint32_t tileSizeX, uint32_t tileSizeY, Mailbox *mail);
-
 class Align
 {
 private:
-    // Mailbox *mail = nullptr;
-    uint32_t numFrames;             // NUmber of frames
-    Image<uint8_t> *img1 = nullptr; // Pointer to images of channel 0
-    Image<uint8_t> *img2 = nullptr; // Pointer to images of channel 1
-
-    uint32_t width, height; // Image dimensions
-    TransformData RT;       // Holds all the optmized transformation paramters
-
     Mailbox *mail = nullptr;
 
-    // Parallelization
-    Threadpool pool;
+    uint32_t numFrames;                       // NUmber of frames
+    uint32_t chAligning;                      // channel currently aligning
+    std::vector<Image<uint8_t>> vImg0, vImg1; // Treated images
+
+    uint32_t width, height;           // Image dimensions
+    std::vector<TransformData> vecRT; // Holds all the optmized transformation paramters
+
+    // Parallel variables
     MatrixXd itrf; // inverse transform for alingment
     std::vector<double> global_energy;
 
 public:
-    Align(Mailbox *mailbox);
+    Align(Mailbox *mailbox, uint32_t nChannels = 2);
     ~Align(void) = default;
 
-    void setImageData(const uint32_t numDir, Image<uint8_t> *im1, Image<uint8_t> *im2);
+    void setChannelToAlign(uint32_t channel) { chAligning = channel - 1; }
+    void setImageData(const uint32_t nFrames, MatrixXd *im1, MatrixXd *im2);
 
     bool alignCameras(void);
     bool correctAberrations(void);
 
-    TransformData &getTransformData(void) { return RT; }
-    const TransformData &getTransformData(void) const { return RT; }
+    uint32_t getChannelIndex(void) const { return chAligning + 1; }
+
+    TransformData &getTransformData(uint32_t channel) { return vecRT[channel - 1]; }
+    const TransformData &getTransformData(uint32_t channel) const { return vecRT[channel - 1]; }
 
     ////////////////// NOT-TO-USE /////////////////////
     void calcEnergy(const uint32_t id);

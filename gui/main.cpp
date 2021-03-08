@@ -58,7 +58,7 @@ static void saveJSON(const String &path, UI *ui)
 {
     MainStruct &data = *reinterpret_cast<MainStruct *>(ui->getUserData());
 
-    if (!data.align && data.vecGP.size() == 0)
+    if (!data.align && data.vecGP.size() == 0 && !data.track)
     {
         ui->mWindows["inbox"]->show();
         ui->mail.createMessage<MSG_Warning>("Nothing to be saved!");
@@ -98,20 +98,21 @@ static void saveJSON(const String &path, UI *ui)
 
     // First let's check if we have alignement matrix to store
     if (data.align)
-    {
-        const TransformData &RT = data.align->getTransformData();
+        for (uint32_t ch = 1; ch < meta.SizeC; ch++)
+        {
+            const TransformData &RT = data.align->getTransformData(ch);
 
-        Json::Value align;
-        align["dimensions"] = toArray(RT.width, RT.height);
-        align["translation"] = toArray(RT.dx, RT.dy);
-        align["rotation"]["center"] = toArray(RT.cx, RT.cy);
-        align["rotation"]["angle"] = RT.angle;
-        align["scaling"] = toArray(RT.sx, RT.sy);
-        align["transform"] = convertEigenJSON(RT.trf);
+            Json::Value align;
+            align["dimensions"] = toArray(meta.SizeX, meta.SizeY);
+            align["translation"] = toArray(RT.dx, RT.dy);
+            align["rotation"]["center"] = toArray(RT.cx, RT.cy);
+            align["rotation"]["angle"] = RT.angle;
+            align["scaling"] = toArray(RT.sx, RT.sy);
+            align["transform"] = convertEigenJSON(RT.trf);
 
-        output["Alignment"] = std::move(align);
+            output["Alignment"]["channel_" + std::to_string(ch)] = std::move(align);
 
-    } // if-align
+        } // if-align
 
     ///////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////
@@ -219,7 +220,7 @@ static void saveJSON(const String &path, UI *ui)
 static void saveHDF5(const String &path, UI *ui)
 {
     MainStruct &data = *reinterpret_cast<MainStruct *>(ui->getUserData());
-    if (!data.align && data.vecGP.size() == 0)
+    if (!data.align && data.vecGP.size() == 0 && !data.track)
     {
         ui->mWindows["inbox"]->show();
         ui->mail.createMessage<MSG_Warning>("Nothing to be saved!");
@@ -241,28 +242,29 @@ static void saveHDF5(const String &path, UI *ui)
 
     // First let's check if we have alignement matrix to store
     if (data.align)
-    {
-        const TransformData &RT = data.align->getTransformData();
+        for (uint32_t ch = 1; ch < meta.SizeC; ch++)
+        {
+            const TransformData &RT = data.align->getTransformData(ch);
 
-        GHDF5 &align = output["Alignment"];
+            GHDF5 &align = output["Alignment"]["channel_" + std::to_string(ch)];
 
-        uint32_t dim[] = {RT.width, RT.height};
-        align["dimensions"].createFromPointer(dim, 2);
+            uint32_t dim[] = {meta.SizeX, meta.SizeY};
+            align["dimensions"].createFromPointer(dim, 2);
 
-        std::array<double, 2> arr = {RT.dx, RT.dy};
-        align["translation"].createFromPointer(arr.data(), 2);
+            std::array<double, 2> arr = {RT.dx, RT.dy};
+            align["translation"].createFromPointer(arr.data(), 2);
 
-        arr = {RT.cx, RT.cy};
-        align["rotation"]["center"].createFromPointer(arr.data(), 2);
-        align["rotation"]["angle"] = RT.angle;
+            arr = {RT.cx, RT.cy};
+            align["rotation"]["center"].createFromPointer(arr.data(), 2);
+            align["rotation"]["angle"] = RT.angle;
 
-        arr = {RT.sx, RT.sy};
-        align["scaling"].createFromPointer(arr.data(), 2);
+            arr = {RT.sx, RT.sy};
+            align["scaling"].createFromPointer(arr.data(), 2);
 
-        MatrixXd trans = RT.trf.transpose();
-        align["transform"].createFromPointer(trans.data(), trans.rows(), trans.cols());
+            MatrixXd trans = RT.trf.transpose();
+            align["transform"].createFromPointer(trans.data(), trans.rows(), trans.cols());
 
-    } // if-align
+        } // if-align
 
     ///////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////
@@ -429,23 +431,15 @@ static void openMovie(const String &path, UI *ui)
             data->iprops.setMinMaxValues(ch, 0.8 * low, 1.2 * high);
         }
 
-        // data->movie = std::make_unique<Movie>(std::move(movie));
-
         // Creating alignment plugin if necessary
         if (meta.SizeC > 1)
         {
-            data->align = std::make_unique<Align>(box);
-
-            data->alignOrig = 0;
-            data->alignChannel = 1;
-            TransformData &RT = data->align->getTransformData();
-            RT.width = data->movie->getImage(0, 0).cols();
-            RT.height = data->movie->getImage(0, 0).rows();
-            RT.cx = 0.5 * RT.width;
-            RT.cy = 0.5 * RT.height;
-            RT.updateTransform();
-
             data->mPlugin["ALIGNMENT"].active = true;
+            data->align = std::make_unique<Align>(box, meta.SizeC);
+            data->align->setChannelToAlign(1);
+
+            for (uint32_t ch = 1; ch < meta.SizeC; ch++)
+                data->align->getTransformData(ch).reset(meta.SizeX, meta.SizeY);
         }
 
         data->createBuffers_flag = true;
@@ -652,41 +646,12 @@ static void propsDisplay_Alignment(void *ptr)
     UI &ui = *reinterpret_cast<UI *>(ptr);
     MainStruct &data = *reinterpret_cast<MainStruct *>(ui.getUserData());
 
-    using Frame = std::tuple<MatrixXd, MatrixXd, Mailbox *>;
+    auto runAlignment = [](Mailbox *box, MainStruct *data) -> void {
+        uint32_t chAlign = data->align->getChannelIndex();
 
-    auto parallel_image_treatment = [](const uint32_t id, void *ptr) -> void {
-        auto &[ch0, ch1, mail] = reinterpret_cast<Frame *>(ptr)[id];
-        ch0 = (255.0 * treatImage(ch0, 3, 5.0, 64, 64, mail)).array().round();
-        ch1 = (255.0 * treatImage(ch1, 3, 5.0, 64, 64, mail)).array().round();
-    };
-
-    auto runAlignment = [parallel_image_treatment](Mailbox *box, MainStruct *data) -> void {
-        const Metadata &meta = data->movie->getMetadata();
-
-        const uint32_t N = 0.05 * meta.SizeT;
-        std::vector<Frame> vFrame;
-        for (uint32_t k = 0; k < N; k++)
-        {
-            Frame fr = {data->movie->getImage(data->alignOrig, k),
-                        data->movie->getImage(data->alignChannel, k),
-                        box};
-
-            vFrame.emplace_back(fr);
-        }
-
-        MSG_Progress *msg = box->createMessage<MSG_Progress>("Treating images");
-
-        Threadpool pool(msg);
-        pool.run(parallel_image_treatment, vFrame.size(), vFrame.data());
-
-        std::vector<Image<uint8_t>> vCh0, vCh1;
-        for (auto &[ch0, ch1, ptr] : vFrame)
-        {
-            vCh0.emplace_back(ch0.cast<uint8_t>());
-            vCh1.emplace_back(ch1.cast<uint8_t>());
-        } // loop-frames
-
-        data->align->setImageData(N, vCh0.data(), vCh1.data());
+        data->align->setImageData(data->movie->getMetadata().SizeT,
+                                  data->movie->getChannel(0),
+                                  data->movie->getChannel(chAlign));
 
         MSG_Timer *msg2 = box->createMessage<MSG_Timer>("Aligning cameras");
         bool check = data->align->alignCameras();
@@ -698,6 +663,7 @@ static void propsDisplay_Alignment(void *ptr)
             data->align->correctAberrations();
             msg3->markAsRead();
         }
+
         // worker is finished
         data->updateViewport_flag = true;
     };
@@ -710,7 +676,7 @@ static void propsDisplay_Alignment(void *ptr)
 
         if (ImGui::BeginCombo(title, txt.c_str()))
         {
-            for (uint32_t ch = 0; ch < nChannels; ch++)
+            for (uint32_t ch = 1; ch < nChannels; ch++)
             {
                 txt = "Channel " + std::to_string(ch);
                 if (ImGui::Selectable(txt.c_str()))
@@ -750,15 +716,19 @@ static void propsDisplay_Alignment(void *ptr)
     /////////////////////////////////////////////////////////////////
 
     const uint32_t nChannels = data.movie->getMetadata().SizeC;
-    if (item(data.alignOrig, nChannels, "Original") ||
-        item(data.alignChannel, nChannels, "To align"))
+    uint32_t chAlign = data.align->getChannelIndex();
+
+    if (item(chAlign, nChannels, "To align"))
+    {
+        data.align->setChannelToAlign(chAlign);
         data.updateViewport_flag = true;
+    }
 
     ImGui::Spacing();
     ImGui::Spacing();
     ImGui::Spacing();
 
-    TransformData &RT = data.align->getTransformData();
+    TransformData &RT = data.align->getTransformData(chAlign);
 
     glm::vec2 trans = {RT.dx, RT.dy},
               rot = {RT.cx, RT.cy},
@@ -826,10 +796,7 @@ static void propsDisplay_Alignment(void *ptr)
     ImGui::Spacing();
     ImGui::Spacing();
 
-    check = ImGui::Button("Auto alignment");
-    check &= data.alignOrig != data.alignChannel;
-
-    if (check)
+    if (ImGui::Button("Auto alignment"))
     {
         ui.mWindows["inbox"]->show();
         std::thread(runAlignment, &(ui.mail), &data).detach();
@@ -839,14 +806,8 @@ static void propsDisplay_Alignment(void *ptr)
 
     if (ImGui::Button("Reset"))
     {
-        RT.dx = 0.0;
-        RT.dy = 0.0;
-        RT.cx = 0.5 * RT.width;
-        RT.cy = 0.5 * RT.height;
-        RT.angle = 0.0;
-        RT.sx = 1.0;
-        RT.sy = 1.0;
-        RT.updateTransform();
+        Metadata &meta = data.movie->getMetadata();
+        RT.reset(meta.SizeX, meta.SizeY);
         data.updateViewport_flag = true;
     }
 
@@ -1108,8 +1069,7 @@ static void propsDisplay_GProcess(void *ptr)
                          Mailbox *box, MainStruct *data) -> void {
         // We already calculated the basic stuff here
 
-        Message
-            *msg = box->createMessage<MSG_Timer>("Optimizing cell's parameters");
+        Message *msg = box->createMessage<MSG_Timer>("Optimizing cell's parameters");
 
         const uint32_t N = vTraj.size();
         GP_FBM gp(vTraj, box);
@@ -1535,21 +1495,11 @@ static void onUserUpdate(UI &ui)
         ui.tex.updateDepthComponent(data.texID_signal, mat.data());
 
         // Determining if channel should be aligned
-        if (ch == data.alignChannel)
-        {
-            MatrixXf itrf;
-            if (data.align)
-                itrf = data.align->getTransformData().itrf.cast<float>();
-            else
-                itrf = MatrixXf::Identity(3, 3);
+        MatrixXf itrf = MatrixXf::Identity(3, 3);
+        if (data.align && ch > 0)
+            itrf = data.align->getTransformData(ch).itrf.cast<float>();
 
-            ui.shader.setMatrix3f("u_align", itrf.data());
-        }
-        else
-        {
-            glm::mat3 itrf(1.0);
-            ui.shader.setMatrix3f("u_align", glm::value_ptr(itrf));
-        }
+        ui.shader.setMatrix3f("u_align", itrf.data());
 
         // Updating colormap and blending channel
         ui.shader.setVec3f("colormap", data.iprops.getLUT(ch).data());
@@ -1577,28 +1527,22 @@ static void onUserUpdate(UI &ui)
                 {
                     const MatrixXd &mat = data.track->getTrack(ch).traj[k];
 
-                    MatrixXd trans = data.align ? data.align->getTransformData().trf
-                                                : MatrixXd::Identity(3, 3);
+                    MatrixXd trans = MatrixXd::Identity(3, 3);
+                    if (data.align && ch > 0)
+                        trans = data.align->getTransformData(ch).trf;
 
                     for (uint32_t l = 0; l < mat.rows(); l++)
                         if (uint32_t(mat(l, TrajColumns::FRAME)) == data.frame)
                         {
 
                             glm::vec2 pos;
-                            if (ch == data.alignChannel)
-                            {
-                                pos.x = trans(0, 0) * mat(l, TrajColumns::POSX) +
-                                        trans(0, 1) * mat(l, TrajColumns::POSY) +
-                                        trans(0, 2);
+                            pos.x = trans(0, 0) * mat(l, TrajColumns::POSX) +
+                                    trans(0, 1) * mat(l, TrajColumns::POSY) +
+                                    trans(0, 2);
 
-                                pos.y = trans(1, 0) * mat(l, TrajColumns::POSX) +
-                                        trans(1, 1) * mat(l, TrajColumns::POSY) +
-                                        trans(1, 2);
-                            }
-                            else
-                            {
-                                pos = {mat(l, TrajColumns::POSX), mat(l, TrajColumns::POSY)};
-                            }
+                            pos.y = trans(1, 0) * mat(l, TrajColumns::POSX) +
+                                    trans(1, 1) * mat(l, TrajColumns::POSY) +
+                                    trans(1, 2);
 
                             pos /= dim; // Normalize for texture space
 

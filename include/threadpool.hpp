@@ -20,7 +20,7 @@ class Threadpool
 {
 public:
     Threadpool(MSG_Progress *message = nullptr);
-    Threadpool(const uint32_t mThreads, MSG_Progress *message = nullptr);
+    Threadpool(const uint32_t nThreads, MSG_Progress *message = nullptr);
 
     Threadpool &operator=(Threadpool &&pool);
     Threadpool &operator=(const Threadpool &pool);
