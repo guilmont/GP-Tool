@@ -1604,7 +1604,7 @@ static void onUserUpdate(UI &ui)
     if (data.updateContrast_flag)
     {
         const Metadata &meta = data.movie->getMetadata();
-        const size_t N = meta.SizeX * meta.SizeT;
+        const size_t N = meta.SizeX * meta.SizeY;
         for (uint32_t ch = 0; ch < meta.SizeC; ch++)
         {
             Histogram &histo = data.iprops.getHistogram(ch);

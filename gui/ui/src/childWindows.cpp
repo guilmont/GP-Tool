@@ -64,6 +64,7 @@ static void plotDistribution(const MatrixXd &mat, const uint32_t col,
     // Calculatin x and y limits for plot
     double xmin = 0.8 * xy.col(0).minCoeff(), xmax = 1.2 * xy.col(0).maxCoeff();
     double ymin = 0.0, ymax = 1.2 * xy.col(1).maxCoeff();
+
     ImPlot::SetNextPlotLimits(xmin, xmax, ymin, ymax, ImGuiCond_Once);
 
     ImGui::PushID(std::to_string(rand()).c_str());
@@ -531,10 +532,10 @@ void winPlotDistribution::display(void)
         ImGui::Text("Particle %d", int(0.25 * k));
         ImGui::Spacing();
 
-        plotDistribution(*mat, k, "Diffusion coefficient", "D (x 0.001)", size,
-                         g_color::green, calib * calib * 1000);
+        plotDistribution(*mat, k, "Diffusion coefficient", "D", size,
+                         g_color::green, calib * calib);
         ImGui::SameLine();
-        plotDistribution(*mat, k + 2, "Constrainment", "Alpha", size, g_color::red);
+        plotDistribution(*mat, k + 2, "Anomalous coefficient", "Alpha", size, g_color::red);
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
