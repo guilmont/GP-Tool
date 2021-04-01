@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.10)
 
+
+find_package(glfw3 REQUIRED)
+find_package(glm REQUIRED)
+
+
 ###########################################################
 ## GLAD ###################################################
 
@@ -30,17 +35,6 @@ target_include_directories(pugixml
     PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/pugixml/src"
 )
-
-###########################################################
-## GLFW ###################################################
-
-add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/glfw" glfw)
-
-
-###########################################################
-## GLM ####################################################
-
-add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/glm/glm" glm)
 
 ###########################################################
 ## IMGUI ##################################################
