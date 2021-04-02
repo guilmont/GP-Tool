@@ -177,11 +177,11 @@ target_include_directories(RENDERER
         "${CMAKE_SOURCE_DIR}/gui/renderer/include"
         "${CMAKE_SOURCE_DIR}/gui/include"
         "${CMAKE_SOURCE_DIR}/vendor/stb"
+        ${GLM_INCLUDE_DIRS}""
 )
 
 target_link_libraries(RENDERER
     PUBLIC
-        glm
         glfw
         glad
         imgui
