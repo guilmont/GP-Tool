@@ -1,7 +1,7 @@
 
 <!-- PROJECT LOGO -->
 <h1 align="center">GP-Tool</h1>
-<img src="./screenshots/screenshot.png" alt="gptool_demo" width="90%" style="padding-left: 5%;">
+<img src="./screenshots/screenshot.png" alt="gptool_demo" width="98%"">
   <p align="center">
     GP-Tool: A user-friendly graphical interface to apply GP-FBM
 </p>
