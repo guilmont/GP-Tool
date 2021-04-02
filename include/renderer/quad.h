@@ -7,13 +7,10 @@ class Quad
 {
 
 public:
-    Quad(void) = default;
-    ~Quad(void) = default;
+    Quad(void);
+    ~Quad(void);
 
-    void generateObj(void);
     void draw(void);
-
-    void cleanUp(void);
 
 private:
     struct Vertex

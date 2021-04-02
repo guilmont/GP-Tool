@@ -1,10 +1,11 @@
 #include "shader.h"
-#include "shaders_code.cpp"
-
 #include "gl_assert.cpp"
 
-static void CheckShaderError(uint32_t shader, uint32_t flag,
-                             bool isProgram, String msg)
+#include <fstream>
+#include <sstream>
+#include <cstring>
+
+static void CheckShaderError(uint32_t shader, uint32_t flag, bool isProgram, String msg)
 {
     int success = 0;
     char error[1024] = {0};
@@ -55,10 +56,19 @@ static uint32_t CreateShader(const char *shaderSource, GLenum shaderType)
     return shader;
 } // CreateShader
 
-static uint32_t genShader(const char *vertex_shader, const char *frag_shader)
+static uint32_t genShader(const String &vertex_shader, const String &frag_shader)
 {
-    uint32_t vtx = CreateShader(vertex_shader, GL_VERTEX_SHADER);
-    uint32_t frg = CreateShader(frag_shader, GL_FRAGMENT_SHADER);
+
+    auto readShader = [](const String &path) -> String {
+        std::ifstream arq(path);
+        std::stringstream shader;
+        shader << arq.rdbuf();
+        arq.close();
+        return shader.str();
+    };
+
+    uint32_t vtx = CreateShader(readShader(vertex_shader).c_str(), GL_VERTEX_SHADER);
+    uint32_t frg = CreateShader(readShader(frag_shader).c_str(), GL_FRAGMENT_SHADER);
 
     // Create program
     gl_call(uint32_t program = glad_glCreateProgram());
@@ -86,16 +96,19 @@ static uint32_t genShader(const char *vertex_shader, const char *frag_shader)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void Shader::loadShaders(void)
+Shader::Shader(void)
 {
-    vProgram["viewport"] = genShader(basic_vert, viewport_frag);
-    vProgram["histogram"] = genShader(basic_vert, histogram_frag);
-    vProgram["trajectory"] = genShader(basic_vert, trajectory_frag);
-    vProgram["selectRoi"] = genShader(basic_vert, selectRoi_frag);
+    String path(PROJECT_DIR);
+    vProgram["basic"] = genShader(path + "/assets/shaders/basic.vtx.glsl",
+                                  path + "/assets/shaders/basic.frag.glsl");
+    // vProgram["viewport"] = genShader(basic_vert, viewport_frag);
+    // vProgram["histogram"] = genShader(basic_vert, histogram_frag);
+    // vProgram["trajectory"] = genShader(basic_vert, trajectory_frag);
+    // vProgram["selectRoi"] = genShader(basic_vert, selectRoi_frag);
 
 } // constructor
 
-void Shader::cleanUp(void)
+Shader::~Shader(void)
 {
     for (auto &it : vProgram)
         glad_glDeleteProgram(it.second);

@@ -1,23 +1,16 @@
 #pragma once
 
-#include <map>
-#include <string>
-#include <cstring>
-
-using String = std::string;
+#include "config.h"
 
 class Shader
 {
 protected:
     uint32_t program_used;
-    std::map<String, uint32_t> vProgram;
+    std::unordered_map<String, uint32_t> vProgram;
 
 public:
-    Shader(void) = default;
-    ~Shader(void) = default;
-
-    void loadShaders(void);
-    void cleanUp(void);
+    Shader(void);
+    ~Shader(void);
 
     void useProgram(const String &name);
 

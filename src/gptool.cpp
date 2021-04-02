@@ -14,6 +14,13 @@ void GPTool::onUserUpdate(float deltaTime)
     fBuffer["viewport"]->bind();
     glad_glClear(GL_COLOR_BUFFER_BIT);
     glad_glClearColor(0.6, 0.6, 0.6, 1.0);
+
+    glm::mat4 uni(1.0f);
+    shader->useProgram("basic");
+    shader->setMatrix4f("u_transform", glm::value_ptr(uni));
+
+    quad->draw();
+
     fBuffer["viewport"]->unbind();
 
 } // function
@@ -23,7 +30,7 @@ void GPTool::ImGuiLayer(void)
 
     ImGui::Begin("Plugins");
 
-        // float width = ImGui::GetContentRegionAvailWidth();
+    // float width = ImGui::GetContentRegionAvailWidth();
     // ImVec2 buttonSize{width, 30};
     // ImVec4
     //     chosenColor{0.1, 0.6, 0.1, 1.0},
