@@ -3,71 +3,86 @@
 #include <iostream>
 #include <glm/glm.hpp>
 #include <unordered_map>
+#include <vector>
 
-namespace Event
-{
-    const int32_t
-        RELEASE = 0,
-        PRESS = 1,
-        REPEAT = 2;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
-class Mouse
+class Event
 {
 public:
-    Mouse(void) = default;
-    ~Mouse(void) = default;
+    Event(void) = default;
+    virtual ~Event(void) = default;
 
-    glm::vec2 wheel;
-    glm::vec2 pos = {0.0f, 0.0f};
-    glm::vec2 dpos = {0.0f, 0.0f};
+    void set(const int32_t ev, int32_t action) { event[ev] = action; }
 
-    void set(const int32_t key, int32_t action) { event[key] = action; }
-
-    int32_t get(const int32_t button)
+    int32_t get(const int32_t ev)
     {
-        if (event.find(button) == event.end())
+        if (event.find(ev) == event.end())
             return -1;
         else
-            return event[button];
+            return event[ev];
     }
 
-private:
+    virtual void clear(void) = 0;
+
+    enum : const int32_t
+    {
+        RELEASE = 0,
+        PRESS = 1,
+        REPEAT = 2
+    };
+
+protected:
     std::unordered_map<int32_t, int32_t> event;
 };
 
-namespace MouseButton
-{
-    const int32_t
-        LEFT = 0,
-        RIGHT = 1,
-        MIDDLE = 2;
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-class Keyboard
+struct Mouse : public Event
 {
-public:
-    Keyboard(void) = default;
-    ~Keyboard(void) = default;
+    glm::vec2 wheel;
+    glm::vec2 position = {0.0f, 0.0f};
+    glm::vec2 offset = {0.0f, 0.0f};
 
-    void set(const int32_t key, int32_t action) { event[key] = action; }
-
-    int32_t get(const int32_t key)
+    void clear(void) override
     {
-        if (event.find(key) == event.end())
-            return -1;
-        else
-            return event[key];
+        offset = wheel = {0.0f, 0.0f};
+
+        std::vector<int32_t> tags;
+        for (auto &[tag, value] : event)
+            if (value == Event::PRESS)
+                tags.push_back(tag);
+
+        event.clear();
+        for (int32_t &tag : tags)
+            event[tag] = Event::PRESS;
     }
 
-private:
-    std::unordered_map<int32_t, int32_t> event;
+    enum : const int32_t
+    {
+        LEFT = 0,
+        RIGHT = 1,
+        MIDDLE = 2
+    };
+};
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+struct Keyboard : public Event
+{
+
+    void clear(void) override
+    {
+
+        std::vector<int32_t> tags;
+        for (auto &[tag, value] : event)
+            if (value == Event::PRESS || value == Event::REPEAT)
+                tags.push_back(tag);
+
+        event.clear();
+        for (int32_t &tag : tags)
+            event[tag] = Event::PRESS;
+    }
 };
 
 namespace Key

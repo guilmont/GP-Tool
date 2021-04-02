@@ -11,13 +11,25 @@ GPTool::GPTool(void)
 
 void GPTool::onUserUpdate(float deltaTime)
 {
+
+    if (keyboard.get(Key::LEFT_CONTROL) == Event::PRESS && keyboard.get('A') == Event::RELEASE)
+        std::cout << deltaTime << std::endl;
+
+    if (viewport_hover)
+        viewport_function(deltaTime);
+
+    ///////////////////////////////////////////////////////
+    // Renderering
+
     fBuffer["viewport"]->bind();
     glad_glClear(GL_COLOR_BUFFER_BIT);
     glad_glClearColor(0.6, 0.6, 0.6, 1.0);
 
-    glm::mat4 uni(1.0f);
+    const glm::vec2 &size = fBuffer["viewport"]->getDimensions();
+
+    glm::mat4 trf = camera.getViewMatrix(size.y / size.x);
     shader->useProgram("basic");
-    shader->setMatrix4f("u_transform", glm::value_ptr(uni));
+    shader->setMatrix4f("u_transform", glm::value_ptr(trf));
 
     quad->draw();
 
@@ -89,7 +101,7 @@ void GPTool::ImGuiLayer(void)
     // data->viewPos = {2.0f * (pos.x - rect.x) / dim.x - 1.0f,
     //                  2.0f * (pos.y - rect.y) / dim.y - 1.0f};
 
-    // data->viewHover = ImGui::IsWindowHovered();
+    viewport_hover = ImGui::IsWindowHovered();
     ImGui::End();
 
     ///////////////////////////////////////////////////////
@@ -160,3 +172,28 @@ void GPTool::ImGuiMenuLayer(void)
         ImGui::EndMenu();
     }
 } // function
+
+/////////////////////////////////////
+
+void GPTool::viewport_function(float deltaTime)
+{
+
+    // std::cout << mouse.position.x << " x " << mouse.position.y << std::endl;
+
+    // move camera -- add roi points
+    if (mouse.get(Mouse::LEFT) == Event::PRESS)
+    {
+        glm::vec2 dr = mouse.offset * deltaTime;
+        camera.moveHorizontal(dr.x);
+        camera.moveVertical(dr.y);
+    } // left-button-pressed
+
+    // zoom
+    if (mouse.wheel.y > 0.0f)
+    {
+        camera.moveFront(deltaTime);
+    }
+    else if (mouse.wheel.y < 0.0f)
+        camera.moveBack(deltaTime);
+
+} // controls

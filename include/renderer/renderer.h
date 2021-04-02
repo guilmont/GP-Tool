@@ -1,10 +1,5 @@
 #pragma once
 
-#include <iostream>
-#include <string>
-#include <memory>
-#include <unordered_map>
-
 // vendor
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -24,6 +19,7 @@
 #include "framebuffer.h"
 #include "events.h"
 #include "gdialog.h"
+#include "camera.h"
 
 class Renderer
 {
@@ -39,10 +35,11 @@ public:
     virtual void ImGuiLayer(void) {}
     virtual void ImGuiMenuLayer(void) {}
 
-    GDialog dialog;
+    Mouse mouse;
+    Keyboard keyboard;
 
-    std::unique_ptr<Mouse> mouse = nullptr;
-    std::unique_ptr<Keyboard> keyboard = nullptr;
+    GDialog dialog;
+    Camera camera;
 
 private:
     String screenTitle;

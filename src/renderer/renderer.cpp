@@ -15,28 +15,28 @@ void winResize_callback(GLFWwindow *window, int width, int height)
 
 void mousePos_callback(GLFWwindow *window, double xpos, double ypos)
 {
-    Renderer &renderer = *reinterpret_cast<Renderer *>(glfwGetWindowUserPointer(window));
-    renderer.mouse->dpos = {xpos - renderer.mouse->pos.x, ypos - renderer.mouse->pos.y};
-    renderer.mouse->pos = {xpos, ypos};
+    Mouse &mouse = reinterpret_cast<Renderer *>(glfwGetWindowUserPointer(window))->mouse;
+    mouse.offset = {xpos - mouse.position.x, ypos - mouse.position.y};
+    mouse.position = {xpos, ypos};
 } //mousePos_callback
 
 void mouseButton_callback(GLFWwindow *window, int button, int action, int mods)
 {
-    Renderer &renderer = *reinterpret_cast<Renderer *>(glfwGetWindowUserPointer(window));
-    renderer.mouse->set(button, action);
+    Mouse &mouse = reinterpret_cast<Renderer *>(glfwGetWindowUserPointer(window))->mouse;
+    mouse.set(button, action);
 } // mouseButton_callback
 
 void mouseScroll_callback(GLFWwindow *window, double xoffset, double yoffset)
 {
-    Renderer &renderer = *reinterpret_cast<Renderer *>(glfwGetWindowUserPointer(window));
-    renderer.mouse->wheel = {float(xoffset), float(yoffset)};
+    Mouse &mouse = reinterpret_cast<Renderer *>(glfwGetWindowUserPointer(window))->mouse;
+    mouse.wheel = {float(xoffset), float(yoffset)};
 
 } // mouseScroll_callback
 
 void keyboard_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
-    Renderer &renderer = *reinterpret_cast<Renderer *>(glfwGetWindowUserPointer(window));
-    renderer.keyboard->set(key, action);
+    Keyboard &keyboard = reinterpret_cast<Renderer *>(glfwGetWindowUserPointer(window))->keyboard;
+    keyboard.set(key, action);
 } // keyboard_callback
 
 /*****************************************************************************/
@@ -83,6 +83,7 @@ void Renderer::initialize(const String &name, uint32_t width, uint32_t height)
         exit(-1);
     }
 
+    glfwSetInputMode(main_window, GLFW_STICKY_KEYS, GLFW_TRUE);
     glfwMakeContextCurrent(main_window);
     glfwSwapInterval(1); // synchronize with screen updates
 
@@ -104,7 +105,6 @@ void Renderer::initialize(const String &name, uint32_t width, uint32_t height)
     glfwSetMouseButtonCallback(main_window, mouseButton_callback);
     glfwSetScrollCallback(main_window, mouseScroll_callback);
     glfwSetWindowSizeCallback(main_window, winResize_callback);
-
     ///////////////////////////////////////////////////////////////////////////
     // SETUP DEAR IMGRenderer/IMPLOT CONTEXT
 
@@ -134,8 +134,8 @@ void Renderer::mainLoop(void)
     while (!glfwWindowShouldClose(main_window))
     {
         // reset events
-        mouse = std::make_unique<Mouse>();
-        keyboard = std::make_unique<Keyboard>();
+        keyboard.clear();
+        mouse.clear();
 
         // Get new events
         glfwPollEvents();
