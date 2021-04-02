@@ -1,5 +1,14 @@
 cmake_minimum_required(VERSION 3.10)
 
+## GLOBALLY INSTALLED LIBRARIES
+find_package(PkgConfig REQUIRED)
+
+find_package(glfw3 REQUIRED)
+find_package(glm REQUIRED)
+# find_package(HDF5 COMPONENTS CXX REQUIRED) 
+# pkg_check_modules(jsoncpp REQUIRED IMPORTED_TARGET jsoncpp)
+
+
 ###########################################################
 ## GLAD ###################################################
 
@@ -31,16 +40,6 @@ target_include_directories(pugixml
         "${CMAKE_CURRENT_SOURCE_DIR}/pugixml/src"
 )
 
-###########################################################
-## GLFW ###################################################
-
-add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/glfw" glfw)
-
-
-###########################################################
-## GLM ####################################################
-
-add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/glm/glm" glm)
 
 ###########################################################
 ## IMGUI ##################################################

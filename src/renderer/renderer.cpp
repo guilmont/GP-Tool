@@ -1,4 +1,4 @@
-#include "ui.h"
+#include "renderer.h"
 
 #include "gl_assert.cpp"
 
@@ -6,72 +6,58 @@
 
 void winResize_callback(GLFWwindow *window, int width, int height)
 {
-    UI &ui = *reinterpret_cast<UI *>(glfwGetWindowUserPointer(window));
+    Renderer &renderer = *reinterpret_cast<Renderer *>(glfwGetWindowUserPointer(window));
 
-    ui.screenDim = {width, height};
+    renderer.screenDim = {width, height};
     gl_call(glad_glViewport(0, 0, width, height));
-    ui.resizeEvent = true;
 
 } //winResize_callback
 
 void mousePos_callback(GLFWwindow *window, double xpos, double ypos)
 {
-    UI &ui = *reinterpret_cast<UI *>(glfwGetWindowUserPointer(window));
-
-    ui.mouse.dpos = {xpos - ui.mouse.pos.x, ypos - ui.mouse.pos.y};
-    ui.mouse.pos = {xpos, ypos};
-
+    Renderer &renderer = *reinterpret_cast<Renderer *>(glfwGetWindowUserPointer(window));
+    renderer.mouse->dpos = {xpos - renderer.mouse->pos.x, ypos - renderer.mouse->pos.y};
+    renderer.mouse->pos = {xpos, ypos};
 } //mousePos_callback
 
 void mouseButton_callback(GLFWwindow *window, int button, int action, int mods)
 {
-    UI &ui = *reinterpret_cast<UI *>(glfwGetWindowUserPointer(window));
-
-    (void)mods; // to avoid warnings
-
-    ui.mouse.action = action;
-    if (button == GLFW_MOUSE_BUTTON_LEFT)
-    {
-        ui.mouse.leftButton = true;
-        if (action == GLFW_PRESS)
-            ui.mouse.leftPressed = true;
-        else if (action == GLFW_RELEASE)
-            ui.mouse.leftPressed = false;
-    }
-
-    else if (button == GLFW_MOUSE_BUTTON_RIGHT)
-    {
-        ui.mouse.rightButton = true;
-        if (action == GLFW_PRESS)
-            ui.mouse.rightPressed = true;
-        else if (action == GLFW_RELEASE)
-            ui.mouse.rightPressed = false;
-    }
-
-    else if (button == GLFW_MOUSE_BUTTON_MIDDLE)
-    {
-        ui.mouse.middleButton = true;
-        if (action == GLFW_PRESS)
-            ui.mouse.middlePressed = true;
-        else if (action == GLFW_RELEASE)
-            ui.mouse.middlePressed = false;
-    }
-
+    Renderer &renderer = *reinterpret_cast<Renderer *>(glfwGetWindowUserPointer(window));
+    renderer.mouse->set(button, action);
 } // mouseButton_callback
 
 void mouseScroll_callback(GLFWwindow *window, double xoffset, double yoffset)
 {
-    UI &ui = *reinterpret_cast<UI *>(glfwGetWindowUserPointer(window));
-    ui.mouse.offset = {float(xoffset), float(yoffset)};
+    Renderer &renderer = *reinterpret_cast<Renderer *>(glfwGetWindowUserPointer(window));
+    renderer.mouse->wheel = {float(xoffset), float(yoffset)};
 
 } // mouseScroll_callback
 
+void keyboard_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
+{
+    Renderer &renderer = *reinterpret_cast<Renderer *>(glfwGetWindowUserPointer(window));
+    renderer.keyboard->set(key, action);
+} // keyboard_callback
+
 /*****************************************************************************/
 /*****************************************************************************/
 
-UI::UI(const String &name, uint32_t width, uint32_t height)
-    : screenTitle(name), screenDim(width, height)
+Renderer::~Renderer(void)
 {
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+
+    ImGui::DestroyContext();
+
+    glfwTerminate();
+
+} // destructor
+
+void Renderer::initialize(const String &name, uint32_t width, uint32_t height)
+{
+    this->screenTitle = name;
+    this->screenDim = glm::ivec2{width, height};
+
     // Setup window
     glfwSetErrorCallback([](int error, const char *description) -> void {
         std::cout << "ERROR (glfw): " << error << ", " << description << std::endl;
@@ -87,10 +73,6 @@ UI::UI(const String &name, uint32_t width, uint32_t height)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-#ifdef __APPLE__
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // Mac OS only
-#endif
 
     // Generating resizable window
     main_window = glfwCreateWindow(screenDim.x, screenDim.y, screenTitle.c_str(), NULL, NULL);
@@ -117,18 +99,17 @@ UI::UI(const String &name, uint32_t width, uint32_t height)
     // ///////////////////////////////////////////////////////////////////////////
     // // HANDLING EVENTS
     glfwSetWindowUserPointer(main_window, this);
+    glfwSetKeyCallback(main_window, keyboard_callback);
     glfwSetCursorPosCallback(main_window, mousePos_callback);
     glfwSetMouseButtonCallback(main_window, mouseButton_callback);
     glfwSetScrollCallback(main_window, mouseScroll_callback);
     glfwSetWindowSizeCallback(main_window, winResize_callback);
 
     ///////////////////////////////////////////////////////////////////////////
-    // SETUP DEAR IMGUI/IMPLOT CONTEXT
+    // SETUP DEAR IMGRenderer/IMPLOT CONTEXT
 
     // Setup Platform/Renderer bindings
     ImGui::CreateContext();
-    ImPlot::CreateContext();
-
     ImGui::StyleColorsClassic();
 
     // Floating windows off main windows
@@ -137,48 +118,14 @@ UI::UI(const String &name, uint32_t width, uint32_t height)
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
-    io.IniFilename = "gptool.ini";
+    io.IniFilename = INI_PATH;
 
     ImGui_ImplGlfw_InitForOpenGL(main_window, true);
     ImGui_ImplOpenGL3_Init("#version 410 core"); // Mac supports only up to 410
 
-    ////////////////////////////////////////////////////////////////////////////
-    // INITIALIZING CONTEXT DEPENDENT VARIABLES
-
-    shader.loadShaders();
-    quad.generateObj();
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Setup fonts
-
-    fonts.loadFont("regular", "Open_Sans/OpenSans-Regular.ttf", 18.0);
-    fonts.loadFont("bold", "Open_Sans/OpenSans-Bold.ttf", 18.0);
-    fonts.setDefault("regular");
-
-    mWindows["inbox"] = std::make_unique<winInboxMessage>(&mail);
-    mWindows["dialog"] = std::make_unique<FileDialog>();
-
 } // constructor
 
-UI::~UI(void)
-{
-    tex.cleanUp();
-    quad.cleanUp();
-    shader.cleanUp();
-    FBuffer.clear();
-
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-
-    ImPlot::DestroyContext();
-    ImGui::DestroyContext();
-
-    glfwTerminate();
-
-} // destructor
-
-void UI::mainLoop(void (*onUserUpdate)(UI &), void (*controls)(UI &), void (*ImGuiMenuLayer)(UI &),
-                  void (*ImGuiLayer)(UI &))
+void Renderer::mainLoop(void)
 {
     glfwSetTime(0);
     double t0 = glfwGetTime();
@@ -187,18 +134,17 @@ void UI::mainLoop(void (*onUserUpdate)(UI &), void (*controls)(UI &), void (*ImG
     while (!glfwWindowShouldClose(main_window))
     {
         // reset events
-        resizeEvent = false;
-        mouse.leftButton = false;
-        mouse.middleButton = false;
-        mouse.rightButton = false;
-        mouse.offset = {0.0, 0.0};
+        mouse = std::make_unique<Mouse>();
+        keyboard = std::make_unique<Keyboard>();
 
+        // Get new events
         glfwPollEvents();
 
-        controls(*this);
+        // Updating application
+        onUserUpdate(deltaTime);
 
-        // Create a secondary buffer for swap
-        onUserUpdate(*this);
+        ///////////////////////////////////////////////////
+        // IMGUI /////////////////////////////////////////
 
         // Setup a new frame for imgui
         ImGui_ImplOpenGL3_NewFrame();
@@ -232,13 +178,13 @@ void UI::mainLoop(void (*onUserUpdate)(UI &), void (*controls)(UI &), void (*ImG
 
         if (ImGui::BeginMenuBar())
         {
-            ImGuiMenuLayer(*this);
+            ImGuiMenuLayer();
             ImGui::EndMenuBar();
         }
 
         // Here goes the implementation for user interface
         ImGui::PushStyleColor(ImGuiCol_WindowBg, {0.0, 0.0, 0.0, 1.0}); // solid background
-        ImGuiLayer(*this);
+        ImGuiLayer();
         ImGui::PopStyleColor();
 
         // Ending dockspace
@@ -246,21 +192,22 @@ void UI::mainLoop(void (*onUserUpdate)(UI &), void (*controls)(UI &), void (*ImG
 
         // Render ImGui // It calls endFrame automatically
         ImGui::Render();
-
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-        // Allows redering of external floating windows
+        // Allows rendering of external floating windows
         GLFWwindow *backup_current_context = glfwGetCurrentContext();
         ImGui::UpdatePlatformWindows();
         ImGui::RenderPlatformWindowsDefault();
         glfwMakeContextCurrent(backup_current_context);
+
+        ///////////////////////////////////////////////////
 
         // Swap secondary buffer to screen
         glfwSwapBuffers(main_window);
 
         // Calculating elapsed time for smooth controls
         double tf = glfwGetTime();
-        elapsedTime = float(tf - t0);
+        deltaTime = float(tf - t0);
         t0 = tf;
 
     } // main-loop
