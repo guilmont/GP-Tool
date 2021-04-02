@@ -1,7 +1,7 @@
 
 <!-- PROJECT LOGO -->
 <h1 align="center">GP-Tool</h1>
-<img src="./screenshots/screenshot.png" alt="gptool_demo" width="90%" style="margin-left: 5%;">
+<img src="./screenshots/screenshot.png" alt="gptool_demo" width="90%" style="padding-left: 5%;">
   <p align="center">
     GP-Tool: A user-friendly graphical interface to apply GP-FBM
 </p>
@@ -74,7 +74,7 @@ pamac install glm glfw-x11 hdf5 jsoncpp
 
 1. Clone the repo. As I include several sub-modules as vendors, recursive clone is needed.
    ```
-   git clone --recurse-submodules -j5 git@github.com:guilmont/GP-Tool.git
+   git clone --recurse-submodules -j5 https://github.com/guilmont/GP-Tool.git
    ```
 
 2. For the more experienced, the software can be built using cmake. Otherwise, the facility script will compile and install GP-Tool to desktop. 
