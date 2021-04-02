@@ -46,6 +46,9 @@ void GDialog::createDialog(uint32_t type, const String &title, const std::list<S
 
 void GDialog::showDialog(void)
 {
+    if (!active)
+        return;
+
     ImGui::Begin(title.c_str(), &active);
     bool status = (this->*dialog_function)();
     ImGui::End();

@@ -15,18 +15,12 @@ public:
     GDialog(void) = default;
     ~GDialog(void) = default;
 
-    bool active = false;
-
     void createDialog(uint32_t type, const String &title, const std::list<String> &ext,
                       void *data = nullptr, void (*callback)(void *) = nullptr);
     void showDialog(void);
 
     // RETRIEVE DATA
-    const String &
-    getFilename(void) const
-    {
-        return filename;
-    }
+    const String &getFilename(void) const { return filename; }
     const String &getMainPath(void) const { return main_path; }
     const String &getPath(void) const { return path2File; }
 
@@ -37,6 +31,8 @@ public:
     };
 
 private:
+    bool active = false;
+
     String main_path = HOME_DIR;
     String foldername, filename;
     std::list<String> lFolders, lFiles;

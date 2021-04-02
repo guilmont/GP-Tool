@@ -1,7 +1,8 @@
 #pragma once
 
 #include "config.h"
-#include "renderer/renderer.h"
+#include "renderer.h"
+#include "mailbox.h"
 
 #include <unordered_map>
 
@@ -17,6 +18,8 @@ public:
     void reset(const String &shader_path);
 
 private:
+    Mailbox mbox;
+
     std::unique_ptr<Quad> quad = nullptr;
     std::unique_ptr<Shader> shader = nullptr;
 

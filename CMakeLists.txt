@@ -46,6 +46,7 @@ target_link_libraries(RENDERER
 add_executable(GPTool 
     "${CMAKE_SOURCE_DIR}/src/main.cpp"
     "${CMAKE_SOURCE_DIR}/src/gptool.cpp"
+    "${CMAKE_SOURCE_DIR}/src/mailbox.cpp"
 )
 
 set_target_properties(GPTool

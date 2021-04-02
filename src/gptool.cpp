@@ -23,7 +23,7 @@ void GPTool::ImGuiLayer(void)
 
     ImGui::Begin("Plugins");
 
-    // float width = ImGui::GetContentRegionAvailWidth();
+        // float width = ImGui::GetContentRegionAvailWidth();
     // ImVec2 buttonSize{width, 30};
     // ImVec4
     //     chosenColor{0.1, 0.6, 0.1, 1.0},
@@ -87,8 +87,8 @@ void GPTool::ImGuiLayer(void)
 
     ///////////////////////////////////////////////////////
 
-    if (dialog.active)
-        dialog.showDialog();
+    dialog.showDialog();
+    mbox.showMessages();
 
     // // External windows
     // for (auto &win : ui.mWindows)
@@ -135,8 +135,8 @@ void GPTool::ImGuiMenuLayer(void)
 
     if (ImGui::BeginMenu("About"))
     {
-        // if (ImGui::MenuItem("View inbox messages"))
-        //     ui.mWindows["inbox"]->show();
+        if (ImGui::MenuItem("Show mailbox"))
+            mbox.setActive();
 
         // if (ImGui::MenuItem("How to cite"))
         // {

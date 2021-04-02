@@ -1,0 +1,95 @@
+#pragma once
+
+#include <iostream>
+#include <string>
+#include <chrono>
+#include <list>
+#include <memory>
+
+#include <imgui.h>
+
+using Clock = std::chrono::high_resolution_clock;
+using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
+
+namespace Message
+{
+    class Message
+    {
+    public:
+        Message(const std::string &msg) : content(msg) {}
+        virtual ~Message(void) = default;
+        bool is_read = false;
+
+        virtual void show(void) = 0;
+
+    protected:
+        std::string content;
+    };
+
+    ///////////////////////////////////////////////////////
+
+    struct Info : public Message
+    {
+        Info(const std::string &msg) : Message(msg) {}
+        void show(void) override;
+    };
+
+    struct Warn : public Message
+    {
+        Warn(const std::string &msg) : Message(msg) {}
+        void show(void) override;
+    };
+
+    struct Error : public Message
+    {
+        Error(const std::string &msg) : Message(msg) {}
+        void show(void) override;
+    };
+
+    class Progress : public Message
+    {
+    public:
+        Progress(const std::string &msg) : Message(msg) { this->zero = Clock::now(); }
+        void show(void) override;
+
+        float progress = 0.0f;
+
+    private:
+        TimePoint zero, current;
+    };
+
+    class Timer : public Message
+    {
+    public:
+        Timer(const std::string &msg) : Message(msg) { this->zero = Clock::now(); }
+        void show(void) override;
+        void stop(void);
+
+    private:
+        TimePoint zero, current;
+    };
+
+}
+
+class Mailbox
+{
+public:
+    Mailbox(void) = default;
+    ~Mailbox(void);
+
+    template <class T>
+    T *create(const std::string &msg)
+    {
+        active = true;
+        messages.emplace_back(new T(msg));
+        return (T *)messages.back();
+    }
+
+    void showMessages(void);
+
+    inline void setActive(void) { active = true; }
+
+private:
+    bool active = false;
+    std::list<Message::Message *> messages;
+};
