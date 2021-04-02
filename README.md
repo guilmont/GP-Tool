@@ -30,8 +30,7 @@
 ## About The Project
 This software accompanies the following paper:
 
-<br/>
-<h2> Precise measurements of chromatin diffusion dynamics by modeling using Gaussian processes</h2> 
+<h3> Precise measurements of chromatin diffusion dynamics by modeling using Gaussian processes</h3> 
 
 GM Oliveira <i>et al</i>
 
