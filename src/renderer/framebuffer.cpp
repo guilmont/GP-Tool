@@ -3,7 +3,7 @@
 #include <glad/glad.h>
 #include "gl_assert.cpp"
 
-Framebuffer::Framebuffer(uint32_t width, uint32_t height) : dimension(width, height)
+Framebuffer::Framebuffer(uint32_t width, uint32_t height) : size(width, height)
 {
     gl_call(glad_glGenFramebuffers(1, &bufferID));
     gl_call(glad_glBindFramebuffer(GL_FRAMEBUFFER, bufferID));
@@ -41,7 +41,7 @@ Framebuffer::~Framebuffer(void)
 void Framebuffer::bind(void)
 {
     gl_call(glad_glBindFramebuffer(GL_FRAMEBUFFER, bufferID));
-    gl_call(glad_glViewport(0, 0, dimension.x, dimension.y));
+    gl_call(glad_glViewport(0, 0, size.x, size.y));
 }
 
 void Framebuffer::unbind(void)

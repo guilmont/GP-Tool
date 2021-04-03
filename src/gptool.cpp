@@ -12,8 +12,14 @@ GPTool::GPTool(void)
 void GPTool::onUserUpdate(float deltaTime)
 {
 
-    if (keyboard.get(Key::LEFT_CONTROL) == Event::PRESS && keyboard.get('A') == Event::RELEASE)
-        std::cout << deltaTime << std::endl;
+    if (keyboard.get(Key::LEFT_CONTROL) == Event::PRESS && keyboard.get('I') == Event::RELEASE)
+        mbox.create<Message::Info>("Double key");
+
+    if (keyboard.get('W') == Event::RELEASE)
+        mbox.create<Message::Warn>("opa");
+
+    if (keyboard.get('E') == Event::RELEASE)
+        mbox.create<Message::Error>("aiai");
 
     if (viewport_hover)
         viewport_function(deltaTime);
@@ -25,9 +31,9 @@ void GPTool::onUserUpdate(float deltaTime)
     glad_glClear(GL_COLOR_BUFFER_BIT);
     glad_glClearColor(0.6, 0.6, 0.6, 1.0);
 
-    const glm::vec2 &size = fBuffer["viewport"]->getDimensions();
+    glm::mat4 trf = camera.getViewMatrix();
+    const glm::vec2 &size = fBuffer["viewport"]->getSize();
 
-    glm::mat4 trf = camera.getViewMatrix(size.y / size.x);
     shader->useProgram("basic");
     shader->setMatrix4f("u_transform", glm::value_ptr(trf));
 
@@ -85,23 +91,24 @@ void GPTool::ImGuiLayer(void)
 
     ImGui::Begin("Viewport", NULL, ImGuiWindowFlags_NoTitleBar);
 
-    glm::uvec2 view = fBuffer["viewport"]->getDimensions();
+    // Check if it needs to resize
     ImVec2 port = ImGui::GetContentRegionAvail();
     ImGui::Image((void *)(uintptr_t)fBuffer["viewport"]->getID(), port);
 
-    if (int(port.x) != view.x || int(port.y) != view.y)
+    glm::vec2 view = fBuffer["viewport"]->getSize();
+    if (port.x != view.x || port.y != view.y)
     {
         fBuffer["viewport"] = std::make_unique<Framebuffer>(port.x, port.y);
-        //  data->updateViewport_flag = true;
+        camera.setAspectRatio(port.y / port.x);
     }
 
-    // ImVec2 pos = ImGui::GetMousePos(), rect = ImGui::GetItemRectMin(),
-    //        dim = ImGui::GetItemRectSize();
+    // Checking if anchoring position changed
+    ImVec2 pos = ImGui::GetItemRectMin();
+    fBuffer["viewport"]->setPosition(pos.x - window.position.x, pos.y - window.position.y);
 
-    // data->viewPos = {2.0f * (pos.x - rect.x) / dim.x - 1.0f,
-    //                  2.0f * (pos.y - rect.y) / dim.y - 1.0f};
-
+    // Check if mouse is on viewport
     viewport_hover = ImGui::IsWindowHovered();
+
     ImGui::End();
 
     ///////////////////////////////////////////////////////
@@ -178,8 +185,6 @@ void GPTool::ImGuiMenuLayer(void)
 void GPTool::viewport_function(float deltaTime)
 {
 
-    // std::cout << mouse.position.x << " x " << mouse.position.y << std::endl;
-
     // move camera -- add roi points
     if (mouse.get(Mouse::LEFT) == Event::PRESS)
     {
@@ -190,10 +195,9 @@ void GPTool::viewport_function(float deltaTime)
 
     // zoom
     if (mouse.wheel.y > 0.0f)
-    {
         camera.moveFront(deltaTime);
-    }
-    else if (mouse.wheel.y < 0.0f)
+
+    if (mouse.wheel.y < 0.0f)
         camera.moveBack(deltaTime);
 
 } // controls

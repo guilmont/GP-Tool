@@ -2,7 +2,6 @@
 
 #include "config.h"
 #include "renderer.h"
-#include "mailbox.h"
 
 #include <unordered_map>
 
@@ -18,8 +17,6 @@ public:
     void viewport_function(float deltaTime);
 
 private:
-    Mailbox mbox;
-
     std::unique_ptr<Quad> quad = nullptr;
     std::unique_ptr<Shader> shader = nullptr;
 

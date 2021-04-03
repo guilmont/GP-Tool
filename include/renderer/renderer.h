@@ -20,6 +20,14 @@
 #include "events.h"
 #include "gdialog.h"
 #include "camera.h"
+#include "mailbox.h"
+
+struct Window
+{
+    String title;
+    glm::vec2 position, size;
+    GLFWwindow *ptr = nullptr;
+};
 
 class Renderer
 {
@@ -28,28 +36,27 @@ public:
     virtual ~Renderer(void);
 
     void initialize(const String &name, uint32_t width, uint32_t height);
-    void closeApp(void) { glfwSetWindowShouldClose(main_window, 1); }
+    void closeApp(void) { glfwSetWindowShouldClose(window.ptr, 1); }
     void mainLoop(void);
 
     virtual void onUserUpdate(float deltaT) = 0;
     virtual void ImGuiLayer(void) {}
     virtual void ImGuiMenuLayer(void) {}
 
+protected:
+    Window window;
     Mouse mouse;
     Keyboard keyboard;
 
     GDialog dialog;
     Camera camera;
 
+    Mailbox mbox;
+
 private:
-    String screenTitle;
-    glm::ivec2 screenDim;
-
     float deltaTime = 0.1f;
-
-    GLFWwindow *main_window = nullptr;
-
     friend void winResize_callback(GLFWwindow *, int, int);
+    friend void winPos_callback(GLFWwindow *, int, int);
     friend void mousePos_callback(GLFWwindow *, double, double);
     friend void mouseScroll_callback(GLFWwindow *, double, double);
     friend void mouseButton_callback(GLFWwindow *, int, int, int);

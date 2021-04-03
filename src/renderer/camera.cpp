@@ -2,10 +2,10 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
-glm::mat4 Camera::getViewMatrix(float aRatio)
+glm::mat4 Camera::getViewMatrix(void)
 {
     glm::vec3 front(0.0, 0.0, -1.0), up(0.0, 1.0, 0.0);
-    glm::mat4 proj = glm::perspective(float(M_PI_2), aRatio, fNear, fFar);
+    glm::mat4 proj = glm::perspective(float(M_PI_2), aspect, fNear, fFar);
     glm::mat4 view = glm::lookAt(position, position + front, up);
 
     return proj * view;
@@ -13,13 +13,13 @@ glm::mat4 Camera::getViewMatrix(float aRatio)
 
 void Camera::moveFront(float elapsed)
 {
-    position.z -= zoomSpeed * elapsed;
+    position.z -= speed * elapsed;
     position.z = position.z < maxZoom ? maxZoom : position.z;
 }
 
 void Camera::moveBack(float elapsed)
 {
-    position.z += zoomSpeed * elapsed;
+    position.z += speed * elapsed;
     position.z = position.z > minZoom ? minZoom : position.z;
 }
 

@@ -11,10 +11,14 @@ public:
     void bind(void);
     void unbind(void);
 
-    inline glm::ivec2 getDimensions(void) const { return dimension; }
     inline uint32_t getID(void) { return textureID; }
 
+    void setPosition(float x, float y) { position = {x, y}; }
+    const glm::vec2 &getPosition(void) const { return position; }
+
+    inline glm::vec2 getSize(void) const { return size; }
+
 private:
-    glm::ivec2 dimension;
     uint32_t bufferID = 0, textureID = 0;
+    glm::vec2 size, position = {0.0f, 0.0f};
 };

@@ -2,16 +2,18 @@
 
 #include "gl_assert.cpp"
 
-///////////////////////////////////////////////////////////////////////////////
-
 void winResize_callback(GLFWwindow *window, int width, int height)
 {
-    Renderer &renderer = *reinterpret_cast<Renderer *>(glfwGetWindowUserPointer(window));
-
-    renderer.screenDim = {width, height};
+    Window &win = reinterpret_cast<Renderer *>(glfwGetWindowUserPointer(window))->window;
+    win.size = {width, height};
     gl_call(glad_glViewport(0, 0, width, height));
-
 } //winResize_callback
+
+void winPos_callback(GLFWwindow *window, int xpos, int ypos)
+{
+    Window &win = reinterpret_cast<Renderer *>(glfwGetWindowUserPointer(window))->window;
+    win.position = {xpos, ypos};
+}
 
 void mousePos_callback(GLFWwindow *window, double xpos, double ypos)
 {
@@ -55,8 +57,8 @@ Renderer::~Renderer(void)
 
 void Renderer::initialize(const String &name, uint32_t width, uint32_t height)
 {
-    this->screenTitle = name;
-    this->screenDim = glm::ivec2{width, height};
+    window.title = name;
+    window.size = {width, height};
 
     // Setup window
     glfwSetErrorCallback([](int error, const char *description) -> void {
@@ -75,16 +77,16 @@ void Renderer::initialize(const String &name, uint32_t width, uint32_t height)
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     // Generating resizable window
-    main_window = glfwCreateWindow(screenDim.x, screenDim.y, screenTitle.c_str(), NULL, NULL);
-    if (main_window == NULL)
+    window.ptr = glfwCreateWindow(width, height, name.c_str(), NULL, NULL);
+    if (window.ptr == NULL)
     {
         std::cerr << "ERROR: Failed to create GLFW window!!\n";
         glfwTerminate();
         exit(-1);
     }
 
-    glfwSetInputMode(main_window, GLFW_STICKY_KEYS, GLFW_TRUE);
-    glfwMakeContextCurrent(main_window);
+    glfwSetInputMode(window.ptr, GLFW_STICKY_KEYS, GLFW_TRUE);
+    glfwMakeContextCurrent(window.ptr);
     glfwSwapInterval(1); // synchronize with screen updates
 
     // Initialize OPENGL loader
@@ -95,16 +97,17 @@ void Renderer::initialize(const String &name, uint32_t width, uint32_t height)
     }
 
     // Setup viewport -> opengl is going transform final coordinates into this range
-    gl_call(glad_glViewport(0, 0, screenDim.x, screenDim.y));
+    gl_call(glad_glViewport(0, 0, width, height));
 
     // ///////////////////////////////////////////////////////////////////////////
     // // HANDLING EVENTS
-    glfwSetWindowUserPointer(main_window, this);
-    glfwSetKeyCallback(main_window, keyboard_callback);
-    glfwSetCursorPosCallback(main_window, mousePos_callback);
-    glfwSetMouseButtonCallback(main_window, mouseButton_callback);
-    glfwSetScrollCallback(main_window, mouseScroll_callback);
-    glfwSetWindowSizeCallback(main_window, winResize_callback);
+    glfwSetWindowUserPointer(window.ptr, this);
+    glfwSetWindowPosCallback(window.ptr, winPos_callback);
+    glfwSetKeyCallback(window.ptr, keyboard_callback);
+    glfwSetCursorPosCallback(window.ptr, mousePos_callback);
+    glfwSetMouseButtonCallback(window.ptr, mouseButton_callback);
+    glfwSetScrollCallback(window.ptr, mouseScroll_callback);
+    glfwSetWindowSizeCallback(window.ptr, winResize_callback);
     ///////////////////////////////////////////////////////////////////////////
     // SETUP DEAR IMGRenderer/IMPLOT CONTEXT
 
@@ -120,7 +123,7 @@ void Renderer::initialize(const String &name, uint32_t width, uint32_t height)
 
     io.IniFilename = INI_PATH;
 
-    ImGui_ImplGlfw_InitForOpenGL(main_window, true);
+    ImGui_ImplGlfw_InitForOpenGL(window.ptr, true);
     ImGui_ImplOpenGL3_Init("#version 410 core"); // Mac supports only up to 410
 
 } // constructor
@@ -131,7 +134,7 @@ void Renderer::mainLoop(void)
     double t0 = glfwGetTime();
 
     // resetProgram(data);
-    while (!glfwWindowShouldClose(main_window))
+    while (!glfwWindowShouldClose(window.ptr))
     {
         // reset events
         keyboard.clear();
@@ -203,7 +206,7 @@ void Renderer::mainLoop(void)
         ///////////////////////////////////////////////////
 
         // Swap secondary buffer to screen
-        glfwSwapBuffers(main_window);
+        glfwSwapBuffers(window.ptr);
 
         // Calculating elapsed time for smooth controls
         double tf = glfwGetTime();
