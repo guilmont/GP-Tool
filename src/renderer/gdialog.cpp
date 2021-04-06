@@ -125,19 +125,18 @@ bool GDialog::openDialog(void)
 
     ImGui::Spacing();
 
-    if (ImGui::Button("Open"))
+    if (ImGui::Button("Open") | toOpen)
     {
-        path2File = main_path + "/" + filename;
-        if (std::filesystem::is_regular_file(path2File))
+        filepath = main_path + "/" + selected;
+        if (std::filesystem::is_regular_file(filepath))
         {
+            filename = selected;
             status = true;
             active = false;
         }
         else
         {
-            String newFolder = main_path + "/" + foldername;
-            if (std::filesystem::is_directory(newFolder))
-                main_path = newFolder;
+            main_path += "/" + selected;
         }
     }
 
@@ -172,7 +171,8 @@ bool GDialog::saveDialog(void)
     float width = ImGui::GetContentRegionAvailWidth();
 
     ImGui::PushItemWidth(width);
-    ImGui::InputText("##MainAdress", loc, 1024, ImGuiInputTextFlags_CallbackCompletion, inputTextCallback, this);
+    ImGui::InputText("##MainAdress", loc, 1024,
+                     ImGuiInputTextFlags_CallbackCompletion, inputTextCallback, this);
 
     ImGui::PopItemWidth();
 
@@ -232,9 +232,12 @@ bool GDialog::saveDialog(void)
     if (ImGui::Button("Save") | toOpen)
     {
         // NEED to perform some checking
-        path2File = main_path + "/" + filename;
-        if (std::filesystem::is_regular_file(path2File))
+        filepath = main_path + "/" + selected;
+        if (std::filesystem::is_regular_file(filepath))
+        {
+            filename = selected;
             existPopup = true;
+        }
 
         else
         {
@@ -286,42 +289,47 @@ void GDialog::systemLoop(void)
 
 } // loop-directories
 
-bool GDialog::systemDisplay(const String &newMain)
+bool GDialog::systemDisplay(const String &url)
 {
     ImGui::PushStyleColor(ImGuiCol_ChildBg, {0.02, 0.02, 0.02, 1.0});
 
     lFolders.clear();
     lFiles.clear();
 
-    if (std::filesystem::is_directory(newMain))
+    if (url.size() == 0)
     {
-        main_path = std::move(newMain);
+        // nothing to do
+    }
+    else if (std::filesystem::is_directory(url))
+    {
+        main_path = std::move(url);
         systemLoop();
     }
 
-    else if (std::filesystem::is_regular_file(newMain))
+    else if (std::filesystem::is_regular_file(url))
     {
+        size_t pos = url.find_last_of('/');
+        main_path = url.substr(0, pos);
+
         for (const String &ext : lExtension)
-            if (newMain.find(ext) != String::npos)
+            if (url.find(ext) != String::npos)
             {
-                size_t pos = newMain.find_last_of('/');
-                main_path = newMain.substr(0, pos);
-                filename = newMain.substr(pos + 1);
+                selected = url.substr(pos + 1);
                 break;
             }
     }
 
     else // It is probably a incomplete path
     {
-        if (newMain.size() < main_path.size())
-        {
-            size_t pos = newMain.find_last_of('/');
-            main_path = newMain.substr(0, pos);
-        }
+        size_t pos = url.find_last_of('/');
+        pos = pos == 0 ? 1 : pos; // Protection for linux and mac
+
+        main_path = url.substr(0, pos);
 
         systemLoop();
 
-        String diff = newMain.substr(main_path.size() + 1);
+        pos = pos == 1 ? pos : pos + 1;
+        String diff = url.substr(pos);
 
         lFolders.remove_if([&](const String &name) -> bool {
             return name.find(diff) == String::npos;
@@ -341,7 +349,7 @@ bool GDialog::systemDisplay(const String &newMain)
     lFolders.sort();
     for (auto &folder : lFolders)
     {
-        bool check = folder.compare(foldername) == 0;
+        bool check = selected.compare(folder) == 0;
         if (check)
         {
             ImGui::PushStyleColor(ImGuiCol_Header, {0.6, 0.1, 0.1, 1.0});
@@ -351,15 +359,10 @@ bool GDialog::systemDisplay(const String &newMain)
 
         if (ImGui::Selectable(folder.c_str(), true, ImGuiSelectableFlags_AllowDoubleClick))
         {
-            foldername = folder;
+            selected = folder;
 
             if (ImGui::IsMouseDoubleClicked(0))
-            {
-                if (main_path[main_path.size() - 1] == '/')
-                    main_path += folder;
-                else
-                    main_path += "/" + folder;
-            }
+                main_path += "/" + folder;
         }
 
         if (check)
@@ -373,7 +376,7 @@ bool GDialog::systemDisplay(const String &newMain)
     lFiles.sort();
     for (auto &arq : lFiles)
     {
-        bool check = filename.compare(arq) == 0;
+        bool check = selected.compare(arq) == 0;
 
         if (check)
         {
@@ -384,8 +387,13 @@ bool GDialog::systemDisplay(const String &newMain)
 
         if (ImGui::Selectable(arq.c_str(), check, ImGuiSelectableFlags_AllowDoubleClick))
         {
-            filename = arq;
-            toOpen = ImGui::IsMouseDoubleClicked(0);
+            selected = arq;
+
+            if (ImGui::IsMouseDoubleClicked(0))
+            {
+                toOpen = true;
+                filename = arq;
+            }
         }
 
         if (check)

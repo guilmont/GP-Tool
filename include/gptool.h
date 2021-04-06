@@ -3,8 +3,6 @@
 #include "config.h"
 #include "renderer.h"
 
-#include <unordered_map>
-
 class GPTool : public Renderer
 {
 public:

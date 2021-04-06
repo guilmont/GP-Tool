@@ -12,14 +12,11 @@ GPTool::GPTool(void)
 void GPTool::onUserUpdate(float deltaTime)
 {
 
-    if (keyboard.get(Key::LEFT_CONTROL) == Event::PRESS && keyboard.get('I') == Event::RELEASE)
-        mbox.create<Message::Info>("Double key");
-
-    if (keyboard.get('W') == Event::RELEASE)
-        mbox.create<Message::Warn>("opa");
-
-    if (keyboard.get('E') == Event::RELEASE)
-        mbox.create<Message::Error>("aiai");
+    bool check = keyboard[Key::LEFT_CONTROL] == Event::PRESS;
+    check |= keyboard[Key::RIGHT_CONTROL] == Event::PRESS;
+    check &= keyboard['O'] == Event::RELEASE;
+    if (check)
+        dialog.createDialog(GDialog::OPEN, "Choose TIF file...", {".tif", ".ome.tif"});
 
     if (viewport_hover)
         viewport_function(deltaTime);
@@ -131,7 +128,6 @@ void GPTool::ImGuiMenuLayer(void)
         if (ImGui::MenuItem("Open movie..."))
         {
             dialog.createDialog(GDialog::OPEN, "Choose TIF file...", {".tif", ".ome.tif"});
-            // dialog->callback(openMovie, &ui);
         }
 
         // bool enable = data.movie ? true : false;
@@ -186,7 +182,7 @@ void GPTool::viewport_function(float deltaTime)
 {
 
     // move camera -- add roi points
-    if (mouse.get(Mouse::LEFT) == Event::PRESS)
+    if (mouse[Mouse::LEFT] == Event::PRESS)
     {
         glm::vec2 dr = mouse.offset * deltaTime;
         camera.moveHorizontal(dr.x);

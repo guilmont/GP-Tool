@@ -21,8 +21,8 @@ public:
 
     // RETRIEVE DATA
     const String &getFilename(void) const { return filename; }
-    const String &getMainPath(void) const { return main_path; }
-    const String &getPath(void) const { return path2File; }
+    const String &getFolder(void) const { return main_path; }
+    const String &getPath(void) const { return filepath; }
 
     enum : uint32_t
     {
@@ -33,13 +33,10 @@ public:
 private:
     bool active = false;
 
-    String main_path = HOME_DIR;
-    String foldername, filename;
+    String filename, filepath, main_path = HOME_DIR;
     std::list<String> lFolders, lFiles;
 
-    String path2File;
-
-    String title, currentExt;
+    String title, currentExt, selected;
     std::list<String> lExtension;
 
     bool (GDialog::*dialog_function)(void);
@@ -52,7 +49,7 @@ private:
     bool openDialog(void);
     bool saveDialog(void);
 
-    bool systemDisplay(const String &newMain);
+    bool systemDisplay(const String &url);
     void systemLoop(void);
 
     bool existPopup = false;

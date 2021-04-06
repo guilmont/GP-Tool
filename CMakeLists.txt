@@ -15,10 +15,7 @@ set(PROJECT_DIR "${CMAKE_SOURCE_DIR}")
 set(INI_PATH "${CMAKE_SOURCE_DIR}/assets/gptool.ini")
 configure_file("config.h.in" "${CMAKE_SOURCE_DIR}/include/renderer/config.h" @ONLY)
 
-##################################################################
-##################################################################
 # GRAPHICAL USER INTERFACE
-
 add_library(RENDERER 
     STATIC
         "${CMAKE_SOURCE_DIR}/src/renderer/shader.cpp"
@@ -46,18 +43,19 @@ target_link_libraries(RENDERER
         imgui
 )
 
+###########################################################
+# METHODS
 
-#########################
+
+
+###########################################################
+# MAIN EXECUTABLE
 
 add_executable(GPTool 
     "${CMAKE_SOURCE_DIR}/src/main.cpp"
     "${CMAKE_SOURCE_DIR}/src/gptool.cpp"
 )
 
-set_target_properties(GPTool
-    PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}"
-)
 
 target_include_directories(GPTool
     PUBLIC

@@ -9,9 +9,7 @@ void Fonts::setDefault(const String &name)
 
 void Fonts::loadFont(const String &fontname, const String &path, float size)
 {
-    ImGuiIO &io = ImGui::GetIO();
-
-    mFonts[fontname] = io.Fonts->AddFontFromFileTTF(path.c_str(), size);
+    mFonts[fontname] = ImGui::GetIO().Fonts->AddFontFromFileTTF(path.c_str(), size);
 }
 
 void Fonts::text(const String &txt, const String &fontname)

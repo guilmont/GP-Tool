@@ -13,7 +13,7 @@ public:
 
     void set(const int32_t ev, int32_t action) { event[ev] = action; }
 
-    int32_t get(const int32_t ev)
+    int32_t operator[](int32_t ev)
     {
         if (event.find(ev) == event.end())
             return -1;
