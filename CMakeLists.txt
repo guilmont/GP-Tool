@@ -9,6 +9,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 # GENERAL PURPOSE VENDOR
 add_subdirectory("${CMAKE_SOURCE_DIR}/vendor")
 
+# CONFIGURATION FILE
+set(HOME_DIR "$ENV{HOME}")
+set(PROJECT_DIR "${CMAKE_SOURCE_DIR}")
+set(INI_PATH "${CMAKE_SOURCE_DIR}/assets/gptool.ini")
+configure_file("config.h.in" "${CMAKE_SOURCE_DIR}/include/renderer/config.h" @ONLY)
 
 ##################################################################
 ##################################################################
@@ -21,8 +26,9 @@ add_library(RENDERER
         "${CMAKE_SOURCE_DIR}/src/renderer/framebuffer.cpp"
         "${CMAKE_SOURCE_DIR}/src/renderer/quad.cpp"
         "${CMAKE_SOURCE_DIR}/src/renderer/camera.cpp"
-        # "${CMAKE_SOURCE_DIR}/src/renderer/fonts.cpp"
+        "${CMAKE_SOURCE_DIR}/src/renderer/fonts.cpp"
         "${CMAKE_SOURCE_DIR}/src/renderer/gdialog.cpp"
+        "${CMAKE_SOURCE_DIR}/src/renderer/mailbox.cpp"
         "${CMAKE_SOURCE_DIR}/src/renderer/renderer.cpp"
 )
 
@@ -46,7 +52,6 @@ target_link_libraries(RENDERER
 add_executable(GPTool 
     "${CMAKE_SOURCE_DIR}/src/main.cpp"
     "${CMAKE_SOURCE_DIR}/src/gptool.cpp"
-    "${CMAKE_SOURCE_DIR}/src/mailbox.cpp"
 )
 
 set_target_properties(GPTool

@@ -1,0 +1,11 @@
+#pragma once
+
+#include <iostream>
+#include <string>
+#include <unordered_map>
+
+using String = std::string;
+
+#cmakedefine HOME_DIR "@HOME_DIR@"
+#cmakedefine PROJECT_DIR "@PROJECT_DIR@"
+#cmakedefine INI_PATH "@INI_PATH@"

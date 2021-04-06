@@ -21,6 +21,7 @@
 #include "gdialog.h"
 #include "camera.h"
 #include "mailbox.h"
+#include "fonts.h"
 
 struct Window
 {
@@ -47,6 +48,7 @@ protected:
     Window window;
     Mouse mouse;
     Keyboard keyboard;
+    Fonts fonts;
 
     GDialog dialog;
     Camera camera;

@@ -11,8 +11,7 @@ void Fonts::loadFont(const String &fontname, const String &path, float size)
 {
     ImGuiIO &io = ImGui::GetIO();
 
-    String assets = String(std::filesystem::current_path()) + "/assets/";
-    mFonts[fontname] = io.Fonts->AddFontFromFileTTF((assets + path).c_str(), size);
+    mFonts[fontname] = io.Fonts->AddFontFromFileTTF(path.c_str(), size);
 }
 
 void Fonts::text(const String &txt, const String &fontname)

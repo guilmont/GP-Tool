@@ -280,10 +280,7 @@ void GDialog::systemLoop(void)
                 continue;
 
             if (arq.find(currentExt) != String::npos)
-            {
                 lFiles.push_back(arq);
-                break;
-            }
         }
     } // loop-exists
 
