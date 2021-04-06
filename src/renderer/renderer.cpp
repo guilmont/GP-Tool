@@ -128,8 +128,8 @@ void Renderer::initialize(const String &name, uint32_t width, uint32_t height)
 
     // Setup fonts
     const String fonts_path = String(PROJECT_DIR) + "/assets/Open_Sans/";
-    fonts.loadFont("regular", fonts_path + "OpenSans-Regular.ttf", 18.0);
-    fonts.loadFont("bold", fonts_path + "OpenSans-Bold.ttf", 18.0);
+    fonts.loadFont("regular", fonts_path + "OpenSans-Regular.ttf", 18.0 * DPI_FACTOR);
+    fonts.loadFont("bold", fonts_path + "OpenSans-Bold.ttf", 18.0 * DPI_FACTOR);
     fonts.setDefault("regular");
 
 } // constructor

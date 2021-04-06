@@ -13,6 +13,7 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/vendor")
 set(HOME_DIR "$ENV{HOME}")
 set(PROJECT_DIR "${CMAKE_SOURCE_DIR}")
 set(INI_PATH "${CMAKE_SOURCE_DIR}/assets/gptool.ini")
+set(DPI_FACTOR "2")
 configure_file("config.h.in" "${CMAKE_SOURCE_DIR}/include/renderer/config.h" @ONLY)
 
 # GRAPHICAL USER INTERFACE

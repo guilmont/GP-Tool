@@ -9,3 +9,4 @@ using String = std::string;
 #cmakedefine HOME_DIR "@HOME_DIR@"
 #cmakedefine PROJECT_DIR "@PROJECT_DIR@"
 #cmakedefine INI_PATH "@INI_PATH@"
+#cmakedefine DPI_FACTOR @DPI_FACTOR@

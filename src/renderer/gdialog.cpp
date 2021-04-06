@@ -344,7 +344,7 @@ bool GDialog::systemDisplay(const String &url)
     // Displaying folders and files
 
     float width = ImGui::GetContentRegionAvailWidth();
-    ImGui::BeginChild("child_2", {width, 256}, true);
+    ImGui::BeginChild("child_2", {width, 256 * DPI_FACTOR}, true);
 
     lFolders.sort();
     for (auto &folder : lFolders)

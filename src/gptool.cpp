@@ -2,7 +2,7 @@
 
 GPTool::GPTool(void)
 {
-    initialize("GShader", 1200, 800);
+    initialize("GShader", 1200 * DPI_FACTOR, 800 * DPI_FACTOR);
     shader = std::make_unique<Shader>();
     quad = std::make_unique<Quad>();
 
@@ -16,7 +16,10 @@ void GPTool::onUserUpdate(float deltaTime)
     check |= keyboard[Key::RIGHT_CONTROL] == Event::PRESS;
     check &= keyboard['O'] == Event::RELEASE;
     if (check)
-        dialog.createDialog(GDialog::OPEN, "Choose TIF file...", {".tif", ".ome.tif"});
+        dialog.createDialog(GDialog::OPEN, "Choose TIF file...", {".tif", ".ome.tif"}, this, [](void *ptr) -> void {
+            GPTool *tool = (GPTool *)ptr;
+            tool->openMovie(tool->dialog.getPath());
+        });
 
     if (viewport_hover)
         viewport_function(deltaTime);
@@ -81,7 +84,12 @@ void GPTool::ImGuiLayer(void)
     // ///////////////////////////////////////////////////////
 
     ImGui::Begin("Properties");
-    // data->mPlugin[data->activePlugin].callback(&ui);
+    if (movie)
+    {
+    }
+    else
+        ImGui::Text("No movie is loaded!!");
+
     ImGui::End();
 
     ///////////////////////////////////////////////////////
@@ -126,24 +134,18 @@ void GPTool::ImGuiMenuLayer(void)
     if (ImGui::BeginMenu("File"))
     {
         if (ImGui::MenuItem("Open movie..."))
-        {
-            dialog.createDialog(GDialog::OPEN, "Choose TIF file...", {".tif", ".ome.tif"});
-        }
+            dialog.createDialog(GDialog::OPEN, "Choose TIF file...", {".tif", ".ome.tif"}, this, [](void *ptr) -> void {
+                GPTool *tool = (GPTool *)ptr;
+                tool->openMovie(tool->dialog.getPath());
+            });
 
-        // bool enable = data.movie ? true : false;
         bool enable = false;
         if (ImGui::MenuItem("Load trajectories...", NULL, nullptr, enable))
         {
-            // ui.mWindows["openTraj"]->show();
         }
 
         if (ImGui::MenuItem("Save as ...", NULL, nullptr, enable))
         {
-            // FileDialog *dialog = reinterpret_cast<FileDialog *>(ui.mWindows["dialog"].get());
-            // dialog->createDialog(DIALOG_SAVE, "Save as...", {".hdf", ".json"});
-
-            // void (*func)(const String &, UI *) = &saveData;
-            // dialog->callback(func, &ui);
         }
 
         if (ImGui::MenuItem("Exit"))
@@ -197,3 +199,8 @@ void GPTool::viewport_function(float deltaTime)
         camera.moveBack(deltaTime);
 
 } // controls
+
+void GPTool::openMovie(const String &path)
+{
+    std::cout << path << std::endl;
+}
