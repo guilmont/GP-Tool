@@ -76,13 +76,13 @@ void Message::Progress::show(void)
         current = Clock::now();
 
     ImGui::Text("%s :: Time: %s %s ", content.c_str(),
-                time2String(zero, current).c_str(), (cancel ? " --  cancelled" : ""));
+                time2String(zero, current).c_str(), (cancelled ? " --  cancelled" : ""));
 
     float width = 0.8f * ImGui::GetContentRegionAvailWidth();
-    ImGui::ProgressBar(progress, {width, 25});
+    ImGui::ProgressBar(progress, {width, 0}); // 0 goes for automatic height
     ImGui::SameLine();
     if (ImGui::Button("Cancel"))
-        cancel = is_read = true;
+        cancelled = is_read = true;
 
     ImGui::Spacing();
 
@@ -95,7 +95,13 @@ void Message::Timer::show(void)
     if (!is_read)
         current = Clock::now();
 
-    ImGui::Text("%s :: Time: %s", content.c_str(), time2String(zero, current).c_str());
+    ImGui::Text("%s :: Time: %s %s", content.c_str(),
+                time2String(zero, current).c_str(), (cancelled ? " --  cancelled" : ""));
+
+    ImGui::SameLine();
+    if (ImGui::Button("Cancel"))
+        cancelled = is_read = true;
+
     ImGui::Spacing();
 }
 
@@ -126,8 +132,7 @@ void Mailbox::showMessages(void)
     ImGui::PushStyleColor(ImGuiCol_ChildBg, {0.02, 0.02, 0.02, 1.0});
 
     ImVec2 size = {0.95f * ImGui::GetWindowWidth(), 0.8f * ImGui::GetWindowHeight()};
-    ImGui::BeginChild("mail_child", size, true,
-                      ImGuiWindowFlags_HorizontalScrollbar);
+    ImGui::BeginChild("mail_child", size, true, ImGuiWindowFlags_HorizontalScrollbar);
 
     for (Message::Message *msg : messages)
         msg->show();

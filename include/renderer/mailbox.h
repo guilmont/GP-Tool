@@ -53,7 +53,7 @@ namespace Message
         void show(void) override;
 
         float progress = 0.0f;
-        bool cancel = false;
+        bool cancelled = false;
 
     private:
         TimePoint zero, current;
@@ -65,6 +65,8 @@ namespace Message
         Timer(const std::string &msg) : Message(msg) { this->zero = Clock::now(); }
         void show(void) override;
         void stop(void);
+
+        bool cancelled = false;
 
     private:
         TimePoint zero, current;

@@ -43,6 +43,8 @@ Movie::Movie(const std::string &movie_path, Mailbox *mail) : mbox(mail)
         counter = 0,
         nImg = tif.getNumDirectories();
 
+    mbox->create<Message::Info>("Openning  \"" + meta->movie_name + "\"");
+
     Message::Progress *ptr = mbox->create<Message::Progress>("Loading images");
 
     ptr->progress = 0.0f;
@@ -61,7 +63,7 @@ Movie::Movie(const std::string &movie_path, Mailbox *mail) : mbox(mail)
 
             ptr->progress = ++counter / float(nImg);
 
-            if (ptr->cancel)
+            if (ptr->cancelled)
             {
                 success = false;
                 return;
