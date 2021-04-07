@@ -1,4 +1,4 @@
-#include "tiffer.hpp"
+#include "utils/gtiffer.h"
 
 namespace Tiffer
 {
@@ -128,17 +128,21 @@ namespace Tiffer
 
 }; // namespace Tiffer
 
-bool Tiffer::Read::load(const std::string &filename)
+Tiffer::Read::Read(const std::string &movie_path, Mailbox *mail)
+    : movie_path(movie_path), mbox(mail)
 {
     // Reading binary data
-    std::ifstream arq(filename, std::ios::binary);
+    std::ifstream arq(movie_path, std::ios::binary);
 
     if (arq.fail())
     {
-        mail->createMessage<MSG_Warning>("(Tiffer::Read::load): "
-                                         "Cannot read file -> " +
-                                         filename);
-        return false;
+        success = false;
+        if (mbox)
+            mbox->create<Message::Error>("Cannot open file: " + movie_path);
+        else
+            std::cerr << "ERROR (Tiffer::Read) ==> Cannot read file: " << movie_path << std::endl;
+
+        return;
     }
 
     arq.seekg(0, std::ios::end);
@@ -154,10 +158,13 @@ bool Tiffer::Read::load(const std::string &filename)
     // Is it tiff?
     if (get_uint16(2) != 42)
     {
-        mail->createMessage<MSG_Warning>("(Tiffer::Read::load): "
-                                         "Not tiff file! -> " +
-                                         filename);
-        return false;
+        success = false;
+        if (mbox)
+            mbox->create<Message::Error>("Not tiff file: " + movie_path);
+        else
+            std::cerr << "ERROR (Tiffer::Read) ==> Not tiff file: " + movie_path << std::endl;
+
+        return;
     }
 
     // Let's check where the first IFD begins
@@ -191,27 +198,33 @@ bool Tiffer::Read::load(const std::string &filename)
             if (tag == COMPRESSION) // Image is compressed somehow
             {
                 if (value == 1)
-                {
                     this->lzw = false;
-                }
                 else if (value == 5)
-                {
                     this->lzw = true;
-                }
                 else
                 {
-                    mail->createMessage<MSG_Warning>("(Tiffer::Read::load): Compression "
-                                                     "format is not supported!");
-                    return false;
+                    success = false;
+                    if (mbox)
+                        mbox->create<Message::Error>("Compression format is not supported!");
+                    else
+                        std::cerr << "ERROR (Tiffer::Read): Compression format is not supported! - "
+                                  << movie_path << std::endl;
+
+                    return;
                 }
             } // compression
 
             if (tag == SAMPLESPERPIXEL && value != 1)
             {
-                mail->createMessage<MSG_Warning>("(Tiffer::Read::load): "
-                                                 "Only grayscale format is supported!");
+                success = false;
+                if (mbox)
+                    mbox->create<Message::Error>("Only grayscale format is supported!");
+                else
+                    std::cerr << "ERROR (Tiffer::Read::load) ==> "
+                              << "Only grayscale format is supported! - "
+                              << movie_path << std::endl;
 
-                return false;
+                return;
             }
 
             if (tag == BITSPERSAMPLE)
@@ -230,10 +243,15 @@ bool Tiffer::Read::load(const std::string &filename)
 
                 if (value < 8 || value > 32)
                 {
-                    mail->createMessage<MSG_Warning>("(Tiffer::Read::load): "
-                                                     "Only 8/16/32 bits grayscale "
+                    success = false;
+                    if (mbox)
+                        mbox->create<Message::Error>("Only 8/16/32 bits grayscale "
                                                      "images are accepted!");
-                    return false;
+                    else
+                        std::cerr << "ERROR (Tiffer::Read::load) ==> "
+                                  << "Only 8/16/32 bits grayscale images are accepted! - "
+                                  << movie_path << std::endl;
+                    return;
                 }
 
             } // bitsPerSample
@@ -255,165 +273,83 @@ bool Tiffer::Read::load(const std::string &filename)
     // to simplify verifications later
     this->numDir = vIFD.size();
 
-    return true;
-} // load
+} // constructor
 
-uint32_t Tiffer::Read::getBitCount(const uint32_t id)
+uint32_t Tiffer::Read::getBitCount(void) { return vIFD.at(0).field[BITSPERSAMPLE].value; }
+uint32_t Tiffer::Read::getWidth(void) { return vIFD.at(0).field[IMAGEWIDTH].value; }
+uint32_t Tiffer::Read::getHeight(void) { return vIFD.at(0).field[IMAGEHEIGHT].value; }
+
+std::string Tiffer::Read::getDateTime(void)
 {
-    if (id >= numDir)
+    if (vIFD.at(0).field.find(DATETIME) == vIFD.at(0).field.end())
     {
-        mail->createMessage<MSG_Error>("(Tiffer::Read::getBitCount): "
-                                       "Number of directories overflowed!");
-        return 0;
-    }
-    else
-        return vIFD.at(id).field[BITSPERSAMPLE].value;
-}
-
-uint32_t Tiffer::Read::getWidth(const uint32_t id)
-{
-    if (id >= numDir)
-    {
-        mail->createMessage<MSG_Error>("(Tiffer::Read::getWidth): "
-                                       "Number of directories overflowed!");
-        return 0;
-    }
-    else
-        return vIFD.at(id).field[IMAGEWIDTH].value;
-
-} // getWidth
-
-uint32_t Tiffer::Read::getHeight(const uint32_t id)
-{
-    if (id >= numDir)
-    {
-        mail->createMessage<MSG_Error>("(Tiffer::Read::getHeight): "
-                                       "Number of directories overflowed!");
-        return 0;
-    }
-    else
-        return vIFD.at(id).field[IMAGEHEIGHT].value;
-
-} // getHeight
-
-std::string Tiffer::Read::getMetadata(const uint32_t id)
-{
-    if (id >= numDir)
-    {
-        mail->createMessage<MSG_Error>("(Tiffer::Read::getMetadata): "
-                                       "Number of directories overflowed!");
+        if (mbox)
+            mbox->create<Message::Warn>("Movie doesn't contain a time stamp!");
+        else
+            std::cout << "WARN (Tiffer::Read::getDateTime): Movie doesn't contain a time stamp - "
+                      << movie_path << std::endl;
 
         return "";
     }
     else
     {
-
-        auto it = vIFD.at(id).field.find(DESCRIPTION);
-
-        if (it == vIFD.at(id).field.end())
-            return "No metadata";
-
-        uint32_t count = it->second.count;
-        uint32_t pos = it->second.value;
-
+        uint32_t count = vIFD.at(0).field[DATETIME].count;
+        uint32_t pos = vIFD.at(0).field[DATETIME].value;
         std::string out((char *)buffer.data() + pos, count);
-
-        return out;
-    }
-} // getMetadata
-
-std::string Tiffer::Read::getDateTime(const uint32_t id)
-{
-    if (id >= numDir)
-    {
-        mail->createMessage<MSG_Error>("(Tiffer::Read::getDateTime): "
-                                       "Number of directories overflowed!");
-        return "";
-    }
-
-    if (vIFD.at(id).field.find(DATETIME) == vIFD.at(id).field.end())
-    {
-        mail->createMessage<MSG_Warning>("(Tiffer::Read::getDateTime): "
-                                         "Directory doesn't contain tag!");
-        return "";
-    }
-    else
-    {
-        uint32_t count = vIFD.at(id).field[DATETIME].count;
-        uint32_t pos = vIFD.at(id).field[DATETIME].value;
-
-        std::string out((char *)buffer.data() + pos, count);
-
         return out;
     }
 } // getDateTime
 
-std::string Tiffer::Read::getIJMetadata(void)
-{
-    auto it = vIFD[0].field.find(IJ_META_DATA);
+// std::string Tiffer::Read::getMetadata(const uint32_t id)
+// {
+//     if (id >= numDir)
+//     {
+//         mail->createMessage<MSG_Error>("(Tiffer::Read::getMetadata): "
+//                                        "Number of directories overflowed!");
 
-    if (it == vIFD[0].field.end())
-    {
-        mail->createMessage<MSG_Warning>("(Tiffer::Read::getIJMetadata): "
-                                         "File doesn't contain ImageJ metadata!!");
-        return "";
-    }
-    else
-    {
-        uint32_t count = it->second.count;
-        uint32_t pos = it->second.value;
+//         return "";
+//     }
+//     else
+//     {
 
-        std::string out; // imagej metada has utf16 format
+//         auto it = vIFD.at(id).field.find(DESCRIPTION);
 
-        for (size_t k = 0; k < count; k++)
-            if (buffer[pos + k] != 0)
-                out += (char)buffer[pos + k];
+//         if (it == vIFD.at(id).field.end())
+//             return "No metadata";
 
-        return out;
-    }
-} // getIJMetadata
+//         uint32_t count = it->second.count;
+//         uint32_t pos = it->second.value;
 
-void Tiffer::Read::printAll(void)
-{
-    std::cout << "Types: 1 - byte :: 2 - ASCII ::  3 - SHORT :: 4 - LONG :: 5 - RATIONAL\n\n";
+//         std::string out((char *)buffer.data() + pos, count);
 
-    for (auto &[val, tag] : vIFD[0].field)
-    {
-        std::cout << "ID: " << val
-                  << " :: Byte count: " << tag.count
-                  << " :: Type: " << tag.type << std::endl;
+//         return out;
+//     }
+// } // getMetadata
 
-        if (tag.type == ASCII || tag.type == BYTE)
-        {
-            uint32_t count = tag.count;
-            uint32_t pos = tag.value;
+// std::string Tiffer::Read::getIJMetadata(void)
+// {
+//     auto it = vIFD[0].field.find(IJ_META_DATA);
 
-            std::string out((char *)buffer.data() + pos, count);
-            std::cout << out << std::endl;
-        }
-        else if (tag.type == RATIONAL)
-        {
-            uint32_t *loc = reinterpret_cast<uint32_t *>(buffer.data() + tag.value);
+//     if (it == vIFD[0].field.end())
+//     {
+//         mail->createMessage<MSG_Warning>("(Tiffer::Read::getIJMetadata): "
+//                                          "File doesn't contain ImageJ metadata!!");
+//         return "";
+//     }
+//     else
+//     {
+//         uint32_t count = it->second.count;
+//         uint32_t pos = it->second.value;
 
-            std::cout << float(loc[0] / loc[1]) << std::endl;
-        }
-        else
-        {
-            if (tag.count == 1)
-                std::cout << tag.value << std::endl;
-            else
-            {
-                uint32_t *loc = reinterpret_cast<uint32_t *>(buffer.data() + tag.value);
+//         std::string out; // imagej metada has utf16 format
 
-                for (uint32_t k = 0; k < tag.count; k++)
-                    std::cout << "  -> " << loc[k] << std::endl;
-            }
-        }
+//         for (size_t k = 0; k < count; k++)
+//             if (buffer[pos + k] != 0)
+//                 out += (char)buffer[pos + k];
 
-        std::cout << "\n-----------------\n\n"
-                  << std::endl;
-    }
-}
+//         return out;
+//     }
+// } // getIJMetadata
 
 Tiffer::ImData Tiffer::Read::getImageData(const uint32_t id)
 {
@@ -479,3 +415,45 @@ Tiffer::ImData Tiffer::Read::getImageData(const uint32_t id)
     return {width, height, output};
 
 } // getImageData
+
+// void Tiffer::Read::printAll(void)
+// {
+//     std::cout << "Types: 1 - byte :: 2 - ASCII ::  3 - SHORT :: 4 - LONG :: 5 - RATIONAL\n\n";
+
+//     for (auto &[val, tag] : vIFD[0].field)
+//     {
+//         std::cout << "ID: " << val
+//                   << " :: Byte count: " << tag.count
+//                   << " :: Type: " << tag.type << std::endl;
+
+//         if (tag.type == ASCII || tag.type == BYTE)
+//         {
+//             uint32_t count = tag.count;
+//             uint32_t pos = tag.value;
+
+//             std::string out((char *)buffer.data() + pos, count);
+//             std::cout << out << std::endl;
+//         }
+//         else if (tag.type == RATIONAL)
+//         {
+//             uint32_t *loc = reinterpret_cast<uint32_t *>(buffer.data() + tag.value);
+
+//             std::cout << float(loc[0] / loc[1]) << std::endl;
+//         }
+//         else
+//         {
+//             if (tag.count == 1)
+//                 std::cout << tag.value << std::endl;
+//             else
+//             {
+//                 uint32_t *loc = reinterpret_cast<uint32_t *>(buffer.data() + tag.value);
+
+//                 for (uint32_t k = 0; k < tag.count; k++)
+//                     std::cout << "  -> " << loc[k] << std::endl;
+//             }
+//         }
+
+//         std::cout << "\n-----------------\n\n"
+//                   << std::endl;
+//     }
+// }

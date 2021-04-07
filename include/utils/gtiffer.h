@@ -1,6 +1,6 @@
 #pragma once
 
-#include "config.hpp"
+#include "methods/header.h"
 
 namespace Tiffer
 {
@@ -52,33 +52,29 @@ namespace Tiffer
     class Read
     {
     public:
-        Read(Mailbox *mailbox) : mail(mailbox) {}
+        Read(const std::string &movie_path, Mailbox *mail = nullptr);
 
-        bool load(const std::string &filename);
+        bool successful(void) const { return success; }
 
-        inline uint32_t getNumDirectories() { return numDir; }
+        uint32_t getNumDirectories() { return numDir; }
+        uint32_t getBitCount(void);
+        uint32_t getWidth(void);
+        uint32_t getHeight(void);
+        std::string getDateTime(void);
 
-        uint32_t getBitCount(const uint32_t id = 0);
-        uint32_t getWidth(const uint32_t id = 0);
-        uint32_t getHeight(const uint32_t id = 0);
-        std::string getDateTime(const uint32_t id = 0);
-
-        std::string getMetadata(const uint32_t id = 0);
-        std::string getIJMetadata(void);
-
-        void printAll(void);
+        // std::string getMetadata(void);
+        // std::string getIJMetadata(void);
 
         template <typename T>
         Image<T> getImage(const uint32_t id = 0);
 
-        template <typename T>
-        std::vector<Image<T>> readAll(void);
-
     private:
+        std::string movie_path;
+        bool success = true;
+        Mailbox *mbox = nullptr;
+
         bool bigEndian = false; //  true = big | false = little
         bool lzw = false;       // if image was compressed used lzw algorithm
-
-        Mailbox *mail = nullptr;
 
         uint32_t numDir = 0;
         Buffer buffer;
@@ -96,16 +92,30 @@ namespace Tiffer
     template <typename T>
     Image<T> Read::getImage(const uint32_t id)
     {
+        if (id >= numDir)
+        {
+            if (mbox)
+                mbox->create<Message::Error>("Tiffer::Read::getImage >> "
+                                             "Number of directories exceeded!");
+            else
+                std::cerr << "ERROR (Tiffer::Read::getImage): Number of directories exceeded!"
+                          << std::endl;
+
+            return NULL;
+        }
+
         auto [width, height, buf] = getImageData(id);
 
         size_t check = buf.size() / (width * height);
         if (check != sizeof(T))
         {
+            if (mbox)
+                mbox->create<Message::Error>("Movie expects " + std::to_string(check) + " bytes!!");
+            else
+                std::cerr << "ERROR (Tiffer::Read::getImage): Movie expects " << check
+                          << " bytes!!" << std::endl;
 
-            mail->createMessage<MSG_Error>(
-                "ERROR: 'getImage' expects " + std::to_string(check) + " bytes!!");
-
-            return Image<T>(1, 1);
+            return NULL;
         }
 
         Image<T> img = Image<T>::Zero(height, width);
@@ -139,17 +149,5 @@ namespace Tiffer
 
         return img;
     } // getImage
-
-    template <typename T>
-    std::vector<Image<T>> Read::readAll(void)
-    {
-        const uint32_t nFrames = getNumDirectories();
-        std::vector<Image<T>> vec(nFrames);
-
-        for (uint32_t id = 0; id < nFrames; id++)
-            vec.at(id) = getImage<T>(id);
-
-        return vec;
-    } // readAll
 
 }; // namespace Tiffer

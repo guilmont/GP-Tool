@@ -3,9 +3,9 @@
 #include <iostream>
 #include <fstream>
 
-#include "goptimize.hpp"
-#include "threadpool.hpp"
-#include "mailbox.hpp"
+// #include "utils/goptimize.hpp"
+// #include "utils/threadpool.hpp"
+#include "renderer/mailbox.h"
 
 #include <Eigen/Core>
 

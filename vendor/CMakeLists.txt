@@ -44,9 +44,6 @@ target_include_directories(pugixml
 ###########################################################
 ## IMGUI ##################################################
 
-# Gotta include this to imconfig.h
-# #define IMGUI_IMPL_OPENGL_LOADER_GLAD
-
 add_compile_definitions(IMGUI_IMPL_OPENGL_LOADER_GLAD)
 
 add_library(imgui 

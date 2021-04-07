@@ -10,10 +10,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 add_subdirectory("${CMAKE_SOURCE_DIR}/vendor")
 
 # CONFIGURATION FILE
+set(DPI_FACTOR "1")
 set(HOME_DIR "$ENV{HOME}")
 set(PROJECT_DIR "${CMAKE_SOURCE_DIR}")
 set(INI_PATH "${CMAKE_SOURCE_DIR}/assets/gptool.ini")
-set(DPI_FACTOR "2")
 configure_file("config.h.in" "${CMAKE_SOURCE_DIR}/include/renderer/config.h" @ONLY)
 
 # GRAPHICAL USER INTERFACE
@@ -46,7 +46,23 @@ target_link_libraries(RENDERER
 
 ###########################################################
 # METHODS
+add_library(MOVIE
+    SHARED
+        "${CMAKE_SOURCE_DIR}/src/methods/movie.cpp"
+        "${CMAKE_SOURCE_DIR}/src/utils/gtiffer.cpp"
+)
 
+target_include_directories(MOVIE 
+    PUBLIC
+    "${CMAKE_SOURCE_DIR}/include"
+    "${CMAKE_SOURCE_DIR}/include/methods"
+    "${CMAKE_SOURCE_DIR}/vendor/eigen"
+)
+
+target_link_libraries(MOVIE
+    PUBLIC
+        imgui
+)
 
 
 ###########################################################
