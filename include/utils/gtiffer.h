@@ -56,14 +56,15 @@ namespace Tiffer
 
         bool successful(void) const { return success; }
 
+        const std::string &getMoviePath(void) const { return movie_path; }
         uint32_t getNumDirectories() { return numDir; }
         uint32_t getBitCount(void);
         uint32_t getWidth(void);
         uint32_t getHeight(void);
         std::string getDateTime(void);
 
-        // std::string getMetadata(void);
-        // std::string getIJMetadata(void);
+        std::string getMetadata(void);
+        std::string getIJMetadata(void);
 
         template <typename T>
         Image<T> getImage(const uint32_t id = 0);
@@ -101,7 +102,7 @@ namespace Tiffer
                 std::cerr << "ERROR (Tiffer::Read::getImage): Number of directories exceeded!"
                           << std::endl;
 
-            return NULL;
+            return Image<T>(0, 0);
         }
 
         auto [width, height, buf] = getImageData(id);
@@ -115,7 +116,7 @@ namespace Tiffer
                 std::cerr << "ERROR (Tiffer::Read::getImage): Movie expects " << check
                           << " bytes!!" << std::endl;
 
-            return NULL;
+            return Image<T>(0, 0);
         }
 
         Image<T> img = Image<T>::Zero(height, width);

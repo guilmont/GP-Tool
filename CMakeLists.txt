@@ -4,7 +4,7 @@ project(GP_FBM_LIBRARY VERSION 0.2.0)
 # We need standard 17 for some functions
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 
 # GENERAL PURPOSE VENDOR
 add_subdirectory("${CMAKE_SOURCE_DIR}/vendor")
@@ -49,6 +49,7 @@ target_link_libraries(RENDERER
 add_library(MOVIE
     SHARED
         "${CMAKE_SOURCE_DIR}/src/methods/movie.cpp"
+        "${CMAKE_SOURCE_DIR}/src/methods/metadata.cpp"
         "${CMAKE_SOURCE_DIR}/src/utils/gtiffer.cpp"
 )
 
@@ -62,6 +63,7 @@ target_include_directories(MOVIE
 target_link_libraries(MOVIE
     PUBLIC
         imgui
+        pugixml
 )
 
 
@@ -77,14 +79,12 @@ add_executable(GPTool
 target_include_directories(GPTool
     PUBLIC
         "${CMAKE_SOURCE_DIR}/include"
-        # "${HDF5_CXX_INCLUDE_DIRS}"
 )
 
 target_link_libraries(GPTool
     PUBLIC
         RENDERER
-        # PkgConfig::jsoncpp
-        # "${HDF5_CXX_LIBRARIES}"
+        MOVIE
 )
 
 

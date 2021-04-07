@@ -1,7 +1,6 @@
 #pragma once
-#include <config.hpp>
-#include <tiffer.hpp>
-#include <pugixml.hpp>
+#include "utils/gtiffer.h"
+#include "pugixml.hpp"
 
 struct Plane
 {
@@ -41,20 +40,18 @@ public:
         TimeIncrementUnit;
 
     std::string metaString;
-
     std::vector<std::string> nameCH;
 
-    Metadata(void) = default;
-    Metadata(const std::string &movie, const std::string &value);
-
-    bool parseOME(const std::string &inputString);
-    bool parseImageJ(const std::string &inputString);
+    Metadata(Tiffer::Read *tif, Mailbox *mail = nullptr);
 
     bool hasPlanes(void) const { return (vPlanes.size() > 0); }
-
     const Plane &getPlane(uint32_t c, uint32_t z, uint32_t t) const;
 
 private:
+    Mailbox *mbox = nullptr;
     std::vector<Plane> vPlanes;
-    Mailbox *mail = nullptr;
+
+    bool parseOME(const std::string &inputString);
+    bool parseIJ(const std::string &inputString);
+    bool parseIJ_extended(const std::string &inputString);
 };

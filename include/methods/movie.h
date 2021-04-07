@@ -1,7 +1,7 @@
 #pragma once
 
 #include "header.h"
-// #include "metadata.h"
+#include "metadata.h"
 
 class Movie
 {
@@ -12,8 +12,8 @@ public:
 
     bool successful(void) const { return success; }
 
-    // const Metadata &getMetadata(void) const { return meta; }
-    // Metadata &getMetadata(void) { return meta; }
+    const Metadata &getMetadata(void) const { return *(meta.get()); }
+    Metadata &getMetadata(void) { return *(meta.get()); }
 
     MatrixXd &getImage(uint32_t channel, uint32_t frame);
     MatrixXd *getChannel(uint32_t channel);
@@ -22,7 +22,7 @@ private:
     Mailbox *mbox = nullptr;
     bool success = true;
 
-    // Metadata meta;
     MatrixXd **vImg = nullptr;
+    std::unique_ptr<Metadata> meta = nullptr;
 
 }; // class Trajectory

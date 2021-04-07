@@ -300,56 +300,39 @@ std::string Tiffer::Read::getDateTime(void)
     }
 } // getDateTime
 
-// std::string Tiffer::Read::getMetadata(const uint32_t id)
-// {
-//     if (id >= numDir)
-//     {
-//         mail->createMessage<MSG_Error>("(Tiffer::Read::getMetadata): "
-//                                        "Number of directories overflowed!");
+std::string Tiffer::Read::getMetadata(void)
+{
+    auto it = vIFD.at(0).field.find(DESCRIPTION);
 
-//         return "";
-//     }
-//     else
-//     {
+    if (it == vIFD.at(0).field.end())
+        return "";
 
-//         auto it = vIFD.at(id).field.find(DESCRIPTION);
+    uint32_t count = it->second.count;
+    uint32_t pos = it->second.value;
 
-//         if (it == vIFD.at(id).field.end())
-//             return "No metadata";
+    std::string out((char *)buffer.data() + pos, count);
 
-//         uint32_t count = it->second.count;
-//         uint32_t pos = it->second.value;
+    return out;
+} // getMetadata
 
-//         std::string out((char *)buffer.data() + pos, count);
+std::string Tiffer::Read::getIJMetadata(void)
+{
+    auto it = vIFD[0].field.find(IJ_META_DATA);
 
-//         return out;
-//     }
-// } // getMetadata
+    if (it == vIFD[0].field.end())
+        return "";
 
-// std::string Tiffer::Read::getIJMetadata(void)
-// {
-//     auto it = vIFD[0].field.find(IJ_META_DATA);
+    uint32_t count = it->second.count;
+    uint32_t pos = it->second.value;
 
-//     if (it == vIFD[0].field.end())
-//     {
-//         mail->createMessage<MSG_Warning>("(Tiffer::Read::getIJMetadata): "
-//                                          "File doesn't contain ImageJ metadata!!");
-//         return "";
-//     }
-//     else
-//     {
-//         uint32_t count = it->second.count;
-//         uint32_t pos = it->second.value;
+    std::string out; // imagej metada has utf16 format
 
-//         std::string out; // imagej metada has utf16 format
+    for (size_t k = 0; k < count; k++)
+        if (buffer[pos + k] != 0)
+            out += (char)buffer[pos + k];
 
-//         for (size_t k = 0; k < count; k++)
-//             if (buffer[pos + k] != 0)
-//                 out += (char)buffer[pos + k];
-
-//         return out;
-//     }
-// } // getIJMetadata
+    return out;
+} // getIJMetadata
 
 Tiffer::ImData Tiffer::Read::getImageData(const uint32_t id)
 {

@@ -31,7 +31,7 @@ target_include_directories(glad
 ## PUGIXML ################################################
 
 add_library(pugixml
-    STATIC 
+    SHARED 
         "${CMAKE_CURRENT_SOURCE_DIR}/pugixml/src/pugixml.cpp"
 )
 

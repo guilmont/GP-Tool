@@ -14,97 +14,70 @@ Movie::Movie(const std::string &movie_path, Mailbox *mail) : mbox(mail)
         return;
     }
 
-    // const std::string info = tif.getMetadata();
-    // bool mData = false;
-    // if (info.find("ImageJ") != std::string::npos)
-    // {
-    //     std::string extra = tif.getIJMetadata();
-    //     if (extra.size() > 1)
-    //         mData = meta.parseImageJ(info + tif.getIJMetadata());
-    // }
-    // else if (info.find("OME") != std::string::npos)
-    //     mData = meta.parseOME(info);
+    // Parsing metadata to our needs
+    meta = std::make_unique<Metadata>(&tif, mbox);
 
-    // if (!mData)
-    // {
-    //     // if no fancy metada is presented, we go witht the basic one
-    //     meta.SignificantBits = tif.getBitCount();
-    //     meta.SizeT = tif.getNumDirectories();
-    //     meta.SizeC = 1;
-    //     meta.SizeZ = 1;
-    //     meta.SizeY = tif.getHeight();
-    //     meta.SizeX = tif.getWidth();
+    // Check if axes are correct
+    if (meta->DimensionOrder.compare("XYCZT") != 0)
+    {
+        success = false;
+        std::string msg = "Movie has wrong axes format: " + meta->DimensionOrder;
+        msg += " :: Expected -> XYCZT";
 
-    //     meta.PhysicalSizeXY = 1.0;
-    //     meta.PhysicalSizeZ = 1.0;
-    //     meta.TimeIncrement = 1.0;
+        if (mbox)
+            mbox->create<Message::Warn>(msg);
+        else
+            std::cerr << "ERROR (Movie::Movie): " << msg << " -> " << movie_path << std::endl;
 
-    //     meta.acquisitionDate = tif.getDateTime();
-    //     meta.DimensionOrder = "XYCZT";
-    //     meta.PhysicalSizeXYUnit = "Pixel";
-    //     meta.PhysicalSizeZUnit = "Pixel";
-    //     meta.TimeIncrementUnit = "Frame";
-
-    //     meta.metaString = info;
-    //     meta.nameCH.emplace_back("channe0");
-    // }
-
-    // // Check if axes are correct
-    // if (meta.DimensionOrder.compare("XYCZT") != 0)
-    // {
-    //     mail->createMessage<MSG_Warning>("Movie has wrong axes format -> " + filename);
-    //     return false;
-    // }
-
-    // if (meta.SizeZ > 1)
-    // {
-    //     mail->createMessage<MSG_Warning>("ERROR: SizeZ > 1 -> " + filename);
-    //     return false;
-    // }
+        return;
+    }
 
     /////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////
 
-    // vImg = new MatrixXd *[meta.SizeC];
-    // for (uint32_t ch = 0; ch < meta.SizeC; ch++)
-    //     vImg[ch] = new MatrixXd[meta.SizeT];
+    vImg = new MatrixXd *[meta->SizeC];
+    for (uint32_t ch = 0; ch < meta->SizeC; ch++)
+        vImg[ch] = new MatrixXd[meta->SizeT];
 
-    // uint32_t
-    //     counter = 0,
-    //     nImg = tif.getNumDirectories();
+    uint32_t
+        counter = 0,
+        nImg = tif.getNumDirectories();
 
-    // Message *ptr = mail->createMessage<MSG_Progress>("Loading images");
-    // ptr->update(0.0f);
+    Message::Progress *ptr = mbox->create<Message::Progress>("Loading images");
 
-    // for (uint32_t t = 0; t < meta.SizeT; t++)
-    //     for (uint32_t ch = 0; ch < meta.SizeC; ch++)
-    //     {
-    //         if (meta.SignificantBits == 8)
-    //             vImg[ch][t] = tif.getImage<uint8_t>(counter).cast<double>();
+    ptr->progress = 0.0f;
 
-    //         else if (meta.SignificantBits == 16)
-    //             vImg[ch][t] = tif.getImage<uint16_t>(counter).cast<double>();
+    for (uint32_t t = 0; t < meta->SizeT; t++)
+        for (uint32_t ch = 0; ch < meta->SizeC; ch++)
+        {
+            if (meta->SignificantBits == 8)
+                vImg[ch][t] = tif.getImage<uint8_t>(counter).cast<double>();
 
-    //         else if (meta.SignificantBits == 32)
-    //             vImg[ch][t] = tif.getImage<uint32_t>(counter).cast<double>();
+            else if (meta->SignificantBits == 16)
+                vImg[ch][t] = tif.getImage<uint16_t>(counter).cast<double>();
 
-    //         ptr->update(++counter / float(nImg));
+            else if (meta->SignificantBits == 32)
+                vImg[ch][t] = tif.getImage<uint32_t>(counter).cast<double>();
 
-    //     } // loop-images
+            ptr->progress = ++counter / float(nImg);
 
-    // ptr->markAsRead();
+            if (ptr->cancel)
+            {
+                success = false;
+                return;
+            }
 
-    // return true;
+        } // loop-images
 
 } // constructor
 
-// Movie::~Movie(void)
-// {
-//     for (uint32_t ch = 0; ch < meta.SizeC; ch++)
-//         delete[] vImg[ch];
+Movie::~Movie(void)
+{
+    for (uint32_t ch = 0; ch < meta->SizeC; ch++)
+        delete[] vImg[ch];
 
-//     delete[] vImg;
-// } // destructor
+    delete[] vImg;
+} // destructor
 
 // MatrixXd &Movie::getImage(uint32_t channel, uint32_t frame)
 // {

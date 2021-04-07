@@ -53,6 +53,7 @@ namespace Message
         void show(void) override;
 
         float progress = 0.0f;
+        bool cancel = false;
 
     private:
         TimePoint zero, current;

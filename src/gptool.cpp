@@ -1,5 +1,7 @@
 #include "gptool.h"
 
+#include <thread>
+
 GPTool::GPTool(void)
 {
     initialize("GShader", 1200 * DPI_FACTOR, 800 * DPI_FACTOR);
@@ -202,5 +204,10 @@ void GPTool::viewport_function(float deltaTime)
 
 void GPTool::openMovie(const String &path)
 {
-    std::cout << path << std::endl;
+
+    std::thread([&](void) -> void {
+        std::unique_ptr<Movie> loc = std::make_unique<Movie>(path, &mbox);
+        if (loc->successful())
+            movie = std::move(loc);
+    }).detach();
 }

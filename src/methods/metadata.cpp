@@ -1,17 +1,81 @@
-#include <metadata.hpp>
-#include <string>
+#include "metadata.h"
+
+#include <fstream>
+
+Metadata::Metadata(Tiffer::Read *tif, Mailbox *mail) : mbox(mail)
+{
+    // Determining movie name
+    const std::string &movie_path = tif->getMoviePath();
+    size_t pos = movie_path.find_last_of("/");
+    movie_name = movie_path.substr(pos + 1);
+
+    // Does it have extended IJ metadata
+    std::string info = tif->getIJMetadata();
+    if (info.size() > 0)
+        if (parseIJ_extended(info))
+            return;
+
+    // Does it have OME metadata
+    info = tif->getMetadata();
+    if (info.find("OME") != std::string::npos)
+        if (parseOME(info))
+            return;
+
+    // Does it have standard IJ metadata?
+    if (info.find("ImageJ") != std::string::npos)
+    {
+        this->metaString = info;
+        this->SignificantBits = tif->getBitCount();
+        this->acquisitionDate = tif->getDateTime();
+        this->SizeY = tif->getHeight();
+        this->SizeX = tif->getWidth();
+        this->PhysicalSizeXY = 1.0;
+        this->PhysicalSizeZ = 1.0;
+        this->TimeIncrement = 1.0;
+
+        this->acquisitionDate = tif->getDateTime();
+        this->DimensionOrder = "XYCZT";
+        this->PhysicalSizeXYUnit = "Pixel";
+        this->PhysicalSizeZUnit = "Pixel";
+        this->TimeIncrementUnit = "Frame";
+
+        if (parseIJ(info))
+            return;
+    }
+
+    // Metadata structure is not known, we go with basic information
+    this->SignificantBits = tif->getBitCount();
+    this->SizeT = tif->getNumDirectories();
+    this->SizeC = 1;
+    this->SizeZ = 1;
+    this->SizeY = tif->getHeight();
+    this->SizeX = tif->getWidth();
+
+    this->PhysicalSizeXY = 1.0;
+    this->PhysicalSizeZ = 1.0;
+    this->TimeIncrement = 1.0;
+
+    this->acquisitionDate = tif->getDateTime();
+    this->DimensionOrder = "XYCZT";
+    this->PhysicalSizeXYUnit = "Pixel";
+    this->PhysicalSizeZUnit = "Pixel";
+    this->TimeIncrementUnit = "Frame";
+
+    this->metaString = info;
+    this->nameCH.emplace_back("channel0");
+
+} // contructor
 
 bool Metadata::parseOME(const std::string &inputString)
 {
-    metaString = inputString; // hard copy for display in gui
-
     pugi::xml_document doc;
     if (!doc.load_string(inputString.c_str()))
     {
-        mail->createMessage<MSG_Warning>("(Metadata::parseOME): "
-                                         "Cannot parse OME metadata!!");
+        mbox->create<Message::Warn>("Cannot parse OME metadata!!");
         return false;
     }
+
+    metaString = inputString; // hard copy for display in gui
 
     pugi::xml_node ome = doc.child("OME");
     pugi::xml_node main = ome.child("Image");
@@ -67,7 +131,39 @@ bool Metadata::parseOME(const std::string &inputString)
     return true;
 } // parseOME
 
-bool Metadata::parseImageJ(const std::string &inputString)
+bool Metadata::parseIJ(const std::string &inputString)
+{
+    metaString = inputString;
+
+    auto getInfo = [&](const std::string &tag) -> std::string {
+        size_t beg = inputString.find(tag);
+        if (beg == std::string::npos)
+            return "";
+
+        beg += tag.size();
+        size_t end = inputString.find('\n', beg);
+
+        return inputString.substr(beg, end - beg);
+    }; // getInfo
+
+    auto help = [](const std::string &value) -> uint32_t {
+        if (value.size() == 0)
+            return 1;
+        else
+            return stoi(value);
+    };
+
+    this->SizeT = help(getInfo("frames="));
+    this->SizeC = help(getInfo("channels="));
+    this->SizeZ = help(getInfo("slices="));
+
+    for (uint32_t ch = 0; ch < SizeC; ch++)
+        this->nameCH.emplace_back("channel" + std::to_string(ch));
+
+    return true;
+}
+
+bool Metadata::parseIJ_extended(const std::string &inputString)
 {
     metaString = inputString; // hard copy for display in the gui later
 
@@ -82,7 +178,12 @@ bool Metadata::parseImageJ(const std::string &inputString)
         return inputString.substr(beg, end - beg);
     }; // getInfo
 
-    SignificantBits = stoi(getInfo("BitsPerPixel = "));
+    // To fix some IJ blind OME copies
+    std::string help = getInfo("BitsPerPixel = ");
+    if (help.size() == 0)
+        return false;
+
+    SignificantBits = stoi(help);
     SizeC = stoi(getInfo("SizeC = "));
     SizeT = stoi(getInfo("SizeT = "));
     SizeX = stoi(getInfo("SizeX = "));
@@ -116,6 +217,9 @@ bool Metadata::parseImageJ(const std::string &inputString)
     return true;
 } // parseImageJ
 
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
 const Plane &Metadata::getPlane(uint32_t c, uint32_t z, uint32_t t) const
 {
     for (const Plane &pl : vPlanes)
@@ -129,11 +233,11 @@ const Plane &Metadata::getPlane(uint32_t c, uint32_t z, uint32_t t) const
             return pl;
     }
 
-    String txt = "(Metadata::getPlane): No plane was found for (c,z,t): " +
-                 std::to_string(c) + ", " + std::to_string(z) + ", " + std::to_string(t);
+    std::string txt = "(Metadata::getPlane): No plane was found for (c,z,t): " +
+                      std::to_string(c) + ", " + std::to_string(z) + ", " + std::to_string(t);
 
-    mail->createMessage<MSG_Error>(txt);
+    mbox->create<Message::Error>(txt);
 
-    return vPlanes.back();
+    return vPlanes.front();
 
 } // getPlane

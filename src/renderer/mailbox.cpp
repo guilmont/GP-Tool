@@ -75,10 +75,14 @@ void Message::Progress::show(void)
     if (!is_read)
         current = Clock::now();
 
-    ImGui::Text("%s :: Time: %s ", content.c_str(), time2String(zero, current).c_str());
-    ImGui::PushItemWidth(100);
-    ImGui::ProgressBar(progress);
-    ImGui::PopItemWidth();
+    ImGui::Text("%s :: Time: %s %s ", content.c_str(),
+                time2String(zero, current).c_str(), (cancel ? " --  cancelled" : ""));
+
+    float width = 0.8f * ImGui::GetContentRegionAvailWidth();
+    ImGui::ProgressBar(progress, {width, 25});
+    ImGui::SameLine();
+    if (ImGui::Button("Cancel"))
+        cancel = is_read = true;
 
     ImGui::Spacing();
 
