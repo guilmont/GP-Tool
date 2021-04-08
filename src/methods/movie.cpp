@@ -15,13 +15,13 @@ Movie::Movie(const std::string &movie_path, Mailbox *mail) : mbox(mail)
     }
 
     // Parsing metadata to our needs
-    meta = std::make_unique<Metadata>(&tif, mbox);
+    meta = Metadata(&tif, mbox);
 
     // Check if axes are correct
-    if (meta->DimensionOrder.compare("XYCZT") != 0)
+    if (meta.DimensionOrder.compare("XYCZT") != 0)
     {
         success = false;
-        std::string msg = "Movie has wrong axes format: " + meta->DimensionOrder;
+        std::string msg = "Movie has wrong axes format: " + meta.DimensionOrder;
         msg += " :: Expected -> XYCZT";
 
         if (mbox)
@@ -35,31 +35,28 @@ Movie::Movie(const std::string &movie_path, Mailbox *mail) : mbox(mail)
     /////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////
 
-    vImg = new MatrixXd *[meta->SizeC];
-    for (uint32_t ch = 0; ch < meta->SizeC; ch++)
-        vImg[ch] = new MatrixXd[meta->SizeT];
-
     uint32_t
         counter = 0,
         nImg = tif.getNumDirectories();
 
-    mbox->create<Message::Info>("Openning  \"" + meta->movie_name + "\"");
+    mbox->create<Message::Info>("Openning  \"" + meta.movie_name + "\"");
 
     Message::Progress *ptr = mbox->create<Message::Progress>("Loading images");
 
     ptr->progress = 0.0f;
+    vImg.resize(meta.SizeC * meta.SizeT);
 
-    for (uint32_t t = 0; t < meta->SizeT; t++)
-        for (uint32_t ch = 0; ch < meta->SizeC; ch++)
+    for (uint32_t t = 0; t < meta.SizeT; t++)
+        for (uint32_t ch = 0; ch < meta.SizeC; ch++)
         {
-            if (meta->SignificantBits == 8)
-                vImg[ch][t] = tif.getImage<uint8_t>(counter).cast<double>();
+            if (meta.SignificantBits == 8)
+                vImg[t * meta.SizeC + ch] = tif.getImage<uint8_t>(counter).cast<double>();
 
-            else if (meta->SignificantBits == 16)
-                vImg[ch][t] = tif.getImage<uint16_t>(counter).cast<double>();
+            else if (meta.SignificantBits == 16)
+                vImg[t * meta.SizeC + ch] = tif.getImage<uint16_t>(counter).cast<double>();
 
-            else if (meta->SignificantBits == 32)
-                vImg[ch][t] = tif.getImage<uint32_t>(counter).cast<double>();
+            else if (meta.SignificantBits == 32)
+                vImg[t * meta.SizeC + ch] = tif.getImage<uint32_t>(counter).cast<double>();
 
             ptr->progress = ++counter / float(nImg);
 
@@ -73,43 +70,45 @@ Movie::Movie(const std::string &movie_path, Mailbox *mail) : mbox(mail)
 
 } // constructor
 
-Movie::~Movie(void)
+MatrixXd &Movie::getImage(uint32_t channel, uint32_t frame)
 {
-    for (uint32_t ch = 0; ch < meta->SizeC; ch++)
-        delete[] vImg[ch];
+    if (channel >= meta.SizeC)
+    {
+        if (mbox)
+            mbox->create<Message::Warn>("(Movie::getImage) >>  Channel overflow!!");
+        else
+            std::cout << "WARN (Movie::getImage) >> Channel overflow: " << meta.movie_name
+                      << std::endl;
 
-    delete[] vImg;
-} // destructor
+        return vImg[0];
+    }
 
-// MatrixXd &Movie::getImage(uint32_t channel, uint32_t frame)
-// {
-//     if (channel >= meta.SizeC)
-//     {
-//         mail->createMessage<MSG_Error>(
-//             "ERROR: 'getImage' >> channel is greater than available!!");
+    if (frame >= meta.SizeT)
+    {
+        if (mbox)
+            mbox->create<Message::Warn>("(Movie::getImage) >> Frame overflow!!");
+        else
+            std::cout << "WARN (Movie::getImage) >> Frame overflow: " << meta.movie_name
+                      << std::endl;
 
-//         return vImg[0][0];
-//     }
+        return vImg[channel];
+    }
 
-//     if (frame >= meta.SizeT)
-//     {
-//         mail->createMessage<MSG_Error>(
-//             "ERROR: 'getImage' >> frame is greater than available!!");
+    return vImg[frame * meta.SizeC + channel];
+}
 
-//         return vImg[0][0];
-//     }
+MatrixXd *Movie::getChannel(uint32_t frame)
+{
+    if (frame >= meta.SizeT)
+    {
+        if (mbox)
+            mbox->create<Message::Warn>(" (Movie::getChannel) >> Frame overflow!!");
+        else
+            std::cout << "WARN (Movie::getChannel) >> Frame overflow: " << meta.movie_name
+                      << std::endl;
 
-//     return vImg[channel][frame];
-// }
+        return &vImg[0];
+    }
 
-// MatrixXd *Movie::getChannel(uint32_t channel)
-// {
-//     if (channel >= meta.SizeC)
-//     {
-//         mail->createMessage<MSG_Error>(
-//             "ERROR: 'getImage' >> channel is greater than available!!");
-//         return vImg[0];
-//     }
-
-//     return vImg[channel];
-// }
+    return &vImg[frame * meta.SizeC];
+}

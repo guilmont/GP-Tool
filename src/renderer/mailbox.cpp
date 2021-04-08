@@ -142,12 +142,15 @@ void Mailbox::showMessages(void)
 
     ImGui::Spacing();
     if (ImGui::Button("Clear"))
+    {
+        active = false;
         messages.remove_if([](Message::Message *msg) -> bool {
             if (msg->is_read)
                 delete msg;
 
             return msg->is_read;
         });
+    }
 
     ImGui::SameLine();
     if (ImGui::Button("Close"))

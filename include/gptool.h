@@ -3,7 +3,7 @@
 #include "config.h"
 #include "renderer.h"
 
-#include "methods/movie.h"
+#include "plugins/manager.h"
 
 class GPTool : public Renderer
 {
@@ -22,7 +22,7 @@ private:
     std::unique_ptr<Quad> quad = nullptr;
     std::unique_ptr<Shader> shader = nullptr;
 
-    std::unique_ptr<Movie> movie = nullptr;
+    std::unique_ptr<PluginManager> manager = nullptr;
 
     // Histograms and viewport
     std::unordered_map<String, std::unique_ptr<Framebuffer>> fBuffer;

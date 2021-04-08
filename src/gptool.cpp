@@ -8,6 +8,8 @@ GPTool::GPTool(void)
     shader = std::make_unique<Shader>();
     quad = std::make_unique<Quad>();
 
+    manager = std::make_unique<PluginManager>();
+
     fBuffer["viewport"] = std::make_unique<Framebuffer>(1200, 800);
 } // function
 
@@ -47,52 +49,11 @@ void GPTool::onUserUpdate(float deltaTime)
 
 void GPTool::ImGuiLayer(void)
 {
+    fonts.push("bold");
+    manager->showHeader();
+    fonts.pop();
 
-    ImGui::Begin("Plugins");
-
-    // float width = ImGui::GetContentRegionAvailWidth();
-    // ImVec2 buttonSize{width, 30};
-    // ImVec4
-    //     chosenColor{0.1, 0.6, 0.1, 1.0},
-    //     hoverColor{0.2, 0.7, 0.2, 1.0};
-
-    // auto coloredButton = [&](const String &label) {
-    //     bool check = data->activePlugin.compare(label) == 0;
-
-    //     if (check)
-    //     {
-    //         ImGui::PushStyleColor(ImGuiCol_Button, chosenColor);
-    //         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, hoverColor);
-    //         ImGui::PushStyleColor(ImGuiCol_ButtonActive, hoverColor);
-    //     }
-
-    //     if (ImGui::Button(label.c_str(), buttonSize))
-    //         data->activePlugin = label;
-
-    //     if (check)
-    //         ImGui::PopStyleColor(3);
-    // };
-
-    // ui.fonts.push("bold");
-
-    // for (auto &[name, plugin] : data->mPlugin)
-    //     if (plugin.active)
-    //         coloredButton(name);
-
-    // ui.fonts.pop();
-
-    ImGui::End();
-
-    // ///////////////////////////////////////////////////////
-
-    ImGui::Begin("Properties");
-    if (movie)
-    {
-    }
-    else
-        ImGui::Text("No movie is loaded!!");
-
-    ImGui::End();
+    manager->showProperties();
 
     ///////////////////////////////////////////////////////
 
@@ -206,8 +167,17 @@ void GPTool::openMovie(const String &path)
 {
 
     std::thread([&](void) -> void {
-        std::unique_ptr<Movie> loc = std::make_unique<Movie>(path, &mbox);
-        if (loc->successful())
-            movie = std::move(loc);
+        manager = std::make_unique<PluginManager>();
+
+        MoviePlugin *movie = new MoviePlugin(path, &mbox);
+        if (movie->successful())
+        {
+            manager->addPlugin("MOVIE", movie);
+            manager->setActive("MOVIE");
+
+            // TODO: add all the other plugins
+        }
+        else
+            delete movie;
     }).detach();
 }
