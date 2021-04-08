@@ -70,20 +70,22 @@ target_link_libraries(MOVIE
 ###########################################################
 # PLUGIN MANAGER ##########################################
 
-add_library(PMANAGER
+add_library(GPTOOL
     STATIC
+        "${CMAKE_SOURCE_DIR}/src/gptool.cpp"
         "${CMAKE_SOURCE_DIR}/src/plugins/manager.cpp"
         "${CMAKE_SOURCE_DIR}/src/plugins/moviePlugin.cpp"
 )
 
-target_include_directories(PMANAGER
+target_include_directories(GPTOOL
     PUBLIC
         "${CMAKE_SOURCE_DIR}/include"
         "${CMAKE_SOURCE_DIR}/include/plugins"
 )
 
-target_link_libraries(PMANAGER
+target_link_libraries(GPTOOL
     PUBLIC
+        RENDERER
         MOVIE
 )
 
@@ -91,21 +93,19 @@ target_link_libraries(PMANAGER
 ###########################################################
 # MAIN EXECUTABLE
 
-add_executable(GPTool 
+add_executable(App 
     "${CMAKE_SOURCE_DIR}/src/main.cpp"
-    "${CMAKE_SOURCE_DIR}/src/gptool.cpp"
 )
 
 
-target_include_directories(GPTool
+target_include_directories(App
     PUBLIC
         "${CMAKE_SOURCE_DIR}/include"
 )
 
-target_link_libraries(GPTool
+target_link_libraries(App
     PUBLIC
-        RENDERER
-        PMANAGER
+        GPTOOL
 )
 
 

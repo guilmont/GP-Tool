@@ -6,12 +6,14 @@
 #include "plugin.h"
 #include "moviePlugin.h"
 
+#include "renderer/fonts.h"
+
 /////////////////////////////
 
 class PluginManager
 {
 public:
-    PluginManager(void);
+    PluginManager(Fonts *fonts);
     ~PluginManager(void);
 
     void showHeader(void);
@@ -23,6 +25,7 @@ public:
     Plugin *getPlugin(const std::string &name) { return plugins[name].get(); }
 
 private:
+    Fonts *fonts = nullptr;
     Plugin *pActive = nullptr;
     std::map<std::string, std::unique_ptr<Plugin>> plugins;
 };

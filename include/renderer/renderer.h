@@ -44,16 +44,15 @@ public:
     virtual void ImGuiLayer(void) {}
     virtual void ImGuiMenuLayer(void) {}
 
-protected:
     Window window;
-    Mouse mouse;
-    Keyboard keyboard;
+    Mailbox mbox;
+    GDialog dialog;
+
     Fonts fonts;
 
-    GDialog dialog;
+    Mouse mouse;
     Camera camera;
-
-    Mailbox mbox;
+    Keyboard keyboard;
 
 private:
     float deltaTime = 0.1f;

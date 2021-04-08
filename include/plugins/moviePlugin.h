@@ -2,6 +2,7 @@
 
 #include "plugin.h"
 #include "methods/movie.h"
+#include "gptool.h"
 
 #include <vector>
 #include <unordered_map>
@@ -23,7 +24,7 @@ private:
 class MoviePlugin : public Plugin
 {
 public:
-    MoviePlugin(const std::string &path, Mailbox *mail = nullptr);
+    MoviePlugin(const std::string &path, GPTool *ptr);
     ~MoviePlugin(void);
 
     int32_t current_frame = 0;
@@ -37,9 +38,6 @@ public:
     void setConstrast(uint32_t ch, const glm::vec2 &contrast);
     void setMinMaxValues(uint32_t ch, const glm::vec2 &values);
 
-    const std::vector<std::string> &getLutNames(void) { return lut.names; }
-    const std::string &getLutChannel(uint32_t ch) { return data[ch].lut_name; }
-
     // const Contrast &getContrast(uint32_t ch) { return channel[ch].contrast; }
     // const Contrast &getMinMaxValues(uint32_t ch) { return channel[ch].minMaxValue; }
     // Histogram &getHistogram(uint32_t ch) { return channel[ch].histogram; }
@@ -52,7 +50,7 @@ private:
         std::array<float, 256> histogram;
     };
 
-    Mailbox *mbox = nullptr;
+    GPTool *tool = nullptr;
     bool success = true;
 
     LUT lut;

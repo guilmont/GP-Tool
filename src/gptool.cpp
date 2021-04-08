@@ -8,8 +8,7 @@ GPTool::GPTool(void)
     shader = std::make_unique<Shader>();
     quad = std::make_unique<Quad>();
 
-    manager = std::make_unique<PluginManager>();
-
+    manager = std::make_unique<PluginManager>(&fonts);
     fBuffer["viewport"] = std::make_unique<Framebuffer>(1200, 800);
 } // function
 
@@ -49,10 +48,7 @@ void GPTool::onUserUpdate(float deltaTime)
 
 void GPTool::ImGuiLayer(void)
 {
-    fonts.push("bold");
     manager->showHeader();
-    fonts.pop();
-
     manager->showProperties();
 
     ///////////////////////////////////////////////////////
@@ -167,11 +163,10 @@ void GPTool::openMovie(const String &path)
 {
 
     std::thread([&](void) -> void {
-        manager = std::make_unique<PluginManager>();
-
-        MoviePlugin *movie = new MoviePlugin(path, &mbox);
+        MoviePlugin *movie = new MoviePlugin(path, this);
         if (movie->successful())
         {
+            manager = std::make_unique<PluginManager>(&fonts);
             manager->addPlugin("MOVIE", movie);
             manager->setActive("MOVIE");
 

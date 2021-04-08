@@ -3,6 +3,8 @@
 #include <imgui.h>
 #include <glm/glm.hpp>
 
+class GPTool;
+
 struct Plugin
 {
     Plugin(void) = default;

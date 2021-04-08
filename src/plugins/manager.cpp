@@ -3,7 +3,7 @@
 #include <imgui.h>
 #include <iostream>
 
-PluginManager::PluginManager(void)
+PluginManager::PluginManager(Fonts *fonts) : fonts(fonts)
 {
     plugins["ALIGNMENT"] = nullptr;
     plugins["GPROCESS"] = nullptr;
@@ -19,10 +19,13 @@ void PluginManager::showHeader(void)
 
     float width = ImGui::GetContentRegionAvailWidth();
     ImVec2 buttonSize{width, 40};
+
     ImVec4
         deactivated{0.13f, 0.16f, 0.3f, 1.f},
         chosenColor{0.1f, 0.6f, 0.1f, 1.0f},
         hoverColor{0.2f, 0.7f, 0.2f, 1.0f};
+
+    fonts->push("bold");
 
     for (auto const &[name, ptr] : plugins)
     {
@@ -47,6 +50,8 @@ void PluginManager::showHeader(void)
         if (check || !ptr)
             ImGui::PopStyleColor(3);
     }
+
+    fonts->pop();
 
     ImGui::End();
 

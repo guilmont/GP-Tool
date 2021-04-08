@@ -40,10 +40,10 @@ const glm::vec3 &LUT::getColor(const std::string &name) const
 
 ///////////////////////////////////////////////////////////
 
-MoviePlugin::MoviePlugin(const std::string &movie_path, Mailbox *mail) : mbox(mail)
+MoviePlugin::MoviePlugin(const std::string &movie_path, GPTool *ptr) : tool(ptr)
 {
     // Importing movies
-    movie = Movie(movie_path, mail);
+    movie = Movie(movie_path, &(tool->mbox));
     if (!movie.successful())
     {
         success = false;
@@ -66,36 +66,36 @@ void MoviePlugin::showProperties(void)
 
     const Metadata &meta = movie.getMetadata();
 
-    ImGui::Text("Name: ");
+    tool->fonts.text("Name: ", "bold");
     ImGui::SameLine();
     ImGui::Text("%s", meta.movie_name.c_str());
 
-    ImGui::Text("Acquisition date: ");
+    tool->fonts.text("Acquisition date: ", "bold");
     ImGui::SameLine();
     ImGui::Text("%s", meta.acquisitionDate.c_str());
 
-    ImGui::Text("Significant bits: ");
+    tool->fonts.text("Significant bits: ", "bold");
     ImGui::SameLine();
     ImGui::Text("%d", meta.SignificantBits);
 
-    ImGui::Text("Width: ");
+    tool->fonts.text("Width: ", "bold");
     ImGui::SameLine();
     ImGui::Text("%d", meta.SizeX);
 
-    ImGui::Text("Height: ");
+    tool->fonts.text("Height: ", "bold");
     ImGui::SameLine();
     ImGui::Text("%d", meta.SizeY);
 
-    ImGui::Text("Frames: ");
+    tool->fonts.text("Frames: ", "bold");
     ImGui::SameLine();
     ImGui::Text("%d", meta.SizeT);
 
-    ImGui::Text("Calibration: ");
+    tool->fonts.text("Calibration: ", "bold");
     ImGui::SameLine();
     ImGui::Text("%.3f %s", meta.PhysicalSizeXY, meta.PhysicalSizeXYUnit.c_str());
 
     ImGui::Spacing();
-    ImGui::Text("Channels: ");
+    tool->fonts.text("Channels: ", "bold");
     for (uint32_t ch = 0; ch < meta.SizeC; ch++)
         ImGui::Text("   :: %s", meta.nameCH[ch].c_str());
 
