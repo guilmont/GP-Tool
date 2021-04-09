@@ -61,6 +61,12 @@ void PluginManager::showProperties(void)
 {
     if (pActive)
         pActive->showProperties();
+    else
+    {
+        ImGui::Begin("Properties");
+        ImGui::Text("No movie loaded");
+        ImGui::End();
+    }
 } // showProperties
 
 void PluginManager::updateAll(float deltaTime)

@@ -101,8 +101,11 @@ Shader::Shader(void)
     String path(PROJECT_DIR);
     vProgram["basic"] = genShader(path + "/assets/shaders/basic.vtx.glsl",
                                   path + "/assets/shaders/basic.frag.glsl");
+
+    vProgram["histogram"] = genShader(path + "/assets/shaders/basic.vtx.glsl",
+                                      path + "/assets/shaders/histogram.frag.glsl");
+
     // vProgram["viewport"] = genShader(basic_vert, viewport_frag);
-    // vProgram["histogram"] = genShader(basic_vert, histogram_frag);
     // vProgram["trajectory"] = genShader(basic_vert, trajectory_frag);
     // vProgram["selectRoi"] = genShader(basic_vert, selectRoi_frag);
 

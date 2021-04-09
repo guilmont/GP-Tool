@@ -70,7 +70,7 @@ Movie::Movie(const std::string &movie_path, Mailbox *mail) : mbox(mail)
 
 } // constructor
 
-MatrixXd &Movie::getImage(uint32_t channel, uint32_t frame)
+const MatrixXd &Movie::getImage(uint32_t channel, uint32_t frame)
 {
     if (channel >= meta.SizeC)
     {
@@ -97,7 +97,7 @@ MatrixXd &Movie::getImage(uint32_t channel, uint32_t frame)
     return vImg[frame * meta.SizeC + channel];
 }
 
-MatrixXd *Movie::getChannel(uint32_t frame)
+const MatrixXd *Movie::getChannel(uint32_t frame)
 {
     if (frame >= meta.SizeT)
     {

@@ -6,9 +6,8 @@
 class PluginManager;
 #include "plugins/manager.h"
 
-class GPTool : public Renderer
+struct GPTool : public Renderer
 {
-public:
     GPTool(void);
 
     void onUserUpdate(float deltaTime) override;
@@ -19,12 +18,11 @@ public:
 
     void openMovie(const String &path);
 
-private:
     std::unique_ptr<PluginManager> manager = nullptr;
 
     std::unique_ptr<Quad> quad = nullptr;
     std::unique_ptr<Shader> shader = nullptr;
-    std::unordered_map<String, std::unique_ptr<Framebuffer>> fBuffer; // Histograms and viewport
+    std::unique_ptr<Framebuffer> viewBuf = nullptr; // Histograms and viewport
 
     // flow variables
     bool viewport_hover = false;

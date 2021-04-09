@@ -9,11 +9,14 @@ GPTool::GPTool(void)
     quad = std::make_unique<Quad>();
 
     manager = std::make_unique<PluginManager>(&fonts);
-    fBuffer["viewport"] = std::make_unique<Framebuffer>(1200, 800);
+    viewBuf = std::make_unique<Framebuffer>(1200, 800);
+
 } // function
 
 void GPTool::onUserUpdate(float deltaTime)
 {
+    manager->updateAll(deltaTime);
+
 
     bool check = keyboard[Key::LEFT_CONTROL] == Event::PRESS;
     check |= keyboard[Key::RIGHT_CONTROL] == Event::PRESS;
@@ -30,20 +33,21 @@ void GPTool::onUserUpdate(float deltaTime)
     ///////////////////////////////////////////////////////
     // Renderering
 
-    fBuffer["viewport"]->bind();
+    viewBuf->bind();
     glad_glClear(GL_COLOR_BUFFER_BIT);
     glad_glClearColor(0.6, 0.6, 0.6, 1.0);
 
     glm::mat4 trf = camera.getViewMatrix();
-    const glm::vec2 &size = fBuffer["viewport"]->getSize();
 
     shader->useProgram("basic");
     shader->setMatrix4f("u_transform", glm::value_ptr(trf));
 
     quad->draw();
 
-    fBuffer["viewport"]->unbind();
+    viewBuf->unbind();
 
+
+ 
 } // function
 
 void GPTool::ImGuiLayer(void)
@@ -57,18 +61,18 @@ void GPTool::ImGuiLayer(void)
 
     // Check if it needs to resize
     ImVec2 port = ImGui::GetContentRegionAvail();
-    ImGui::Image((void *)(uintptr_t)fBuffer["viewport"]->getID(), port);
+    ImGui::Image((void *)(uintptr_t)viewBuf->getID(), port);
 
-    glm::vec2 view = fBuffer["viewport"]->getSize();
+    glm::vec2 view = viewBuf->getSize();
     if (port.x != view.x || port.y != view.y)
     {
-        fBuffer["viewport"] = std::make_unique<Framebuffer>(port.x, port.y);
+        viewBuf = std::make_unique<Framebuffer>(port.x, port.y);
         camera.setAspectRatio(port.y / port.x);
     }
 
     // Checking if anchoring position changed
     ImVec2 pos = ImGui::GetItemRectMin();
-    fBuffer["viewport"]->setPosition(pos.x - window.position.x, pos.y - window.position.y);
+    viewBuf->setPosition(pos.x - window.position.x, pos.y - window.position.y);
 
     // Check if mouse is on viewport
     viewport_hover = ImGui::IsWindowHovered();

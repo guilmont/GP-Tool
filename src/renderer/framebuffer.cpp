@@ -20,7 +20,7 @@ Framebuffer::Framebuffer(uint32_t width, uint32_t height) : size(width, height)
     gl_call(glad_glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                         GL_TEXTURE_2D, textureID, 0));
 
-    // Testing it worked properly
+    // Testing if it worked properly
     if (glad_glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     {
         std::cerr << "ERROR: Framebuffer is incomplete!!\n";

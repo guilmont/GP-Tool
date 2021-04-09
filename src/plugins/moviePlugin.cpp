@@ -1,5 +1,7 @@
 #include "moviePlugin.h"
 
+#include <numeric>
+
 LUT::LUT(void)
 {
     names.emplace_back("None");
@@ -50,12 +52,17 @@ MoviePlugin::MoviePlugin(const std::string &movie_path, GPTool *ptr) : tool(ptr)
         return;
     }
 
-    const Metadata &meta = movie.getMetadata();
+    uint32_t SC = movie.getMetadata().SizeC;
 
-    data.resize(meta.SizeC);
-    for (uint32_t ch = 0; ch < meta.SizeC; ch++)
-        data[ch].lut_name = lut.names[ch + 1];
+    // Setup info and histograms
+    info.resize(SC);
+    histo.resize(SC);
 
+    for (uint32_t ch = 0; ch < SC; ch++)
+    {
+        info[ch].lut_name = lut.names[ch + 1];
+        calcHistograms(ch);
+    }
 } // constructor
 
 MoviePlugin::~MoviePlugin(void) {}
@@ -103,15 +110,17 @@ void MoviePlugin::showProperties(void)
     ImGui::Separator();
     ImGui::Spacing();
 
-    ImGui::SliderInt("Frame", &current_frame, 0, meta.SizeT - 1);
+    if (ImGui::SliderInt("Frame", &current_frame, 0, meta.SizeT - 1))
+        for (uint32_t ch = 0; ch < meta.SizeC; ch++)
+            calcHistograms(ch);
 
     // bool check = true;
-    // check &= data.imgPos.x > 0 && data.imgPos.x < 1.0f;
-    // check &= data.imgPos.y > 0 && data.imgPos.y < 1.0f;
-    // if (check && data.viewHover)
+    // check &= info.imgPos.x > 0 && info.imgPos.x < 1.0f;
+    // info.imgPos.x > 0 && info.imgPos.x < 1.0f;
+    // if (check && info.viewHover)
     // {
-    //     float FX = meta.SizeX * data.imgPos.x,
-    //           FY = meta.SizeY * data.imgPos.y;
+    //     float FX = meta.SizeX * info.imgPos.x,
+    //           FY = meta.SizeY * info.imgPos.y;
 
     //     ImGui::Text("Position: %.2f x %.2f %s :: %d x %d",
     //                 meta.PhysicalSizeXY * FX, meta.PhysicalSizeXY * FY,
@@ -131,13 +140,13 @@ void MoviePlugin::showProperties(void)
 
         ImGui::PushID(txt.c_str());
 
-        if (ImGui::BeginCombo(txt.c_str(), data[ch].lut_name.c_str()))
+        if (ImGui::BeginCombo(txt.c_str(), info[ch].lut_name.c_str()))
         {
             for (const std::string &name : lut.names)
             {
-                bool selected = name.compare(data[ch].lut_name) == 0;
+                bool selected = name.compare(info[ch].lut_name) == 0;
                 if (ImGui::Selectable(name.c_str(), &selected))
-                    data[ch].lut_name = name;
+                    info[ch].lut_name = name;
 
                 if (selected)
                     ImGui::SetItemDefaultFocus();
@@ -146,45 +155,36 @@ void MoviePlugin::showProperties(void)
             ImGui::EndCombo();
         }
 
-        //     if (current.compare("None") != 0)
-        //     {
-        //         String name = "contrast_" + std::to_string(ch);
+        if (info[ch].lut_name.compare("None") != 0)
+        {
+            const glm::vec2 &size = histo[ch]->getSize();
+            ImGui::Image((void *)(uintptr_t)histo[ch]->getID(), {size.x, size.y});
 
-        //         float port = ImGui::GetContentRegionAvail().x,
-        //               wid = ui.FBuffer[name]->getWidth(),
-        //               hei = ui.FBuffer[name]->getHeight();
+            float port = ImGui::GetContentRegionAvail().x;
+            if (port != size.x)
+                histo[ch] = std::make_unique<Framebuffer>(port, size.y);
 
-        //         ImGui::Image((void *)(uintptr_t)ui.FBuffer[name]->getID(), {wid, hei});
+            // Update contrast
+            if (tool->mouse[Mouse::LEFT] == Event::PRESS && ImGui::IsItemHovered())
+            {
+                const ImVec2 &minPos = ImGui::GetItemRectMin(),
+                             &maxPos = ImGui::GetItemRectMax(),
+                             &pos = ImGui::GetMousePos();
 
-        //         if (port != wid)
-        //         {
-        //             wid = port;
-        //             ui.FBuffer[name] = std::make_unique<Framebuffer>(wid, hei);
-        //             data.updateContrast_flag = true;
-        //         }
+                glm::vec2 &ct = info[ch].contrast;
+                const glm::vec2 &mm = info[ch].minMaxValue;
 
-        //         // Update contrast
-        //         if (ui.mouse.leftPressed && ImGui::IsItemHovered())
-        //         {
-        //             const ImVec2 &minPos = ImGui::GetItemRectMin(),
-        //                          &maxPos = ImGui::GetItemRectMax(),
-        //                          &pos = ImGui::GetMousePos();
+                float dx = (pos.x - minPos.x) / (maxPos.x - minPos.x);
+                dx = (mm.y - mm.x) * dx + mm.x;
 
-        //             auto [low, high] = data.iprops.getContrast(ch);
-        //             auto &[minValue, maxValue] = data.iprops.getMinMaxValues(ch);
+                if (abs(dx - ct.x) < abs(dx - ct.y))
+                    ct.x = dx;
+                else
+                    ct.y = dx;
 
-        //             float dx = (pos.x - minPos.x) / (maxPos.x - minPos.x);
-        //             dx = (maxValue - minValue) * dx + minValue;
+            } // if-contrast Changes
 
-        //             if (abs(dx - low) < abs(dx - high))
-        //                 low = dx;
-        //             else
-        //                 high = dx;
-
-        //             data.iprops.setConstrast(ch, low, high);
-
-        //         } // if-contrastWidget Changes
-        //     }
+        } // if-none
 
         ImGui::PopID();
 
@@ -198,20 +198,58 @@ void MoviePlugin::showProperties(void)
 
 void MoviePlugin::update(float deltaTime)
 {
+    tool->shader->useProgram("histogram");
+
+    glm::mat4 trf = glm::ortho(-0.5f, 0.5f, 0.5f, -0.5f);
+    tool->shader->setMatrix4f("u_transform", glm::value_ptr(trf));
+
+    for (uint32_t ch = 0; ch < movie.getMetadata().SizeC; ch++)
+    {
+
+        const glm::vec3 &color = lut.getColor(info[ch].lut_name);
+        tool->shader->setVec3f("color", glm::value_ptr(color));
+
+        const glm::vec2 &ct = info[ch].contrast,
+                        &mm = info[ch].minMaxValue;
+
+        glm::vec2 contrast = {(ct.x - mm.x) / (mm.y - mm.x), (ct.y - mm.x) / (mm.y - mm.x)};
+        tool->shader->setVec2f("contrast", glm::value_ptr(contrast));
+
+        tool->shader->setFloatArray("histogram", info[ch].histogram.data(), 256);
+
+        if (!histo[ch]) // for safety
+            histo[ch] = std::make_unique<Framebuffer>(162, 100);
+
+        histo[ch]->bind();
+        tool->quad->draw();
+        histo[ch]->unbind();
+    }
 
 } // update
 
-void MoviePlugin::setLUT(uint32_t ch, const std::string &lut_name)
-{
-    data[ch].lut_name = std::move(lut_name);
-}
+///////////////////////////////////////////////////////////
 
-void MoviePlugin::setConstrast(uint32_t ch, const glm::vec2 &contrast)
+void MoviePlugin::calcHistograms(uint32_t channel)
 {
-    data[ch].contrast = std::move(contrast);
-}
 
-void MoviePlugin::setMinMaxValues(uint32_t ch, const glm::vec2 &values)
-{
-    data[ch].minMaxValue = std::move(values);
-}
+    Info *loc = &info[channel];
+
+    const MatrixXd &mat = movie.getImage(channel, current_frame);
+    float low = mat.minCoeff(), high = mat.maxCoeff(),
+          minValue = 0.8f * low, maxValue = 1.2f * high;
+
+    loc->contrast = {low, high};
+    loc->minMaxValue = {minValue, maxValue};
+
+    loc->histogram.fill(0.0f);
+    for (size_t k = 0; k < mat.size(); k++)
+    {
+        uint32_t val = 255.0f * (mat.data()[k] - minValue) / (maxValue - minValue + 0.01f);
+        loc->histogram[val]++;
+    }
+
+    float norma = std::accumulate(loc->histogram.begin(), loc->histogram.end(), 0.0f);
+    for (uint32_t k = 0; k < 256; k++)
+        loc->histogram[k] /= norma;
+
+} // calcHistograms

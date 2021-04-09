@@ -34,13 +34,8 @@ public:
 
     bool successful(void) const { return success; }
 
-    void setLUT(uint32_t ch, const std::string &lut_name);
-    void setConstrast(uint32_t ch, const glm::vec2 &contrast);
-    void setMinMaxValues(uint32_t ch, const glm::vec2 &values);
-
-    // const Contrast &getContrast(uint32_t ch) { return channel[ch].contrast; }
-    // const Contrast &getMinMaxValues(uint32_t ch) { return channel[ch].minMaxValue; }
-    // Histogram &getHistogram(uint32_t ch) { return channel[ch].histogram; }
+private:
+    void calcHistograms(uint32_t channel);
 
 private:
     struct Info
@@ -54,7 +49,8 @@ private:
     bool success = true;
 
     LUT lut;
-    std::vector<Info> data;
+    std::vector<Info> info;
+    std::vector<std::unique_ptr<Framebuffer>> histo;
 
     Movie movie;
 };
