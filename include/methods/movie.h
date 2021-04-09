@@ -17,7 +17,6 @@ public:
     Metadata &getMetadata(void) { return meta; }
 
     const MatrixXd &getImage(uint32_t channel, uint32_t frame);
-    const MatrixXd *getChannel(uint32_t frame);
 
 private:
     Mailbox *mbox = nullptr;

@@ -1,35 +1,24 @@
 #version 410 core
 
+// We certainly don't need more than 5
+uniform int u_nChannels;
+uniform vec3 u_color[5];
+uniform sampler2D u_texture[5];
 
-uniform bool clear;                                                                         
-uniform vec3 colormap;                                                                      
-uniform sampler2D u_signal;                                                                 
-                                                                                            
-uniform vec2 dim;                                                                           
-uniform mat3 u_align;                                                                       
-                                                                                            
+uniform mat4 u_align;
+
 // Input :: Output                                                                          
 in vec2 fragCoord;                                                                          
-out vec4 frag_color;                                                                        
+out vec4 fragColor;                                                                        
                                                                                             
 void main()                                                                                 
-{                                                                                           
-                                                                                            
-    if (clear)                                                                              
-        frag_color = vec4(0.0, 0.0, 0.0, 1.0);                                               
-                                                                                            
-    else                                                                                    
-    {                                                                                       
-        vec2 oldCoord = dim * fragCoord;                                                    
-        vec2 coord;                                                                         
-        coord.x = u_align[0][0] * oldCoord.x + u_align[0][1] * oldCoord.y + u_align[0][2];  
-                                                                                            
-        coord.y = u_align[1][0] * oldCoord.x + u_align[1][1] * oldCoord.y + u_align[1][2];  
-                                                                                            
-        coord /= dim;                                                                       
-                                                                                            
-        float sig =  texture(u_signal, coord).x;                                            
-        frag_color = vec4(sig * colormap,  1.0);                                            
-    }                                                                                       
+{   
+
+    fragColor = vec4(0.0,0.0,0.0,1.0);
+    for (int ch = 0; ch < u_nChannels; ch++)
+        fragColor.rgb += u_color[ch] * texture(u_texture[ch], fragCoord).x;
+
+
+
                                                                                             
 } // main

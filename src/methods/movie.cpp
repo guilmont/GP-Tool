@@ -96,19 +96,3 @@ const MatrixXd &Movie::getImage(uint32_t channel, uint32_t frame)
 
     return vImg[frame * meta.SizeC + channel];
 }
-
-const MatrixXd *Movie::getChannel(uint32_t frame)
-{
-    if (frame >= meta.SizeT)
-    {
-        if (mbox)
-            mbox->create<Message::Warn>(" (Movie::getChannel) >> Frame overflow!!");
-        else
-            std::cout << "WARN (Movie::getChannel) >> Frame overflow: " << meta.movie_name
-                      << std::endl;
-
-        return &vImg[0];
-    }
-
-    return &vImg[frame * meta.SizeC];
-}

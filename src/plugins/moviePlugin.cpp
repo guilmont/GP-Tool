@@ -52,17 +52,24 @@ MoviePlugin::MoviePlugin(const std::string &movie_path, GPTool *ptr) : tool(ptr)
         return;
     }
 
-    uint32_t SC = movie.getMetadata().SizeC;
+    // Setup info, histograms and textures
+    const Metadata &meta = movie.getMetadata();
 
-    // Setup info and histograms
-    info.resize(SC);
-    histo.resize(SC);
+    info.resize(meta.SizeC);
+    histo.resize(meta.SizeC);
 
-    for (uint32_t ch = 0; ch < SC; ch++)
+    for (uint32_t ch = 0; ch < meta.SizeC; ch++)
     {
+
+        const MatrixXd &mat = movie.getImage(ch, current_frame);
+        float low = mat.minCoeff(), high = mat.maxCoeff(),
+              minValue = 0.8f * low, maxValue = 1.2f * high;
+
         info[ch].lut_name = lut.names[ch + 1];
-        calcHistograms(ch);
+        info[ch].contrast = {low, high};
+        info[ch].minMaxValue = {minValue, maxValue};
     }
+
 } // constructor
 
 MoviePlugin::~MoviePlugin(void) {}
@@ -112,7 +119,7 @@ void MoviePlugin::showProperties(void)
 
     if (ImGui::SliderInt("Frame", &current_frame, 0, meta.SizeT - 1))
         for (uint32_t ch = 0; ch < meta.SizeC; ch++)
-            calcHistograms(ch);
+            calcHistogram(ch);
 
     // bool check = true;
     // check &= info.imgPos.x > 0 && info.imgPos.x < 1.0f;
@@ -182,6 +189,8 @@ void MoviePlugin::showProperties(void)
                 else
                     ct.y = dx;
 
+                updateTexture(ch);
+
             } // if-contrast Changes
 
         } // if-none
@@ -198,6 +207,15 @@ void MoviePlugin::showProperties(void)
 
 void MoviePlugin::update(float deltaTime)
 {
+    if (trigger) // only runs the first time
+    {
+        trigger = false;
+        uint32_t SC = movie.getMetadata().SizeC;
+        for (uint32_t ch = 0; ch < SC; ch++)
+            calcHistogram(ch);
+    }
+
+    // Updating histograms
     tool->shader->useProgram("histogram");
 
     glm::mat4 trf = glm::ortho(-0.5f, 0.5f, 0.5f, -0.5f);
@@ -229,17 +247,18 @@ void MoviePlugin::update(float deltaTime)
 
 ///////////////////////////////////////////////////////////
 
-void MoviePlugin::calcHistograms(uint32_t channel)
+void MoviePlugin::calcHistogram(uint32_t channel)
 {
 
     Info *loc = &info[channel];
 
-    const MatrixXd &mat = movie.getImage(channel, current_frame);
-    float low = mat.minCoeff(), high = mat.maxCoeff(),
-          minValue = 0.8f * low, maxValue = 1.2f * high;
+    float minValue = loc->minMaxValue.x,
+          maxValue = loc->minMaxValue.y;
 
-    loc->contrast = {low, high};
-    loc->minMaxValue = {minValue, maxValue};
+    float low = loc->contrast.x,
+          high = loc->contrast.y;
+
+    const MatrixXd &mat = movie.getImage(channel, current_frame);
 
     loc->histogram.fill(0.0f);
     for (size_t k = 0; k < mat.size(); k++)
@@ -251,5 +270,19 @@ void MoviePlugin::calcHistograms(uint32_t channel)
     float norma = std::accumulate(loc->histogram.begin(), loc->histogram.end(), 0.0f);
     for (uint32_t k = 0; k < 256; k++)
         loc->histogram[k] /= norma;
+
+    updateTexture(channel);
+
+} // calcHistograms
+
+void MoviePlugin::updateTexture(uint32_t channel)
+{
+    float low = info[channel].contrast.x,
+          high = info[channel].contrast.y;
+
+    // Let's use this function to update out textures for the shader
+    MatrixXf img = movie.getImage(channel, current_frame).cast<float>();
+    img = (img.array() - low) / (high - low);
+    tool->texture->update(channel, img.data());
 
 } // calcHistograms

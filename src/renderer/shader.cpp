@@ -105,7 +105,9 @@ Shader::Shader(void)
     vProgram["histogram"] = genShader(path + "/assets/shaders/basic.vtx.glsl",
                                       path + "/assets/shaders/histogram.frag.glsl");
 
-    // vProgram["viewport"] = genShader(basic_vert, viewport_frag);
+    vProgram["viewport"] = genShader(path + "/assets/shaders/basic.vtx.glsl",
+                                     path + "/assets/shaders/viewport.frag.glsl");
+
     // vProgram["trajectory"] = genShader(basic_vert, trajectory_frag);
     // vProgram["selectRoi"] = genShader(basic_vert, selectRoi_frag);
 
@@ -171,6 +173,12 @@ void Shader::setMatrix4f(const String &name, const float *mat)
     gl_call(glad_glUniformMatrix4fv(loc, 1, GL_FALSE, mat));
 } //setUniformMatrix4f
 
+void Shader::setIntArray(const String &name, const int *ptr, size_t N)
+{
+    gl_call(uint32_t loc = glad_glGetUniformLocation(program_used, name.c_str()));
+    gl_call(glad_glUniform1iv(loc, N, ptr));
+}
+
 void Shader::setFloatArray(const String &name, const float *ptr, size_t N)
 {
     gl_call(uint32_t loc = glad_glGetUniformLocation(program_used, name.c_str()));
@@ -181,4 +189,10 @@ void Shader::setVec2fArray(const String &name, const float *ptr, size_t N)
 {
     gl_call(uint32_t loc = glad_glGetUniformLocation(program_used, name.c_str()));
     gl_call(glad_glUniform2fv(loc, N, ptr));
+}
+
+void Shader::setVec3fArray(const String &name, const float *ptr, size_t N)
+{
+    gl_call(uint32_t loc = glad_glGetUniformLocation(program_used, name.c_str()));
+    gl_call(glad_glUniform3fv(loc, N, ptr));
 }

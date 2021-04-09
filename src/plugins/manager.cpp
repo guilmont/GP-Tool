@@ -76,3 +76,11 @@ void PluginManager::updateAll(float deltaTime)
             ptr->update(deltaTime);
 
 } // update
+
+Plugin *PluginManager::getPlugin(const std::string &name)
+{
+    if (plugins[name])
+        return plugins[name].get();
+    else
+        return nullptr;
+} //

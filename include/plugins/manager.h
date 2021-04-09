@@ -22,7 +22,8 @@ public:
 
     void addPlugin(const std::string &name, Plugin *plugin) { plugins[name].reset(plugin); }
     void setActive(const std::string &name) { pActive = plugins[name].get(); }
-    Plugin *getPlugin(const std::string &name) { return plugins[name].get(); }
+
+    Plugin *getPlugin(const std::string &name);
 
 private:
     Fonts *fonts = nullptr;

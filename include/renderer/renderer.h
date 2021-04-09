@@ -17,6 +17,7 @@
 #include "quad.h"
 #include "shader.h"
 #include "framebuffer.h"
+#include "texture.h"
 #include "events.h"
 #include "gdialog.h"
 #include "camera.h"
