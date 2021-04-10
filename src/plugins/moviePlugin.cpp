@@ -211,17 +211,17 @@ void MoviePlugin::showProperties(void)
 
 void MoviePlugin::update(float deltaTime)
 {
-    if (!texture) // only runs the first time
+    if (texture.empty()) // only runs the first time
     {
-        texture = std::make_unique<Texture>();
 
         const Metadata &meta = movie.getMetadata();
         for (uint32_t ch = 0; ch < meta.SizeC; ch++)
         {
-            texture->create(meta.SizeX, meta.SizeY);
+            texture.emplace_back(std::make_unique<Texture>(meta.SizeX, meta.SizeY));
             calcHistogram(ch);
         }
     }
+
     ///////////////////////////////////////////////////////
     const Metadata &meta = movie.getMetadata();
 
@@ -234,7 +234,7 @@ void MoviePlugin::update(float deltaTime)
     std::array<float, 15> vColor = {0.0f};
     for (uint32_t ch = 0; ch < meta.SizeC; ch++)
     {
-        texture->bind(ch, ch);
+        texture[ch]->bind(ch);
         const glm::vec3 &cor = lut.getColor(info[ch].lut_name);
         memcpy(vColor.data() + 3 * ch, &cor[0], 3 * sizeof(float));
     }
@@ -310,6 +310,6 @@ void MoviePlugin::updateTexture(uint32_t channel)
     // Let's use this function to update out textures for the shader
     MatrixXf img = movie.getImage(channel, current_frame).cast<float>();
     img = (img.array() - low) / (high - low);
-    texture->update(channel, img.data());
+    texture[channel]->update(img.data());
 
 } // calcHistograms
