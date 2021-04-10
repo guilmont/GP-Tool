@@ -50,20 +50,6 @@ void GPTool::onUserUpdate(float deltaTime)
     ///////////////////////////////////////////////////////
     // Handling plugins
 
-    MoviePlugin *plmov = (MoviePlugin *)manager->getPlugin("MOVIE");
-
-    if (!texture && plmov)
-    {
-        // In case program is fresh or it was reset
-        const Metadata &meta = plmov->getMovie()->getMetadata();
-
-        texture = std::make_unique<Texture>();
-        for (uint32_t ch = 0; ch < meta.SizeC; ch++)
-            texture->create(meta.SizeX, meta.SizeY);
-    }
-
-    manager->updateAll(deltaTime);
-
     ///////////////////////////////////////////////////////
     // Renderering
     // if (!updateViewport)
@@ -73,36 +59,12 @@ void GPTool::onUserUpdate(float deltaTime)
     glad_glClear(GL_COLOR_BUFFER_BIT);
     glad_glClearColor(0.6, 0.6, 0.6, 1.0);
 
-    if (plmov)
-    {
-        const Metadata &meta = plmov->getMovie()->getMetadata();
-
-        shader->useProgram("viewport");
-
-        glm::mat4 trf = camera.getViewMatrix();
-        trf = glm::scale(trf, {1.0f, float(meta.SizeY) / float(meta.SizeX), 1.0f});
-        shader->setMatrix4f("u_transform", glm::value_ptr(trf));
-
-        shader->setInteger("u_nChannels", meta.SizeC);
-
-        std::array<float, 15> vColor = {0.0f};
-        for (uint32_t ch = 0; ch < meta.SizeC; ch++)
-        {
-            texture->bind(ch, ch);
-            memcpy(vColor.data() + 3 * ch, &(plmov->getColor(ch))[0], 3 * sizeof(float));
-        }
-        shader->setVec3fArray("u_color", vColor.data(), 5);
-
-        int vTex[5] = {0, 1, 2, 3, 4};
-        shader->setIntArray("u_texture", vTex, 5);
-
-        quad->draw();
-
-    } // movie-plugin
-
+    shader->useProgram("viewport");
+    manager->updateAll(deltaTime);
+    quad->draw();
     viewBuf->unbind();
 
-    std::cout << deltaTime << std::endl;
+    // std::cout << deltaTime << std::endl;
 
 } // function
 
@@ -204,7 +166,6 @@ void GPTool::openMovie(const String &path)
         MoviePlugin *movie = new MoviePlugin(path, this);
         if (movie->successful())
         {
-            texture = nullptr;
             camera.reset();
 
             manager = std::make_unique<PluginManager>(&fonts);

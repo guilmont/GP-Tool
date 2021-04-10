@@ -54,7 +54,7 @@ private:
     LUT lut;
     std::vector<Info> info;
     std::vector<std::unique_ptr<Framebuffer>> histo;
+    std::unique_ptr<Texture> texture = nullptr;
 
     Movie movie;
-    bool trigger = true;
 };

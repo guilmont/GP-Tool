@@ -76,6 +76,7 @@ MoviePlugin::~MoviePlugin(void) {}
 
 void MoviePlugin::showProperties(void)
 {
+
     ImGui::Begin("Properties");
 
     const Metadata &meta = movie.getMetadata();
@@ -169,7 +170,10 @@ void MoviePlugin::showProperties(void)
 
             float port = ImGui::GetContentRegionAvail().x;
             if (port != size.x)
+            {
                 histo[ch] = std::make_unique<Framebuffer>(port, size.y);
+                updateTexture(ch);
+            }
 
             // Update contrast
             if (tool->mouse[Mouse::LEFT] == Event::PRESS && ImGui::IsItemHovered())
@@ -207,41 +211,38 @@ void MoviePlugin::showProperties(void)
 
 void MoviePlugin::update(float deltaTime)
 {
-    if (trigger) // only runs the first time
+    if (!texture) // only runs the first time
     {
-        trigger = false;
-        uint32_t SC = movie.getMetadata().SizeC;
-        for (uint32_t ch = 0; ch < SC; ch++)
+        texture = std::make_unique<Texture>();
+
+        const Metadata &meta = movie.getMetadata();
+        for (uint32_t ch = 0; ch < meta.SizeC; ch++)
+        {
+            texture->create(meta.SizeX, meta.SizeY);
             calcHistogram(ch);
+        }
     }
+    ///////////////////////////////////////////////////////
+    const Metadata &meta = movie.getMetadata();
 
-    // Updating histograms
-    tool->shader->useProgram("histogram");
+    glm::mat4 trf = tool->camera.getViewMatrix();
+    trf = glm::scale(trf, {1.0f, float(meta.SizeY) / float(meta.SizeX), 1.0f});
 
-    glm::mat4 trf = glm::ortho(-0.5f, 0.5f, 0.5f, -0.5f);
     tool->shader->setMatrix4f("u_transform", glm::value_ptr(trf));
+    tool->shader->setInteger("u_nChannels", meta.SizeC);
 
-    for (uint32_t ch = 0; ch < movie.getMetadata().SizeC; ch++)
+    std::array<float, 15> vColor = {0.0f};
+    for (uint32_t ch = 0; ch < meta.SizeC; ch++)
     {
-
-        const glm::vec3 &color = lut.getColor(info[ch].lut_name);
-        tool->shader->setVec3f("color", glm::value_ptr(color));
-
-        const glm::vec2 &ct = info[ch].contrast,
-                        &mm = info[ch].minMaxValue;
-
-        glm::vec2 contrast = {(ct.x - mm.x) / (mm.y - mm.x), (ct.y - mm.x) / (mm.y - mm.x)};
-        tool->shader->setVec2f("contrast", glm::value_ptr(contrast));
-
-        tool->shader->setFloatArray("histogram", info[ch].histogram.data(), 256);
-
-        if (!histo[ch]) // for safety
-            histo[ch] = std::make_unique<Framebuffer>(162, 100);
-
-        histo[ch]->bind();
-        tool->quad->draw();
-        histo[ch]->unbind();
+        texture->bind(ch, ch);
+        const glm::vec3 &cor = lut.getColor(info[ch].lut_name);
+        memcpy(vColor.data() + 3 * ch, &cor[0], 3 * sizeof(float));
     }
+
+    tool->shader->setVec3fArray("u_color", vColor.data(), 5);
+
+    int vTex[5] = {0, 1, 2, 3, 4};
+    tool->shader->setIntArray("u_texture", vTex, 5);
 
 } // update
 
@@ -277,12 +278,38 @@ void MoviePlugin::calcHistogram(uint32_t channel)
 
 void MoviePlugin::updateTexture(uint32_t channel)
 {
+
+    // Updating histograms
+    tool->shader->useProgram("histogram");
+
+    glm::mat4 trf = glm::ortho(-0.5f, 0.5f, 0.5f, -0.5f);
+    tool->shader->setMatrix4f("u_transform", glm::value_ptr(trf));
+
+    const glm::vec3 &color = lut.getColor(info[channel].lut_name);
+    tool->shader->setVec3f("color", glm::value_ptr(color));
+
+    const glm::vec2 &ct = info[channel].contrast,
+                    &mm = info[channel].minMaxValue;
+
+    glm::vec2 contrast = {(ct.x - mm.x) / (mm.y - mm.x), (ct.y - mm.x) / (mm.y - mm.x)};
+    tool->shader->setVec2f("contrast", glm::value_ptr(contrast));
+
+    tool->shader->setFloatArray("histogram", info[channel].histogram.data(), 256);
+
+    if (!histo[channel]) // for safety
+        histo[channel] = std::make_unique<Framebuffer>(162, 100);
+
+    histo[channel]->bind();
+    tool->quad->draw();
+    histo[channel]->unbind();
+
+    // Updating textures
     float low = info[channel].contrast.x,
           high = info[channel].contrast.y;
 
     // Let's use this function to update out textures for the shader
     MatrixXf img = movie.getImage(channel, current_frame).cast<float>();
     img = (img.array() - low) / (high - low);
-    tool->texture->update(channel, img.data());
+    texture->update(channel, img.data());
 
 } // calcHistograms

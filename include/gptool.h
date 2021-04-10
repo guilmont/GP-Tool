@@ -20,7 +20,6 @@ struct GPTool : public Renderer
 
     std::unique_ptr<Quad> quad = nullptr;
     std::unique_ptr<Shader> shader = nullptr;
-    std::unique_ptr<Texture> texture = nullptr;
     std::unique_ptr<Framebuffer> viewBuf = nullptr; // Histograms and viewport
 
     // flow variables

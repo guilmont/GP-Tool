@@ -18,7 +18,5 @@ void main()
     for (int ch = 0; ch < u_nChannels; ch++)
         fragColor.rgb += u_color[ch] * texture(u_texture[ch], fragCoord).x;
 
-
-
-                                                                                            
+                                                                                           
 } // main
