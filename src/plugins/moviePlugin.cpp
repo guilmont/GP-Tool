@@ -297,7 +297,7 @@ void MoviePlugin::updateTexture(uint32_t channel)
     tool->shader->setFloatArray("histogram", info[channel].histogram.data(), 256);
 
     if (!histo[channel]) // for safety
-        histo[channel] = std::make_unique<Framebuffer>(162, 100);
+        histo[channel] = std::make_unique<Framebuffer>(162 * DPI_FACTOR, 100 * DPI_FACTOR);
 
     histo[channel]->bind();
     tool->quad->draw();

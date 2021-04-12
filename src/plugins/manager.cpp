@@ -18,7 +18,7 @@ void PluginManager::showHeader(void)
     ImGui::Begin("Plugins");
 
     float width = ImGui::GetContentRegionAvailWidth();
-    ImVec2 buttonSize{width, 40};
+    ImVec2 buttonSize{width, 40 * DPI_FACTOR};
 
     ImVec4
         deactivated{0.13f, 0.16f, 0.3f, 1.f},

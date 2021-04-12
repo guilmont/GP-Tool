@@ -196,3 +196,9 @@ void Shader::setVec3fArray(const String &name, const float *ptr, size_t N)
     gl_call(uint32_t loc = glad_glGetUniformLocation(program_used, name.c_str()));
     gl_call(glad_glUniform3fv(loc, N, ptr));
 }
+
+void Shader::setMat3Array(const String &name, const float *ptr, size_t N)
+{
+    gl_call(uint32_t loc = glad_glGetUniformLocation(program_used, name.c_str()));
+    gl_call(glad_glUniformMatrix3fv(loc, N, true, ptr));
+}

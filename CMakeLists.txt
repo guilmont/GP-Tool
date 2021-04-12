@@ -58,12 +58,33 @@ target_include_directories(MOVIE
     "${CMAKE_SOURCE_DIR}/include"
     "${CMAKE_SOURCE_DIR}/include/methods"
     "${CMAKE_SOURCE_DIR}/vendor/eigen"
+    "${GLM_INCLUDE_DIRS}"
 )
 
 target_link_libraries(MOVIE
     PUBLIC
         imgui
         pugixml
+)
+
+#############################
+
+add_library(ALIGN
+    SHARED
+        "${CMAKE_SOURCE_DIR}/src/methods/align.cpp"
+)
+
+target_include_directories(ALIGN 
+    PUBLIC
+    "${CMAKE_SOURCE_DIR}/include"
+    "${CMAKE_SOURCE_DIR}/include/methods"
+    "${CMAKE_SOURCE_DIR}/vendor/eigen"
+)
+
+target_link_libraries(ALIGN
+    PUBLIC
+        imgui
+        MOVIE
 )
 
 
@@ -75,6 +96,7 @@ add_library(GPTOOL
         "${CMAKE_SOURCE_DIR}/src/gptool.cpp"
         "${CMAKE_SOURCE_DIR}/src/plugins/manager.cpp"
         "${CMAKE_SOURCE_DIR}/src/plugins/moviePlugin.cpp"
+        "${CMAKE_SOURCE_DIR}/src/plugins/alignPlugin.cpp"
 )
 
 target_include_directories(GPTOOL
@@ -87,6 +109,7 @@ target_link_libraries(GPTOOL
     PUBLIC
         RENDERER
         MOVIE
+        ALIGN
 )
 
 

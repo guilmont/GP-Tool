@@ -163,18 +163,24 @@ void GPTool::openMovie(const String &path)
 {
 
     std::thread([&](void) -> void {
-        MoviePlugin *movie = new MoviePlugin(path, this);
-        if (movie->successful())
+        MoviePlugin *movpl = new MoviePlugin(path, this);
+        if (movpl->successful())
         {
             camera.reset();
 
             manager = std::make_unique<PluginManager>(&fonts);
-            manager->addPlugin("MOVIE", movie);
+            manager->addPlugin("MOVIE", movpl);
             manager->setActive("MOVIE");
 
-            // TODO: add all the other plugins
+            const Movie *movie = movpl->getMovie();
+
+            if (movie->getMetadata().SizeC > 1)
+            {
+                AlignPlugin *alg = new AlignPlugin(movie, this);
+                manager->addPlugin("ALIGNMENT", alg);
+            }
         }
         else
-            delete movie;
+            delete movpl;
     }).detach();
 }

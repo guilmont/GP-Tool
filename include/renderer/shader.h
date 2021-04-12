@@ -27,4 +27,5 @@ public:
     void setFloatArray(const String &, const float *, size_t);
     void setVec2fArray(const String &, const float *, size_t);
     void setVec3fArray(const String &, const float *, size_t);
+    void setMat3Array(const String &, const float *, size_t);
 }; // class-shadear

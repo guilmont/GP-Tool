@@ -7,6 +7,7 @@
 // #include "utils/threadpool.hpp"
 #include "renderer/mailbox.h"
 
+#include <glm/glm.hpp>
 #include <Eigen/Core>
 
 using MatrixXf = Eigen::Matrix<float, -1, -1, Eigen::RowMajor>;

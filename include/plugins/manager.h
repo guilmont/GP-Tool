@@ -5,6 +5,7 @@
 
 #include "plugin.h"
 #include "moviePlugin.h"
+#include "alignPlugin.h"
 
 #include "renderer/fonts.h"
 
