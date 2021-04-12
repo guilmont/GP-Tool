@@ -16,13 +16,13 @@ public:
     const Metadata &getMetadata(void) const { return meta; }
     Metadata &getMetadata(void) { return meta; }
 
-    const MatrixXd &getImage(uint32_t channel, uint32_t frame);
+    const MatXd &getImage(uint32_t channel, uint32_t frame) const;
 
 private:
     Mailbox *mbox = nullptr;
     bool success = true;
 
     Metadata meta;
-    std::vector<MatrixXd> vImg;
+    std::vector<MatXd> vImg;
 
 }; // class Trajectory

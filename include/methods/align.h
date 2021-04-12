@@ -4,52 +4,43 @@
 struct TransformData
 {
     TransformData(uint32_t width, uint32_t height);
+    TransformData(void) = default;
     ~TransformData(void) = default;
 
     glm::ivec2 size;
     glm::vec2 translate, scale;
     glm::vec3 rotate;
 
-    glm::mat3 trf, itrf; // Transform matrix
+    glm::mat3 trf;  // Transform matrix 0 to x
+    glm::mat3 itrf; // Transform matrix x to 0
 
     void update(void);
 
 }; // TransformData -- struct
 
-// class Align
-// {
-// public:
-//     Align(Movie *mov, Mailbox *mail);
-//     ~Align(void) = default;
+class Align
+{
+public:
+    Align(uint32_t nFrames, const MatXd *vim1, const MatXd *vim2, Mailbox *mail = nullptr);
+    ~Align(void) = default;
 
-//     void setChannelToAlign(uint32_t channel) { chAligning = channel - 1; }
-//     void setImageData(const uint32_t nFrames, MatrixXd *im1, MatrixXd *im2);
+    bool alignCameras(void);
+    bool correctAberrations(void);
 
-//     bool alignCameras(void);
-//     bool correctAberrations(void);
+    const TransformData &getTransformData(void) const { return RT; }
 
-//     uint32_t getChannelIndex(void) const { return chAligning + 1; }
+private:
+    Mailbox *mbox = nullptr;
 
-//     TransformData &getTransformData(uint32_t channel) { return vecRT[channel - 1]; }
-//     const TransformData &getTransformData(uint32_t channel) const { return vecRT[channel - 1]; }
+    TransformData RT;                       // Transformation parameters
+    std::vector<Image<uint8_t>> vIm0, vIm1; // Treated images
 
-//     ////////////////// NOT-TO-USE /////////////////////
-//     void calcEnergy(const uint32_t id);
-//     double weightTransRot(const VectorXd &p);
-//     double weightScale(const VectorXd &p);
+    // Parallel variables
+    glm::mat3 itrf;
+    std::vector<double> global_energy;
 
-// private:
-//     Mailbox *mail = nullptr;
+    void calcEnergy(const uint32_t id, const uint32_t nThr);
+    double weightTransRot(const VecXd &p);
+    double weightScale(const VecXd &p);
 
-//     uint32_t numFrames;                       // NUmber of frames
-//     uint32_t chAligning;                      // channel currently aligning
-//     std::vector<Image<uint8_t>> vImg0, vImg1; // Treated images
-
-//     uint32_t width, height;           // Image dimensions
-//     std::vector<TransformData> vecRT; // Holds all the optmized transformation paramters
-
-//     // Parallel variables
-//     MatrixXd itrf; // inverse transform for alingment
-//     std::vector<double> global_energy;
-
-// }; // class-Align
+}; // class-Align

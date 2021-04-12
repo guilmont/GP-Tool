@@ -80,9 +80,13 @@ void Message::Progress::show(void)
 
     float width = 0.8f * ImGui::GetContentRegionAvailWidth();
     ImGui::ProgressBar(progress, {width, 0}); // 0 goes for automatic height
-    ImGui::SameLine();
-    if (ImGui::Button("Cancel"))
-        cancelled = is_read = true;
+
+    if (!is_read)
+    {
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel"))
+            cancelled = is_read = true;
+    }
 
     ImGui::Spacing();
 
@@ -98,9 +102,12 @@ void Message::Timer::show(void)
     ImGui::Text("%s :: Time: %s %s", content.c_str(),
                 time2String(zero, current).c_str(), (cancelled ? " --  cancelled" : ""));
 
-    ImGui::SameLine();
-    if (ImGui::Button("Cancel"))
-        cancelled = is_read = true;
+    if (!is_read)
+    {
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel"))
+            cancelled = is_read = true;
+    }
 
     ImGui::Spacing();
 }

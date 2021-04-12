@@ -20,10 +20,9 @@ private:
     const Movie *movie = nullptr;
     GPTool *tool = nullptr;
 
+    uint32_t chAlign = 1;
     bool camera = true,
          chromatic = true;
-
-    uint32_t chAlign = 1;
 
     void runAlignment(void);
 };

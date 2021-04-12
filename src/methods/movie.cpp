@@ -2,8 +2,6 @@
 
 #include "utils/gtiffer.h"
 
-using Data = std::tuple<uint32_t, const MatrixXd *, MatrixXd &>;
-
 Movie::Movie(const std::string &movie_path, Mailbox *mail) : mbox(mail)
 {
 
@@ -70,7 +68,7 @@ Movie::Movie(const std::string &movie_path, Mailbox *mail) : mbox(mail)
 
 } // constructor
 
-const MatrixXd &Movie::getImage(uint32_t channel, uint32_t frame)
+const MatXd &Movie::getImage(uint32_t channel, uint32_t frame) const
 {
     if (channel >= meta.SizeC)
     {

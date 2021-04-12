@@ -61,7 +61,7 @@ MoviePlugin::MoviePlugin(const std::string &movie_path, GPTool *ptr) : tool(ptr)
     for (uint32_t ch = 0; ch < meta.SizeC; ch++)
     {
 
-        const MatrixXd &mat = movie.getImage(ch, current_frame);
+        const MatXd &mat = movie.getImage(ch, current_frame);
         float low = mat.minCoeff(), high = mat.maxCoeff(),
               minValue = 0.8f * low, maxValue = 1.2f * high;
 
@@ -259,7 +259,7 @@ void MoviePlugin::calcHistogram(uint32_t channel)
     float low = loc->contrast.x,
           high = loc->contrast.y;
 
-    const MatrixXd &mat = movie.getImage(channel, current_frame);
+    const MatXd &mat = movie.getImage(channel, current_frame);
 
     loc->histogram.fill(0.0f);
     for (size_t k = 0; k < mat.size(); k++)
@@ -308,7 +308,7 @@ void MoviePlugin::updateTexture(uint32_t channel)
           high = info[channel].contrast.y;
 
     // Let's use this function to update out textures for the shader
-    MatrixXf img = movie.getImage(channel, current_frame).cast<float>();
+    MatXf img = movie.getImage(channel, current_frame).cast<float>();
     img = (img.array() - low) / (high - low);
     texture[channel]->update(img.data());
 

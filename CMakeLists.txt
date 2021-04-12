@@ -72,6 +72,8 @@ target_link_libraries(MOVIE
 add_library(ALIGN
     SHARED
         "${CMAKE_SOURCE_DIR}/src/methods/align.cpp"
+        "${CMAKE_SOURCE_DIR}/src/utils/goptimize.cpp"
+
 )
 
 target_include_directories(ALIGN 

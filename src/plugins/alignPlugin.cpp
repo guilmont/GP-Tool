@@ -126,8 +126,7 @@ void AlignPlugin::showProperties(void)
     ImGui::Spacing();
 
     if (ImGui::Button("Run"))
-    {
-    }
+        std::thread(&AlignPlugin::runAlignment, this).detach();
 
     ImGui::End();
 
@@ -151,21 +150,35 @@ void AlignPlugin::update(float deltaTime)
 void AlignPlugin::runAlignment(void)
 {
 
-    // uint32_t chAlign = data->align->getChannelIndex();
+    tool->mbox.create<Message::Info>("Running alignment algorithm...");
 
-    // data->align->setImageData(data->movie->getMetadata().SizeT,
-    //                           data->movie->getChannel(0),
-    //                           data->movie->getChannel(chAlign));
+    uint32_t nFrames = movie->getMetadata().SizeT;
+    nFrames = nFrames < 20 ? nFrames : 0.05f * nFrames;
 
-    // MSG_Timer *msg2 = box->createMessage<MSG_Timer>("Aligning cameras");
-    // bool check = data->align->alignCameras();
-    // msg2->markAsRead();
+    std::vector<MatXd> vi1, vi2;
 
-    // if (check)
-    // {
-    //     Message *msg3 = box->createMessage<MSG_Timer>("Correcting chromatic aberrations");
-    //     data->align->correctAberrations();
-    //     msg3->markAsRead();
-    // }
+    for (uint32_t k = 0; k < nFrames; k++)
+    {
+        vi1.push_back(movie->getImage(0, k));
+        vi2.push_back(movie->getImage(chAlign, k));
+    }
+
+    Align align(nFrames, vi1.data(), vi2.data(), &(tool->mbox));
+
+    if (camera)
+        if (!align.alignCameras())
+        {
+            tool->mbox.create<Message::Warn>("Camera alignment didn't converge!!");
+            return;
+        }
+
+    if (chromatic)
+        if (!align.correctAberrations())
+        {
+            tool->mbox.create<Message::Warn>("Chromatic aberration correction didn't converge!!");
+            return;
+        }
+
+    data[chAlign] = align.getTransformData();
 
 } // runAlignement
