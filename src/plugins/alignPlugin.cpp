@@ -52,7 +52,7 @@ void AlignPlugin::showProperties(void)
 
         ImGui::SameLine();
         ImGui::PushItemWidth(0.4f * linewidth);
-        check |= ImGui::DragFloat(("##" + XYA).c_str(), &val, step, 0.0, 0.0, "%.3f");
+        check |= ImGui::DragFloat(("##" + XYA).c_str(), &val, step, 0.0, 0.0, "%.4f");
         ImGui::PopItemWidth();
         ImGui::PopStyleVar();
 
@@ -140,6 +140,9 @@ void AlignPlugin::update(float deltaTime)
     for (uint32_t ch = 0; ch < SC; ch++)
         memcpy(mat.data() + 9 * ch, glm::value_ptr(data[ch].itrf), 9 * sizeof(float));
 
+    float size[2] = {float(data[chAlign].size.x), float(data[chAlign].size.y)};
+
+    tool->shader->setVec2f("u_size", size);
     tool->shader->setMat3Array("u_align", mat.data(), 5);
 
 } // update

@@ -4,7 +4,7 @@ TransformData::TransformData(uint32_t width, uint32_t height) : size(width, heig
 {
     translate = {0.0f, 0.0f};
     scale = {1.0f, 1.0f};
-    rotate = {0.5f, 0.5f, 0.0f};
+    rotate = {0.5f * width, 0.5f * height, 0.0f};
 
     trf = glm::mat3(1.0f);
     itrf = glm::mat3(1.0f);
@@ -14,8 +14,8 @@ void TransformData::update(void)
 {
     // Creating transform matrix
 
-    glm::mat3 A(scale.x, 0.0f, (1.0f - scale.x) * 0.5f,
-                0.0f, scale.y, (1.0f - scale.y) * 0.5f,
+    glm::mat3 A(scale.x, 0.0f, (1.0f - scale.x) * 0.5f * size.x,
+                0.0f, scale.y, (1.0f - scale.y) * 0.5f * size.y,
                 0.0f, 0.0f, 1.0f);
 
     glm::mat3 B(1.0, 0.0, translate.x - rotate.x,
@@ -217,8 +217,8 @@ Align::Align(uint32_t nFrames, const MatXd *im1, const MatXd *im2, Mailbox *mail
     auto parallel_image_treatment = [&](uint32_t tid, uint32_t nThr) -> void {
         for (uint32_t k = tid; k < nFrames; k += nThr)
         {
-            vIm0[k] = (255.0 * treatImage(im1[k], 3, 5.0, 64, 64)).array().round().cast<uint8_t>();
-            vIm1[k] = (255.0 * treatImage(im2[k], 3, 5.0, 64, 64)).array().round().cast<uint8_t>();
+            vIm0[k] = (255.0 * treatImage(im1[k], 3, 5.0, 32, 32)).array().round().cast<uint8_t>();
+            vIm1[k] = (255.0 * treatImage(im2[k], 3, 5.0, 32, 32)).array().round().cast<uint8_t>();
 
             if (tid == 0)
                 msg->progress = float(k) / float(nFrames);
@@ -270,16 +270,16 @@ double Align::weightTransRot(const VecXd &p)
            cx = p[2], cy = p[3], angle = p[4];
 
     // Transformation matrices
-    glm::mat3 A(1.0f, 0.0f, dx + cx,
-                0.0f, 1.0f, dy + cy,
+    glm::mat3 A(1.0f, 0.0f, dx - cx,
+                0.0f, 1.0f, dy - cy,
                 0.0f, 0.0f, 1.0f);
 
     glm::mat3 B(cos(angle), sin(angle), 0.0f,
                 -sin(angle), cos(angle), 0.0f,
                 0.0f, 0.0f, 1.0f);
 
-    glm::mat3 C(1.0f, 0.0f, -cx,
-                0.0f, 1.0f, -cy,
+    glm::mat3 C(1.0f, 0.0f, cx,
+                0.0f, 1.0f, cy,
                 0.0f, 0.0f, 1.0f);
 
     // Complete transformation
@@ -319,7 +319,7 @@ double Align::weightScale(const VecXd &p)
                 0.0f, 0.0f, 1.0f);
 
     // Inverse of transfomation for mapping
-    glm::mat3 trf = A * RT.trf;
+    glm::mat3 trf = A * glm::mat3(RT.trf);
     itrf = glm::inverse(trf);
 
     // Splitting log-likelihood calculationg to threads
@@ -349,11 +349,8 @@ bool Align::alignCameras(void)
     if (mbox)
         msg = mbox->create<Message::Timer>("Correcting camera aligment...");
 
-    const float W = RT.size.x, H = RT.size.y;
-
     VecXd vec(5);
-    vec << W * RT.translate.x, H * RT.translate.y,
-        W * RT.rotate.x, H * RT.rotate.y, RT.rotate.z;
+    vec << RT.translate.x, RT.translate.y, RT.rotate.x, RT.rotate.y, RT.rotate.z;
 
     GOptimize::NMSimplex spx(vec, 1e-8, 15.0);
     if (!spx.runSimplex(&Align::weightTransRot, this))
@@ -362,8 +359,8 @@ bool Align::alignCameras(void)
     // Update TransformData
     vec = spx.getResults();
 
-    RT.translate = {vec(0) / W, vec(1) / H};
-    RT.rotate = {vec(2) / W, vec(3) / H, vec(4)};
+    RT.translate = {vec(0), vec(1)};
+    RT.rotate = {vec(2), vec(3), vec(4)};
     RT.update();
 
     if (msg)
@@ -384,8 +381,8 @@ bool Align::correctAberrations(void)
     vec << RT.scale.x, RT.scale.y;
 
     GOptimize::NMSimplex spx(vec, 1e-8, 0.1);
-    // if (!spx.runSimplex(&transferScale, this))
-    //     return false;
+    if (!spx.runSimplex(&Align::weightScale, this))
+        return false;
 
     // Saving to main vector
     vec = spx.getResults();
