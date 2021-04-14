@@ -20,5 +20,5 @@ public:
 
 private:
     uint32_t bufferID = 0, textureID = 0;
-    glm::vec2 size, position = {0.0f, 0.0f};
+    glm::vec2 size = {1.0f, 1.0f}, position = {0.0f, 0.0f};
 };

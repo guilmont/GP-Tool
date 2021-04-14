@@ -193,8 +193,11 @@ bool Metadata::parseIJ_extended(const std::string &inputString)
 
     if (getInfo("spatial-calibration-state").compare("on") == 0)
     {
-        PhysicalSizeXY = stof(getInfo("spatial-calibration-x = "));
-        PhysicalSizeZ = stof(getInfo("spacing="));
+        std::string txt = getInfo("spatial-calibration-x = ");
+        PhysicalSizeXY = stof(txt.size() == 0 ? "1" : txt);
+
+        txt = getInfo("spacing = ");
+        PhysicalSizeZ = stof(txt.size() == 0 ? "1" : txt);
         PhysicalSizeXYUnit = getInfo("spatial-calibration-units = ");
         PhysicalSizeZUnit = getInfo("spatial-calibration-units = ");
     }
@@ -207,7 +210,9 @@ bool Metadata::parseIJ_extended(const std::string &inputString)
     }
 
     acquisitionDate = getInfo("DateTime = ");
-    TimeIncrement = stof(getInfo("finterval="));
+
+    std::string txt = getInfo("finterval = ");
+    TimeIncrement = stof(txt.size() == 0 ? "1" : txt);
 
     TimeIncrementUnit = "secs";
 

@@ -221,7 +221,7 @@ Align::Align(uint32_t nFrames, const MatXd *im1, const MatXd *im2, Mailbox *mail
             vIm1[k] = (255.0 * treatImage(im2[k], 3, 5.0, 32, 32)).array().round().cast<uint8_t>();
 
             if (tid == 0)
-                msg->progress = float(k) / float(nFrames);
+                msg->progress = float(k + 1) / float(nFrames);
         }
     };
 
