@@ -21,6 +21,8 @@ namespace Tiffer
 
         // Creating table
         std::vector<std::string> table(258);
+        table.reserve(5012);
+
         for (uint32_t k = 0; k < 256; k++)
             table[k] = std::string(1, char(k));
 
@@ -40,7 +42,8 @@ namespace Tiffer
 
         auto clear_table = [&](void) -> void {
             B = 9;
-            table.resize(258); };
+            table.resize(258);
+        };
 
         /////////////////////////////////////////////////
         // loop over all bits
@@ -92,7 +95,6 @@ namespace Tiffer
 
             oldCode = code;
 
-            std::fflush(stdout);
         } // while-true
 
         return arr;
@@ -374,9 +376,11 @@ Tiffer::ImData Tiffer::Read::getImageData(const uint32_t id)
 
     // Creating image
     uint32_t width = dir[IMAGEWIDTH].value,
-             height = dir[IMAGEHEIGHT].value;
+             height = dir[IMAGEHEIGHT].value,
+             bytes = dir[BITSPERSAMPLE].value >> 3;
 
     Buffer output;
+    output.reserve(width * height * bytes);
 
     for (auto &var : vStrip)
     {
