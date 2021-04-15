@@ -1,9 +1,6 @@
 [submodule "vendor/eigen"]
 	path = vendor/eigen
 	url = https://gitlab.com/libeigen/eigen.git
-[submodule "vendor/stb"]
-	path = vendor/stb
-	url = https://github.com/nothings/stb.git
 [submodule "vendor/implot"]
 	path = vendor/implot
 	url = https://github.com/epezent/implot.git
