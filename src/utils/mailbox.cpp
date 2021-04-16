@@ -1,4 +1,4 @@
-#include "renderer/mailbox.h"
+#include "utils/mailbox.h"
 
 static std::string time2String(const TimePoint &t1, const TimePoint &t2)
 {

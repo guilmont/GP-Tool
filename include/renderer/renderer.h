@@ -21,8 +21,9 @@
 #include "events.h"
 #include "gdialog.h"
 #include "camera.h"
-#include "mailbox.h"
 #include "fonts.h"
+
+#include "utils/mailbox.h"
 
 struct Window
 {

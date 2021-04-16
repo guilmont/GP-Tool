@@ -5,7 +5,7 @@
 #include <thread>
 
 #include "utils/goptimize.h"
-#include "renderer/mailbox.h"
+#include "utils/mailbox.h"
 
 #include <glm/glm.hpp>
 #include "eigen/Eigen/Core" // vendor

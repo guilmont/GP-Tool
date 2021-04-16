@@ -16,37 +16,9 @@ set(PROJECT_DIR "${CMAKE_SOURCE_DIR}")
 set(INI_PATH "${CMAKE_SOURCE_DIR}/assets/gptool.ini")
 configure_file("config.h.in" "${CMAKE_SOURCE_DIR}/include/renderer/config.h" @ONLY)
 
-# GRAPHICAL USER INTERFACE
-add_library(RENDERER 
-    SHARED
-        "${CMAKE_SOURCE_DIR}/src/renderer/shader.cpp"
-        "${CMAKE_SOURCE_DIR}/src/renderer/texture.cpp"
-        "${CMAKE_SOURCE_DIR}/src/renderer/framebuffer.cpp"
-        "${CMAKE_SOURCE_DIR}/src/renderer/quad.cpp"
-        "${CMAKE_SOURCE_DIR}/src/renderer/camera.cpp"
-        "${CMAKE_SOURCE_DIR}/src/renderer/fonts.cpp"
-        "${CMAKE_SOURCE_DIR}/src/renderer/gdialog.cpp"
-        "${CMAKE_SOURCE_DIR}/src/renderer/mailbox.cpp"
-        "${CMAKE_SOURCE_DIR}/src/renderer/renderer.cpp"
-)
 
-target_include_directories(RENDERER
-    PUBLIC 
-        "${CMAKE_SOURCE_DIR}/vendor"
-        "${CMAKE_SOURCE_DIR}/include"
-        "${GLM_INCLUDE_DIRS}"
-)
-
-target_link_libraries(RENDERER
-    PUBLIC
-        glfw
-        glad
-        imgui
-)
-
-# set_property(TARGET RENDERER PROPERTY POSITION_INDEPENDENT_CODE ON)
 ###########################################################
-# METHODS
+# UTILS
 
 add_library(GOPTIMIZE
     SHARED
@@ -60,6 +32,26 @@ target_include_directories(GOPTIMIZE
 )
 
 #############################
+
+add_library(MAILBOX
+    SHARED
+        "${CMAKE_SOURCE_DIR}/src/utils/mailbox.cpp"
+)
+
+target_include_directories(MAILBOX
+    PUBLIC
+       "${CMAKE_SOURCE_DIR}/include" 
+       "${CMAKE_SOURCE_DIR}/vendor" 
+)
+
+target_link_libraries(MAILBOX
+    PUBLIC
+        imgui
+)
+
+###########################################################
+# METHODS
+
 
 add_library(MOVIE
     SHARED
@@ -77,8 +69,8 @@ target_include_directories(MOVIE
 
 target_link_libraries(MOVIE
     PUBLIC
-        imgui
         pugixml
+        MAILBOX
 )
 
 #############################
@@ -119,14 +111,44 @@ target_include_directories(TRAJECTORY
 
 target_link_libraries(TRAJECTORY
     PUBLIC
-        imgui
         pugixml
         GOPTIMIZE
         MOVIE
 )
 
+
 ###########################################################
-# PLUGIN MANAGER ##########################################
+# RENDERER FOR GUI
+
+add_library(RENDERER 
+    SHARED
+        "${CMAKE_SOURCE_DIR}/src/renderer/shader.cpp"
+        "${CMAKE_SOURCE_DIR}/src/renderer/texture.cpp"
+        "${CMAKE_SOURCE_DIR}/src/renderer/framebuffer.cpp"
+        "${CMAKE_SOURCE_DIR}/src/renderer/quad.cpp"
+        "${CMAKE_SOURCE_DIR}/src/renderer/camera.cpp"
+        "${CMAKE_SOURCE_DIR}/src/renderer/fonts.cpp"
+        "${CMAKE_SOURCE_DIR}/src/renderer/gdialog.cpp"
+        "${CMAKE_SOURCE_DIR}/src/renderer/renderer.cpp"
+)
+
+target_include_directories(RENDERER
+    PUBLIC 
+        "${CMAKE_SOURCE_DIR}/vendor"
+        "${CMAKE_SOURCE_DIR}/include"
+        "${GLM_INCLUDE_DIRS}"
+)
+
+target_link_libraries(RENDERER
+    PUBLIC
+        glfw
+        glad
+        imgui
+        MAILBOX
+)
+
+###########################################################
+# PLUGIN MANAGER 
 
 add_library(GPTOOL
     SHARED

@@ -37,11 +37,14 @@ Movie::Movie(const std::string &movie_path, Mailbox *mail) : mbox(mail)
         counter = 0,
         nImg = tif.getNumDirectories();
 
-    mbox->create<Message::Info>("Openning  \"" + meta.movie_name + "\"");
+    Message::Progress *ptr = nullptr;
 
-    Message::Progress *ptr = mbox->create<Message::Progress>("Loading images");
+    if (mbox)
+    {
+        mbox->create<Message::Info>("Openning  \"" + meta.movie_name + "\"");
+        ptr = mbox->create<Message::Progress>("Loading images");
+    }
 
-    ptr->progress = 0.0f;
     vImg.resize(meta.SizeC * meta.SizeT);
 
     for (uint32_t t = 0; t < meta.SizeT; t++)
@@ -56,14 +59,15 @@ Movie::Movie(const std::string &movie_path, Mailbox *mail) : mbox(mail)
             else if (meta.SignificantBits == 32)
                 vImg[t * meta.SizeC + ch] = tif.getImage<uint32_t>(counter).cast<double>();
 
-            ptr->progress = ++counter / float(nImg);
-
-            if (ptr->cancelled)
+            if (ptr)
             {
-                success = false;
-                return;
+                ptr->progress = ++counter / float(nImg);
+                if (ptr->cancelled)
+                {
+                    success = false;
+                    return;
+                }
             }
-
         } // loop-images
 
 } // constructor
