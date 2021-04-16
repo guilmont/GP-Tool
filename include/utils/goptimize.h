@@ -11,7 +11,7 @@
 #include <algorithm>
 #include <random>
 
-#include <Eigen/Core>
+#include "eigen/Eigen/Core" // vendor
 
 using VecXd = Eigen::VectorXd;
 using MatXd = Eigen::MatrixXd;

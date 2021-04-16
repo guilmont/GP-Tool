@@ -1,4 +1,4 @@
-#include "quad.h"
+#include "renderer/quad.h"
 #include "gl_assert.cpp"
 
 Quad::Quad(void)

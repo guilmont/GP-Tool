@@ -8,7 +8,7 @@
 #include "renderer/mailbox.h"
 
 #include <glm/glm.hpp>
-#include <Eigen/Core>
+#include "eigen/Eigen/Core" // vendor
 
 using MatXf = Eigen::Matrix<float, -1, -1, Eigen::RowMajor>; // Used for rendering
 using MatXd = Eigen::MatrixXd;

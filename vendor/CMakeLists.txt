@@ -13,7 +13,7 @@ find_package(glm REQUIRED)
 ## GLAD ###################################################
 
 add_library(glad 
-    STATIC
+    SHARED
         "${CMAKE_CURRENT_SOURCE_DIR}/glad/src/glad.c"
 )   
 
@@ -26,6 +26,8 @@ target_include_directories(glad
     PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/glad/include"
 )
+
+set_property(TARGET glad PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 ###########################################################
 ## PUGIXML ################################################
@@ -47,7 +49,7 @@ target_include_directories(pugixml
 add_compile_definitions(IMGUI_IMPL_OPENGL_LOADER_GLAD)
 
 add_library(imgui 
-    STATIC 
+    SHARED 
         "${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui_draw.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui_widgets.cpp"
@@ -69,11 +71,13 @@ target_include_directories(imgui
         "${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends"
 )
 
+# set_property(TARGET imgui PROPERTY POSITION_INDEPENDENT_CODE ON)
+
 ###########################################################
 ## IMPLOT #################################################
 
 add_library(implot 
-    STATIC 
+    SHARED 
         "${CMAKE_CURRENT_SOURCE_DIR}/implot/implot.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/implot/implot_demo.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/implot/implot_items.cpp"

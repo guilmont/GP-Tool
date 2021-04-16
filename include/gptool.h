@@ -1,7 +1,7 @@
 #pragma once
 
-#include "config.h"
-#include "renderer.h"
+#include "renderer/config.h"
+#include "renderer/renderer.h"
 
 class PluginManager;
 #include "plugins/manager.h"

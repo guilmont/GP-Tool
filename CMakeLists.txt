@@ -18,7 +18,7 @@ configure_file("config.h.in" "${CMAKE_SOURCE_DIR}/include/renderer/config.h" @ON
 
 # GRAPHICAL USER INTERFACE
 add_library(RENDERER 
-    STATIC
+    SHARED
         "${CMAKE_SOURCE_DIR}/src/renderer/shader.cpp"
         "${CMAKE_SOURCE_DIR}/src/renderer/texture.cpp"
         "${CMAKE_SOURCE_DIR}/src/renderer/framebuffer.cpp"
@@ -32,7 +32,8 @@ add_library(RENDERER
 
 target_include_directories(RENDERER
     PUBLIC 
-        "${CMAKE_SOURCE_DIR}/include/renderer"
+        "${CMAKE_SOURCE_DIR}/vendor"
+        "${CMAKE_SOURCE_DIR}/include"
         "${GLM_INCLUDE_DIRS}"
 )
 
@@ -43,18 +44,19 @@ target_link_libraries(RENDERER
         imgui
 )
 
+# set_property(TARGET RENDERER PROPERTY POSITION_INDEPENDENT_CODE ON)
 ###########################################################
 # METHODS
 
 add_library(GOPTIMIZE
-    STATIC
+    SHARED
     "${CMAKE_SOURCE_DIR}/src/utils/goptimize.cpp"
 )
 
 target_include_directories(GOPTIMIZE
     PUBLIC
-        "${CMAKE_SOURCE_DIR}/include/utils"
-        "${CMAKE_SOURCE_DIR}/vendor/eigen"
+        "${CMAKE_SOURCE_DIR}/include"
+        "${CMAKE_SOURCE_DIR}/vendor"
 )
 
 #############################
@@ -68,9 +70,8 @@ add_library(MOVIE
 
 target_include_directories(MOVIE 
     PUBLIC
-    "${CMAKE_SOURCE_DIR}/include/"
-    "${CMAKE_SOURCE_DIR}/include/methods"
-    "${CMAKE_SOURCE_DIR}/vendor/eigen"
+    "${CMAKE_SOURCE_DIR}/include"
+    "${CMAKE_SOURCE_DIR}/vendor"
     "${GLM_INCLUDE_DIRS}"
 )
 
@@ -106,7 +107,7 @@ target_link_libraries(ALIGN
 add_library(TRAJECTORY
     SHARED
         "${CMAKE_SOURCE_DIR}/src/methods/spot.cpp"
-        "${CMAKE_SOURCE_DIR}/src/methods/trajectory.cpp"
+        # "${CMAKE_SOURCE_DIR}/src/methods/trajectory.cpp"
 
 )
 
@@ -128,7 +129,7 @@ target_link_libraries(TRAJECTORY
 # PLUGIN MANAGER ##########################################
 
 add_library(GPTOOL
-    STATIC
+    SHARED
         "${CMAKE_SOURCE_DIR}/src/gptool.cpp"
         "${CMAKE_SOURCE_DIR}/src/plugins/manager.cpp"
         "${CMAKE_SOURCE_DIR}/src/plugins/moviePlugin.cpp"

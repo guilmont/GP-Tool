@@ -6,7 +6,7 @@
 #include <list>
 #include <memory>
 
-#include <imgui.h>
+#include "imgui/imgui.h"
 
 using Clock = std::chrono::high_resolution_clock;
 using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
@@ -16,8 +16,8 @@ namespace Message
     class Message
     {
     public:
-        Message(const std::string &msg) : content(msg) {}
-        virtual ~Message(void) = default;
+        Message(void) {}
+        virtual ~Message(void) {}
         bool is_read = false;
 
         virtual void show(void) = 0;
@@ -30,26 +30,30 @@ namespace Message
 
     struct Info : public Message
     {
-        Info(const std::string &msg) : Message(msg) {}
+        Info(const std::string &msg) { this->content = msg; }
         void show(void) override;
     };
 
     struct Warn : public Message
     {
-        Warn(const std::string &msg) : Message(msg) {}
+        Warn(const std::string &msg) { this->content = msg; }
         void show(void) override;
     };
 
     struct Error : public Message
     {
-        Error(const std::string &msg) : Message(msg) {}
+        Error(const std::string &msg) { this->content = msg; }
         void show(void) override;
     };
 
     class Progress : public Message
     {
     public:
-        Progress(const std::string &msg) : Message(msg) { this->zero = Clock::now(); }
+        Progress(const std::string &msg)
+        {
+            this->content = msg;
+            this->zero = Clock::now();
+        }
         void show(void) override;
 
         float progress = 0.0f;
@@ -62,7 +66,11 @@ namespace Message
     class Timer : public Message
     {
     public:
-        Timer(const std::string &msg) : Message(msg) { this->zero = Clock::now(); }
+        Timer(const std::string &msg)
+        {
+            this->content = msg;
+            this->zero = Clock::now();
+        }
         void show(void) override;
         void stop(void);
 
