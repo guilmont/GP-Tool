@@ -13,10 +13,11 @@
 
 #include <Eigen/Core>
 
+using VecXd = Eigen::VectorXd;
+using MatXd = Eigen::MatrixXd;
+
 namespace GOptimize
 {
-    using VecXd = Eigen::VectorXd;
-
     struct Vertex
     {
         VecXd pos;
@@ -63,11 +64,11 @@ namespace GOptimize
 
     // /////////////////////////////////////////////
 
-    // // This function will use markov chain monte carlo to estimate the probability
-    // // distribution of each parameter
-    // template <typename T, typename VEC, typename VAR>
-    // VAR sampleParameters(const VEC &params, const uint32_t sample_size,
-    //                      T (*func)(const VEC &, void *), void *ptr = nullptr);
+    // This function will use markov chain monte carlo to estimate the probability
+    // distribution of each parameter
+    template <class CL>
+    MatXd sampleParameters(const VecXd &params, const uint32_t sample_size,
+                           double (CL::*func)(const VecXd &), CL *ptr);
 
 } // namespace GOptimize
 
@@ -155,92 +156,89 @@ bool GOptimize::NMSimplex::runSimplex(double (CL::*weight)(const VecXd &), CL *p
     return false;
 }
 
-// ///////////////// DISTRIBUTION ///////////////////////
-// template <typename T, typename VEC, typename VAR>
-// VAR GOptimize::sampleParameters(const VEC &params, const uint32_t sample_size,
-//                                 T (*func)(const VEC &, void *), void *ptr)
-// {
-//     // This functions will sample the used parameters via MCMC.
+///////////////// DISTRIBUTION ///////////////////////
+template <class CL>
+MatXd GOptimize::sampleParameters(const VecXd &params, const uint32_t sample_size,
+                                  double (CL::*func)(const VecXd &), CL *ptr)
+{
+    // This functions will sample the used parameters via MCMC.
 
-//     const uint32_t N = params.size(); // number of parameters
+    const uint32_t N = params.size(); // number of parameters
 
-//     VEC DA = params,
-//         da = params;
+    VecXd DA(params), da(params);
+    MatXd mcmc(sample_size, N);
 
-//     VAR mcmc(sample_size, N);
+    // Maximum likelihood
+    double LIKE = -(ptr->*func)(DA);
+    double S = 0.02; // proposal deviation
 
-//     // Maximum likelihood
-//     T LIKE = -(*func)(DA, ptr);
-//     T S = 0.02; // proposal deviation
+    std::mt19937 rng(time(NULL));
+    std::uniform_real_distribution<double> unif(0.0, 1.0);
+    std::normal_distribution<double> normal(0.0, S);
 
-//     std::mt19937 rng(time(NULL));
-//     std::uniform_real_distribution<T> unif(0.0, 1.0);
-//     std::normal_distribution<T> normal(0.0, S);
+    ///////////////////////////////////////////////////
+    // calibrating variance for "good" acceptance ratio ~0.25
+    const uint32_t nStep = 1000;
+    uint32_t ct = 0;
+    while (ct++ < 100)
+    {
+        float accepted = 0.0f;
+        for (uint32_t mcs = 0; mcs < nStep; mcs++)
+        {
+            // Proposing new position
+            for (uint32_t k = 0; k < N; k++)
+                da(k) = DA(k) + normal(rng);
 
-//     ///////////////////////////////////////////////////
-//     // calibrating variance for "good" acceptance ratio ~0.25
-//     const uint32_t nStep = 1000;
-//     uint32_t ct = 0;
-//     while (ct++ < 100)
-//     {
-//         float accepted = 0.0f;
-//         for (uint32_t mcs = 0; mcs < nStep; mcs++)
-//         {
-//             // Proposing new position
-//             for (uint32_t k = 0; k < N; k++)
-//                 da(k) = DA(k) + normal(rng);
+            // Estimating posterior and transition probabilities
+            double like = -(ptr->*func)(da);
+            double ratio = exp(like - LIKE);
 
-//             // Estimating posterior and transition probabilities
-//             T like = -(*func)(da, ptr);
-//             T ratio = exp(like - LIKE);
+            // Are the proposed values accepted?
+            if (ratio > unif(rng))
+            {
+                DA = da;
+                LIKE = like;
+                accepted++;
+            }
 
-//             // Are the proposed values accepted?
-//             if (ratio > unif(rng))
-//             {
-//                 DA = da;
-//                 LIKE = like;
-//                 accepted++;
-//             }
+        } // loop-mcs
 
-//         } // loop-mcs
+        float aux = (accepted + 1.0f) / float(nStep);
+        if (abs(0.25f - aux) < 0.1)
+            break;
+        else
+        {
+            S *= aux / 0.2f;
+            S = std::max<double>(S, 0.001);
+            normal = std::normal_distribution<double>(0.0, S);
+        }
 
-//         float aux = (accepted + 1.0f) / float(nStep);
-//         if (abs(0.25f - aux) < 0.1)
-//             break;
-//         else
-//         {
-//             S *= aux / 0.2f;
-//             S = std::max<T>(S, 0.001);
-//             normal = std::normal_distribution<T>(0.0, S);
-//         }
+    } // while true
 
-//     } // while true
+    //////////////////////////////////////////////
+    // Running distribution
+    for (uint32_t mcs = 0; mcs < sample_size; mcs++)
+    {
+        // Proposing new position
+        for (uint32_t k = 0; k < N; k++)
+            da(k) = DA(k) + normal(rng);
 
-//     //////////////////////////////////////////////
-//     // Running distribution
-//     for (uint32_t mcs = 0; mcs < sample_size; mcs++)
-//     {
-//         // Proposing new position
-//         for (uint32_t k = 0; k < N; k++)
-//             da(k) = DA(k) + normal(rng);
+        // Estimating posterior and transition probabilities
+        double like = -(ptr->*func)(da);
+        double ratio = exp(like - LIKE);
 
-//         // Estimating posterior and transition probabilities
-//         T like = -(*func)(da, ptr);
-//         T ratio = exp(like - LIKE);
+        // Are the proposed values accepted?
+        if (ratio > unif(rng))
+        {
+            DA = da;
+            LIKE = like;
+        }
 
-//         // Are the proposed values accepted?
-//         if (ratio > unif(rng))
-//         {
-//             DA = da;
-//             LIKE = like;
-//         }
+        // Saving correct values to mcmc matrix
+        mcmc.row(mcs) = DA;
 
-//         // Saving correct values to mcmc matrix
-//         for (uint32_t k = 0; k < N; k++)
-//             mcmc(mcs, k) = DA(k);
+    } // loop-mcs
 
-//     } // loop-mcs
+    return mcmc;
 
-//     return mcmc;
-
-// } // paramDistribution
+} // paramDistribution

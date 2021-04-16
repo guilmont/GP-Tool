@@ -1,6 +1,6 @@
-#include "spot.hpp"
+#include "spot.h"
 
-std::pair<double, double> getMeanDev(const VectorXd &vec)
+std::pair<double, double> getMeanDev(const VecXd &vec)
 {
   double a = 0.0,
          a2 = 0.0;
@@ -19,14 +19,8 @@ std::pair<double, double> getMeanDev(const VectorXd &vec)
 
 /////////////////////////////
 
-double transferWeight(const VectorXd &v, void *ptr)
+Spot::Spot(const MatXd &mat) : NX(mat.cols()), NY(mat.rows())
 {
-  return reinterpret_cast<Spot *>(ptr)->weightFunction(v);
-}
-
-Spot::Spot(const MatrixXd &mat) : NX(mat.cols()), NY(mat.rows())
-{
-  roi.resize(NY, NX);
 
   // Converting to integer for Poisson noise
   roi = mat.array().round();
@@ -36,27 +30,22 @@ Spot::Spot(const MatrixXd &mat) : NX(mat.cols()), NY(mat.rows())
 
   double I0 = roi.maxCoeff() - BG;
 
-  info.mX = 0.5 * NX;
-  info.mY = 0.5 * NY;
-  info.lX = 1.0;
-  info.lY = 1.0;
-  info.eX = 0.1;
-  info.eY = 0.1;
-  info.I0 = I0;
-  info.BG = BG;
+  info.mu = {0.5 * NX, 0.5 * NY};
+  info.size = {1.0, 1.0};
+  info.error = {1.0, 1.0};
+  info.signal = {BG, I0};
   info.rho = 0.0;
 
   // We maximize the likelihood to find centroid and size
-  if (findPositionAndSize())
-  {
-    // To determine the error in centroid's position, we sample mX and mY
-    refinePosition();
-    flag = true;
-  }
+  flag = findPositionAndSize();
+
+  // To determine the error in centroid's position, we sample mX and mY
+  if (flag)
+    flag = refinePosition();
 
 } // Constructor
 
-double Spot::weightFunction(const VectorXd &v)
+double Spot::weightFunction(const VecXd &v)
 {
   // The weight function is defined as the negative of the log-likelihood given
   // by a Poisson model
@@ -64,7 +53,7 @@ double Spot::weightFunction(const VectorXd &v)
   // We use this trick to constrain nmsimplex output results
   double emx = exp(v(0)), emy = exp(v(1)),
          lx = exp(v(2)), ly = exp(v(3)),
-         I0 = exp(v(4)), BG = exp(v(5)),
+         BG = exp(v(4)), I0 = exp(v(5)),
          erho = exp(v(6));
 
   double mx = NX * emx / (1.0 + emx),
@@ -75,14 +64,13 @@ double Spot::weightFunction(const VectorXd &v)
   for (uint32_t k = 0; k < NY; k++)
     for (uint32_t l = 0; l < NX; l++)
     {
-      double dx = (l + 0.5f - mx) / lx,
-             dy = (k + 0.5f - my) / ly,
+      double dx = (l + 0.5 - mx) / lx,
+             dy = (k + 0.5 - my) / ly,
              val = 1.0 - rho * rho;
 
-      double mu = I0 * exp(-0.5f / val * (dx * dx + dy * dy - 2.0 * rho * dx * dy)) + BG;
+      double mu = I0 * exp(-0.5 / val * (dx * dx + dy * dy - 2.0 * rho * dx * dy)) + BG;
 
       logLike += mu - roi(k, l) * log(mu);
-
     } // for-loop
 
   // Flat priors
@@ -99,29 +87,22 @@ bool Spot::findPositionAndSize(void)
   // The initial guess:
   //    mX and mY will be ICY location
   //    lX and lY will be 1/6 of roi's size
-  VectorXd vec(7);
-  vec(0) = 0.0;
-  vec(1) = 0.0;
-  vec(2) = log(NX / 6.0);
-  vec(3) = log(NY / 6.0);
-  vec(4) = log(info.I0);
-  vec(5) = log(info.BG);
-  vec(6) = 0.0;
 
-  GOptimize::NMSimplex<double, VectorXd> nms(vec, 1e-5);
-  if (!nms.runSimplex(&transferWeight, this))
+  VecXd vec(7);
+  vec << 0.0, 0.0, log(NX / 6.0), log(NY / 6.0),
+      log(info.signal[0]), log(info.signal[1]), 0.0;
+
+  GOptimize::NMSimplex nms(vec, 1e-5);
+  if (!nms.runSimplex(&Spot::weightFunction, this))
     return false;
 
   else
   {
     // Preparing the final values
-    VectorXd vx = nms.getResults().array().exp();
-    info.mX = NX * vx(0) / (1.0f + vx(0));
-    info.mY = NY * vx(1) / (1.0f + vx(1));
-    info.lX = vx(2);
-    info.lY = vx(3);
-    info.I0 = vx(4);
-    info.BG = vx(5);
+    VecXd vx = nms.getResults().array().exp();
+    info.mu = {NX * vx(0) / (1.0f + vx(0)), NY * vx(1) / (1.0f + vx(1))};
+    info.size = {vx(2), vx(3)};
+    info.signal = {vx(4), vx(5)};
     info.rho = 2.0 * vx(6) / (1.0 + vx(6)) - 1.0;
 
     return true;
@@ -129,29 +110,23 @@ bool Spot::findPositionAndSize(void)
 
 } // findPositionAndSize
 
-void Spot::refinePosition(void)
+bool Spot::refinePosition(void)
 {
   // This functions will sample the mean position of the particle using MCMC.
   // By doing so we get an estimation of positional error
 
-  VectorXd MXY(7);
-  MXY(0) = -log(NX / info.mX - 1.0f);
-  MXY(1) = -log(NY / info.mY - 1.0f);
-  MXY(2) = log(info.lX);
-  MXY(3) = log(info.lY);
-  MXY(4) = log(info.I0);
-  MXY(5) = log(info.BG);
-  MXY(6) = -log(2.0 / (info.rho + 1.0) - 1.0f);
+  VecXd MXY(7);
+  MXY << -log(NX / info.mu.x - 1.0f), -log(NY / info.mu.y - 1.0f),
+      log(info.size.x), log(info.size.y), log(info.signal[0]), log(info.signal[1]),
+      -log(2.0 / (info.rho + 1.0) - 1.0f);
 
   uint32_t maxMCS = 5000;
-  MatrixXd stats = GOptimize::sampleParameters<double, VectorXd, MatrixXd>(
-      MXY, maxMCS, &transferWeight, this);
+  MatXd stats = GOptimize::sampleParameters(MXY, maxMCS, &Spot::weightFunction, this);
 
-  MatrixXd pos(maxMCS, 2);
+  MatXd pos(maxMCS, 2);
   for (uint32_t k = 0; k < maxMCS; k++)
   {
     double mx = exp(stats(k, 0)), my = exp(stats(k, 1));
-
     pos(k, 0) = NX * mx / (1.0f + mx);
     pos(k, 1) = NY * my / (1.0f + my);
   }
@@ -160,12 +135,14 @@ void Spot::refinePosition(void)
   double devy = getMeanDev(pos.col(1)).second;
 
   // Doing some statistics and creating output
-  info.eX = devx;
-  info.eY = devy;
-
-  if (std::isnan(info.eX))
-    info.eX = double(this->NX);
-  if (std::isnan(info.eY))
-    info.eY = double(this->NY);
+  if (std::isnan(devx) || std::isnan(devy))
+  {
+    return false;
+  }
+  else
+  {
+    info.error = {devx, devy};
+    return true;
+  }
 
 } // refinePosition
