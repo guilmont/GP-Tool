@@ -7,7 +7,7 @@
 
 #include <imgui.h>
 
-#include <config.h>
+#include "config.h"
 
 class GDialog
 {

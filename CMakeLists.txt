@@ -33,7 +33,6 @@ add_library(RENDERER
 target_include_directories(RENDERER
     PUBLIC 
         "${CMAKE_SOURCE_DIR}/include/renderer"
-        "${CMAKE_SOURCE_DIR}/vendor/stb"
         "${GLM_INCLUDE_DIRS}"
 )
 
@@ -46,6 +45,20 @@ target_link_libraries(RENDERER
 
 ###########################################################
 # METHODS
+
+add_library(GOPTIMIZE
+    STATIC
+    "${CMAKE_SOURCE_DIR}/src/utils/goptimize.cpp"
+)
+
+target_include_directories(GOPTIMIZE
+    PUBLIC
+        "${CMAKE_SOURCE_DIR}/include/utils"
+        "${CMAKE_SOURCE_DIR}/vendor/eigen"
+)
+
+#############################
+
 add_library(MOVIE
     SHARED
         "${CMAKE_SOURCE_DIR}/src/methods/movie.cpp"
@@ -55,7 +68,7 @@ add_library(MOVIE
 
 target_include_directories(MOVIE 
     PUBLIC
-    "${CMAKE_SOURCE_DIR}/include"
+    "${CMAKE_SOURCE_DIR}/include/"
     "${CMAKE_SOURCE_DIR}/include/methods"
     "${CMAKE_SOURCE_DIR}/vendor/eigen"
     "${GLM_INCLUDE_DIRS}"
@@ -72,23 +85,44 @@ target_link_libraries(MOVIE
 add_library(ALIGN
     SHARED
         "${CMAKE_SOURCE_DIR}/src/methods/align.cpp"
-        "${CMAKE_SOURCE_DIR}/src/utils/goptimize.cpp"
-
 )
 
 target_include_directories(ALIGN 
     PUBLIC
     "${CMAKE_SOURCE_DIR}/include"
     "${CMAKE_SOURCE_DIR}/include/methods"
-    "${CMAKE_SOURCE_DIR}/vendor/eigen"
 )
 
 target_link_libraries(ALIGN
     PUBLIC
         imgui
+        GOPTIMIZE
         MOVIE
 )
 
+
+#############################
+
+add_library(TRAJECTORY
+    SHARED
+        "${CMAKE_SOURCE_DIR}/src/methods/spot.cpp"
+        "${CMAKE_SOURCE_DIR}/src/methods/trajectory.cpp"
+
+)
+
+target_include_directories(TRAJECTORY 
+    PUBLIC
+    "${CMAKE_SOURCE_DIR}/include"
+    "${CMAKE_SOURCE_DIR}/include/methods"
+)
+
+target_link_libraries(TRAJECTORY
+    PUBLIC
+        imgui
+        pugixml
+        GOPTIMIZE
+        MOVIE
+)
 
 ###########################################################
 # PLUGIN MANAGER ##########################################
