@@ -241,7 +241,10 @@ const Plane &Metadata::getPlane(uint32_t c, uint32_t z, uint32_t t) const
     std::string txt = "(Metadata::getPlane): No plane was found for (c,z,t): " +
                       std::to_string(c) + ", " + std::to_string(z) + ", " + std::to_string(t);
 
-    mbox->create<Message::Error>(txt);
+    if (mbox)
+        mbox->create<Message::Error>(txt);
+    else
+        std::cerr << "ERROR " << txt << std::endl;
 
     return vPlanes.front();
 

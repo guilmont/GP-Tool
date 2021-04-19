@@ -59,15 +59,19 @@ Movie::Movie(const std::string &movie_path, Mailbox *mail) : mbox(mail)
             else if (meta.SignificantBits == 32)
                 vImg[t * meta.SizeC + ch] = tif.getImage<uint32_t>(counter).cast<double>();
 
+            // Increasing counter
+            counter++;
+
             if (ptr)
             {
-                ptr->progress = ++counter / float(nImg);
+                ptr->progress = float(counter) / float(nImg);
                 if (ptr->cancelled)
                 {
                     success = false;
                     return;
                 }
             }
+
         } // loop-images
 
 } // constructor

@@ -1,4 +1,4 @@
-#include "trajectory.h"
+#include "methods/trajectory.h"
 
 static void removeRow(MatXd &matrix, uint32_t rowToRemove)
 {
@@ -20,7 +20,6 @@ static glm::dvec2 thresOutliers(VecXd vec)
              FQ = 0.25 * vec.size(), TQ = 0.75 * vec.size();
 
     double fifty = vec(TQ) - vec(FQ);
-
     return {vec(N) - 2.0 * fifty, vec(N) + 2.0 * fifty};
 } // thresOutliers
 
@@ -28,276 +27,297 @@ static MatXd loadFromTextFile(const std::string &path, char delimiter,
                               uint32_t skip_rows, uint32_t skip_cols, Mailbox *mbox)
 {
 
-    // std::ifstream arq(path, std::fstream::binary);
-    // if (arq.fail())
-    // {
-    //     if (mbox)
-    //         mbox->create<Message::Error>("(Trajectory::useCSV): Cannot open " + path);
-    //     else
-    //         std::cerr << "ERROR (Trajectory::useCSV) ==> Cannot open " << path << std::endl;
+    std::ifstream arq(path, std::fstream::binary);
+    if (arq.fail())
+    {
+        if (mbox)
+            mbox->create<Message::Error>("(Trajectory::useCSV): Cannot open " + path);
+        else
+            std::cerr << "ERROR (Trajectory::useCSV) ==> Cannot open " << path << std::endl;
 
-    //     return MatXd(0, 0);
-    // }
+        return MatXd(0, 0);
+    }
 
-    // std::string data;
-    // arq.seekg(0, arq.end);
-    // data.resize(arq.tellg());
+    std::string data;
+    arq.seekg(0, arq.end);
+    data.resize(arq.tellg());
 
-    // arq.seekg(0, arq.beg);
-    // arq.read(data.data(), data.size());
+    arq.seekg(0, arq.beg);
+    arq.read(data.data(), data.size());
 
-    // arq.close();
+    arq.close();
 
-    // // so we know where we are
-    // size_t pos = 0;
+    // so we know where we are
+    size_t pos = 0;
 
-    // // skipping rows demanded
-    // for (size_t k = 0; k < skip_rows; k++)
-    // {
-    //     pos = data.find('\n', pos) + 1;
-    //     if (pos == std::string::npos)
-    //     {
-    //         mail->createMessage<MSG_Warning>("(Trajectory::useCSV): "
-    //                                          "More skip_rows than number of rows!!");
-    //         return MatXd(0, 0);
-    //     }
-    // } // loop-skip-rows
+    // skipping rows demanded
+    for (size_t k = 0; k < skip_rows; k++)
+    {
+        pos = data.find('\n', pos) + 1;
+        if (pos == std::string::npos)
+        {
 
-    // // Reading data to matrix
-    // std::vector<std::vector<double>> mat;
+            std::string msg = "(Trajectory::useCSV): More skip_rows than number of rows!! " + path;
 
-    // while (true)
-    // {
-    //     // loading row if existent
-    //     size_t brk = std::min(data.find('\n', pos), data.size());
+            if (mbox)
+                mbox->create<Message::Error>(msg);
+            else
+                std::cerr << "ERROR " << msg << std::endl;
 
-    //     // in case there are multiple empty lines at the bottom
-    //     // in case there are no empty lines at bottom
-    //     if (pos == brk || pos >= data.size())
-    //         break;
+            return MatXd(0, 0);
+        }
+    } // loop-skip-rows
 
-    //     // Parsing row
-    //     size_t ct = 0;
-    //     std::vector<double> vec;
-    //     while (true)
-    //     {
-    //         size_t loc = std::min(data.find(delimiter, pos), brk);
+    // Reading data to matrix
+    std::vector<std::vector<double>> mat;
 
-    //         if (++ct > skip_cols)
-    //             vec.emplace_back(stof(data.substr(pos, loc - pos)));
+    while (true)
+    {
+        // loading row if existent
+        size_t brk = std::min(data.find('\n', pos), data.size());
 
-    //         pos = loc + 1;
+        // in case there are multiple empty lines at the bottom
+        // in case there are no empty lines at bottom
+        if (pos == brk || pos >= data.size())
+            break;
 
-    //         if (pos >= brk)
-    //             break;
+        // Parsing row
+        size_t ct = 0;
+        std::vector<double> vec;
+        while (true)
+        {
+            size_t loc = std::min(data.find(delimiter, pos), brk);
 
-    //     } // while-columns
+            if (++ct > skip_cols)
+                vec.emplace_back(stof(data.substr(pos, loc - pos)));
 
-    //     // appending row to matrix
-    //     mat.emplace_back(std::move(vec));
+            pos = loc + 1;
 
-    // } // while-rows
+            if (pos >= brk)
+                break;
 
-    // // Let's check is alls rows have same width
-    // size_t sum = 0;
-    // for (auto &vec : mat)
-    //     sum += vec.size();
+        } // while-columns
 
-    // if (sum == 0)
-    // {
-    //     mail->createMessage<MSG_Warning>("(Trajectory::useCSV): "
-    //                                      "Input matrix is empty!!");
+        // appending row to matrix
+        mat.emplace_back(std::move(vec));
 
-    //     return MatXd(0, 0);
-    // }
+    } // while-rows
 
-    // const uint32_t
-    //     NX = mat[0].size(),
-    //     NY = mat.size();
+    // Let's check is alls rows have same width
+    size_t sum = 0;
+    for (auto &vec : mat)
+        sum += vec.size();
 
-    // if (sum != mat.at(0).size() * mat.size())
-    // {
-    //     mail->createMessage<MSG_Warning>("(Trajectory::useCSV): "
-    //                                      " Input txt have rows of different widths!!");
-    //     return MatXd(0, 0);
-    // }
+    if (sum == 0)
+    {
+        std::string msg = "(Trajectory::useCSV): Input matrix is empty!! " + path;
 
-    // MatXd obj(NY, NX);
-    // for (uint32_t k = 0; k < NY; k++)
-    //     for (uint32_t l = 0; l < NX; l++)
-    //         obj(k, l) = mat[k][l];
+        if (mbox)
+            mbox->create<Message::Error>(msg);
+        else
+            std::cerr << "ERROR " << msg << std::endl;
 
-    // return obj;
+        return MatXd(0, 0);
+    }
 
-    return MatXd(1, 1);
+    const uint32_t
+        NX = mat[0].size(),
+        NY = mat.size();
+
+    if (sum != mat.at(0).size() * mat.size())
+    {
+        std::string msg = "(Trajectory::useCSV): Input txt have rows of different widths!! " + path;
+
+        if (mbox)
+            mbox->create<Message::Error>(msg);
+        else
+            std::cerr << "ERROR " << msg << std::endl;
+
+        return MatXd(0, 0);
+    }
+
+    MatXd obj(NY, NX);
+    for (uint32_t k = 0; k < NY; k++)
+        for (uint32_t l = 0; l < NX; l++)
+            obj(k, l) = mat[k][l];
+
+    return obj;
 
 } // readTextFile
 
 ///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+// PRIVATE FUNCTIONS
 
-// static void enhancePoint(const uint32_t pt, void *ptr)
-// {
-//     auto [radius, vImg, route] = *reinterpret_cast<Data *>(ptr);
+void Trajectory::enhancePoint(uint32_t trackID, uint32_t trajID, uint32_t tid)
+{
 
-//     uint32_t sRoi = 2 * radius + 1;
+    const uint32_t sRoi = 2 * spotSize + 1,
+                   nThreads = std::thread::hardware_concurrency();
 
-//     // Get frame and coordinates
-//     int frame = route(pt, TrajColumns::FRAME),
-//         px = route(pt, TrajColumns::POSX),
-//         py = route(pt, TrajColumns::POSY);
+    MatXd &route = m_vTrack[trackID].traj[trajID];
 
-//     // Let's check if all ROI pixels are within the image
-//     int px_o = px - radius, px_f = px_o + sRoi,
-//         py_o = py - radius, py_f = py_o + sRoi;
+    for (uint32_t pt = tid; pt < route.rows(); pt += nThreads)
+    {
 
-//     bool check = true;
-//     check &= px_o >= 0;
-//     check &= px_f < vImg[frame].cols();
-//     check &= py_o >= 0;
-//     check &= py_f < vImg[frame].rows();
+        // Get frame and coordinates
+        int frame = route(pt, Track::FRAME),
+            px = route(pt, Track::POSX),
+            py = route(pt, Track::POSY);
 
-//     if (!check)
-//     {
-//         // Cannot really work in this situation
-//         route(pt, 0) = -1;
-//         return;
-//     }
+        // Loading a pointer to image
+        const MatXd &img = movie->getImage(trackID, frame);
 
-//     MatXd roi = vImg[frame].block(py - radius, px - radius, sRoi, sRoi);
+        // Let's check if all ROI pixels are within the image
+        int px_o = px - spotSize, px_f = px_o + sRoi,
+            py_o = py - spotSize, py_f = py_o + sRoi;
 
-//     // Correcting contrast
-//     double bot = roi.minCoeff();
-//     double top = roi.maxCoeff();
+        bool check = true;
+        check &= px_o >= 0;
+        check &= px_f < img.cols();
+        check &= py_o >= 0;
+        check &= py_f < img.rows();
 
-//     roi.array() -= bot;
-//     roi.array() *= 255.0f / (top - bot);
+        if (!check)
+        {
+            // Cannot really work in this situation
+            route(pt, 0) = -1;
+            continue;
+        }
 
-//     // Sending roi to Spot class for refinement
-//     Spot spot(roi);
-//     if (spot.successful())
-//     { // Everything went well
-//         const SpotInfo &info = spot.getSpotInfo();
+        MatXd roi = img.block(py - spotSize, px - spotSize, sRoi, sRoi);
 
-//         if (std::isnan(info.mX) || std::isnan(info.mY))
-//             route(pt, 0) = -1;
-//         else
-//         {
+        // Correcting contrast
+        double bot = roi.minCoeff();
+        double top = roi.maxCoeff();
 
-//             // recentering posision
-//             route(pt, TrajColumns::POSX) = px + 0.5 + (info.mX - 0.5 * sRoi);
-//             route(pt, TrajColumns::POSY) = py + 0.5 + (info.mY - 0.5 * sRoi);
-//             route(pt, TrajColumns::ERRX) = info.eX;
-//             route(pt, TrajColumns::ERRY) = info.eY;
-//             route(pt, TrajColumns::SIZEX) = 3.0 * info.lX;
-//             route(pt, TrajColumns::SIZEY) = 3.0 * info.lY;
-//             route(pt, TrajColumns::INTENSITY) = info.I0;
-//             route(pt, TrajColumns::BACKGROUND) = info.BG;
-//         }
-//     }
-//     else
-//     {
-//         route(pt, 0) = -1;
-//     } // spot-successful
+        roi.array() -= bot;
+        roi.array() *= 255.0f / (top - bot);
 
-// } // EnhanceRoute
+        // Sending roi to Spot class for refinement
+        Spot spot(roi);
+        if (spot.successful()) // Everything went well
+        {
+            const SpotInfo &info = spot.getSpotInfo();
 
-// static MatXd enhanceRoute(const uint32_t spotRadius, const MatXd *vImg,
-//                           MatXd route)
-// {
+            // recentering posision
+            route(pt, Track::POSX) = px + 0.5 + (info.mu.x - 0.5 * sRoi);
+            route(pt, Track::POSY) = py + 0.5 + (info.mu.y - 0.5 * sRoi);
 
-//     auto condPush = [](std::vector<uint32_t> &vec, uint32_t val) -> void {
-//         for (uint32_t k : vec)
-//             if (val == k)
-//                 return;
+            route(pt, Track::ERRX) = info.error.x;
+            route(pt, Track::ERRY) = info.error.y;
+            route(pt, Track::SIZEX) = 3.0 * info.size.x;
+            route(pt, Track::SIZEY) = 3.0 * info.size.y;
+            route(pt, Track::BG) = info.signal.x;
+            route(pt, Track::SIGNAL) = info.signal.y;
+        }
+        else
+            route(pt, 0) = -1;
 
-//         vec.push_back(val);
-//     };
+    } // loop-rows
 
-//     uint32_t nRows = route.rows();
+} // EnhanceRoute
 
-//     Data data = {spotRadius, vImg, route};
+void Trajectory::enhanceTrajectory(uint32_t trackID, uint32_t trajID)
+{
 
-//     // Updating localization and estimating error
-//     Threadpool pool;
-//     pool.run(&enhancePoint, nRows, &data);
+    auto condPush = [](std::vector<uint32_t> &vec, uint32_t val) -> void {
+        for (uint32_t k : vec)
+            if (val == k)
+                return;
 
-//     // Removing rows that didn't converge during enhancement
-//     for (int32_t k = nRows - 1; k >= 0; k--)
-//         if (route(k, 0) < 0)
-//             removeRow(route, k);
+        vec.push_back(val);
+    };
 
-//     // Updating route length
-//     nRows = route.rows();
+    // Updating localization and estimating error
+    const uint32_t nThreads = std::thread::hardware_concurrency();
+    std::vector<std::thread> vThr(nThreads);
 
-//     if (nRows < 10) // is going to be removed anyway
-//         return route;
+    for (uint32_t tid = 0; tid < nThreads; tid++)
+        vThr[tid] = std::thread(&Trajectory::enhancePoint, this, trackID, trajID, tid);
 
-//     // Finally, we check if there are outliers in detection and remove them
-//     VectorXd dx = route.block(1, TrajColumns::POSX, nRows - 1, 1) -
-//                   route.block(0, TrajColumns::POSX, nRows - 1, 1);
+    for (std::thread &thr : vThr)
+        thr.join();
 
-//     VectorXd dy = route.block(1, TrajColumns::POSY, nRows - 1, 1) -
-//                   route.block(0, TrajColumns::POSY, nRows - 1, 1);
+    // Removing rows that didn't converge during enhancement
+    MatXd &route = m_vTrack[trackID].traj[trajID];
 
-//     auto [thresX_low, thresX_high] = thresOutliers(dx.array().abs());
-//     auto [thresY_low, thresY_high] = thresOutliers(dy.array().abs());
-//     auto [thresSX_low, thresSX_high] = thresOutliers(route.col(TrajColumns::SIZEX));
-//     auto [thresSY_low, thresSY_high] = thresOutliers(route.col(TrajColumns::SIZEY));
-//     auto [thresEX_low, thresEX_high] = thresOutliers(route.col(TrajColumns::ERRX));
-//     auto [thresEY_low, thresEY_high] = thresOutliers(route.col(TrajColumns::ERRY));
-//     auto [thresSig_low, thresSig_high] = thresOutliers(route.col(TrajColumns::INTENSITY));
-//     auto [thresBG_low, thresBG_high] = thresOutliers(route.col(TrajColumns::BACKGROUND));
+    uint32_t nRows = route.rows();
+    for (int32_t k = nRows - 1; k >= 0; k--)
+        if (route(k, 0) < 0)
+            removeRow(route, k);
 
-//     std::vector<uint32_t> toRemove;
-//     for (uint32_t k = 0; k < nRows; k++)
-//     {
-//         bool check = true;
+    if (route.rows() < 10) // is going to be removed anyway
+        return;
 
-//         if (k < nRows - 1)
-//         {
-//             check &= dx(k) > thresX_low;
-//             check &= dx(k) < thresX_high;
+    // Finally, we check if there are outliers in detection and remove them
+    nRows = route.rows();
+    VecXd dx = route.block(1, Track::POSX, nRows - 1, 1) -
+               route.block(0, Track::POSX, nRows - 1, 1);
 
-//             check &= dy(k) > thresY_low;
-//             check &= dy(k) < thresY_high;
+    VecXd dy = route.block(1, Track::POSY, nRows - 1, 1) -
+               route.block(0, Track::POSY, nRows - 1, 1);
 
-//             if (!check)
-//                 condPush(toRemove, k + 1);
-//         }
+    glm::dvec2
+        thresX = thresOutliers(dx.array().abs()),
+        thresY = thresOutliers(dy.array().abs()),
+        thresSX = thresOutliers(route.col(Track::SIZEX)),
+        thresSY = thresOutliers(route.col(Track::SIZEY)),
+        thresEX = thresOutliers(route.col(Track::ERRX)),
+        thresEY = thresOutliers(route.col(Track::ERRY)),
+        thresSig = thresOutliers(route.col(Track::SIGNAL)),
+        thresBG = thresOutliers(route.col(Track::BG));
 
-//         check = true;
-//         check &= route(k, TrajColumns::SIZEX) < thresSX_high;
-//         check &= route(k, TrajColumns::SIZEX) > thresSX_low;
+    std::vector<uint32_t> toRemove;
+    for (uint32_t k = 0; k < nRows; k++)
+    {
+        bool check = true;
 
-//         check &= route(k, TrajColumns::SIZEY) < thresSY_high;
-//         check &= route(k, TrajColumns::SIZEY) > thresSY_low;
+        if (k < nRows - 1)
+        {
+            check &= dx(k) > thresX.x;
+            check &= dx(k) < thresX.y;
 
-//         check &= route(k, TrajColumns::ERRX) < thresEX_high;
-//         check &= route(k, TrajColumns::ERRX) > thresEX_low;
+            check &= dy(k) > thresY.x;
+            check &= dy(k) < thresY.y;
 
-//         check &= route(k, TrajColumns::ERRY) < thresEY_high;
-//         check &= route(k, TrajColumns::ERRY) > thresEY_low;
+            if (!check)
+                condPush(toRemove, k + 1);
+        }
 
-//         check &= route(k, TrajColumns::INTENSITY) < thresSig_high;
-//         check &= route(k, TrajColumns::INTENSITY) > thresSig_low;
+        check = true;
+        check &= route(k, Track::SIZEX) < thresSX.y;
+        check &= route(k, Track::SIZEX) > thresSX.x;
 
-//         check &= route(k, TrajColumns::BACKGROUND) < thresBG_high;
-//         check &= route(k, TrajColumns::BACKGROUND) > thresBG_low;
+        check &= route(k, Track::SIZEY) < thresSY.y;
+        check &= route(k, Track::SIZEY) > thresSY.x;
 
-//         if (!check)
-//             condPush(toRemove, k);
-//     }
+        check &= route(k, Track::ERRX) < thresEX.y;
+        check &= route(k, Track::ERRX) > thresEX.x;
 
-//     std::sort(toRemove.begin(), toRemove.end());
-//     std::reverse(toRemove.begin(), toRemove.end());
-//     for (uint32_t k : toRemove)
-//         removeRow(route, k);
+        check &= route(k, Track::ERRY) < thresEY.y;
+        check &= route(k, Track::ERRY) > thresEY.x;
 
-//     return route;
+        check &= route(k, Track::BG) < thresBG.y;
+        check &= route(k, Track::BG) > thresBG.x;
 
-// } // Constructor
+        check &= route(k, Track::SIGNAL) < thresSig.y;
+        check &= route(k, Track::SIGNAL) > thresSig.x;
+
+        if (!check)
+            condPush(toRemove, k);
+    }
+
+    std::sort(toRemove.begin(), toRemove.end());
+    std::reverse(toRemove.begin(), toRemove.end());
+    for (uint32_t k : toRemove)
+        removeRow(route, k);
+
+} // enhanceRoutes
 
 ///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+// PUBLIC FUNCTIONS
 
 Trajectory::Trajectory(Movie *mov, Mailbox *mail) : movie(mov), mbox(mail)
 {
@@ -309,8 +329,6 @@ Trajectory::~Trajectory(void) {}
 
 bool Trajectory::useICY(const std::string &xmlTrack, uint32_t ch)
 {
-
-    // mov is not const because we might want to update metadata later
     const Metadata &meta = movie->getMetadata();
 
     pugi::xml_document doc;
@@ -421,44 +439,45 @@ bool Trajectory::useCSV(const std::string &csvTrack, uint32_t ch)
 void Trajectory::enhanceTracks(void)
 {
 
-    // std::vector<uint32_t> empty;
-    // for (auto &[ch, track] : m_vTrack)
-    // {
-    //     const uint32_t N = track.traj.size();
+    std::vector<uint32_t> empty;
+    for (uint32_t ch = 0; ch < m_vTrack.size(); ch++)
+    {
+        Track &track = m_vTrack[ch];
+        const uint32_t N = track.traj.size();
 
-    //     MSG_Progress *msg = mail->createMessage<MSG_Progress>(
-    //         "Enhancing " + std::to_string(N) +
-    //         " trajectories for channel " + std::to_string(ch));
+        Message::Progress *ptr = nullptr;
 
-    //     std::vector<uint32_t> toRemove;
-    //     for (uint32_t k = 0; k < N; k++)
-    //     {
-    //         track.traj[k] = enhanceRoute(m_spotRadius, track.vImage, track.traj[k]);
+        if (mbox)
+            ptr = mbox->create<Message::Progress>("Enhancing " + std::to_string(N) +
+                                                  " trajectories for channel " +
+                                                  std::to_string(ch));
 
-    //         if (track.traj[k].rows() < 10)
-    //         {
-    //             mail->createMessage<MSG_Warning>(
-    //                 "Trajectory smaller than 10 frames removed!!");
+        std::vector<uint32_t> toRemove;
+        for (uint32_t k = 0; k < N; k++)
+        {
+            enhanceTrajectory(ch, k);
 
-    //             toRemove.push_back(k);
-    //         }
+            if (track.traj[k].rows() < 10)
+            {
+                mbox->create<Message::Warn>("Trajectory smaller than 10 frames removed!!");
+                toRemove.push_back(k);
+            }
 
-    //         msg->update((k + 1) / float(track.traj.size()));
-    //     } // loop-tracks
+            if (ptr)
+                ptr->progress = float(k + 1) / float(track.traj.size());
+        } // loop-tracks
 
-    //     std::reverse(toRemove.begin(), toRemove.end());
-    //     for (uint32_t k : toRemove)
-    //         track.traj.erase(track.traj.begin() + k);
+        std::reverse(toRemove.begin(), toRemove.end());
+        for (uint32_t k : toRemove)
+            track.traj.erase(track.traj.begin() + k);
 
-    //     if (track.traj.size() == 0)
-    //         empty.push_back(ch);
+        if (track.traj.size() == 0)
+            empty.push_back(ch);
 
-    //     msg->markAsRead();
+    } // loop-trajectories
 
-    // } // loop-trajectories
-
-    // // Removing empty tracks
-    // for (uint32_t ch : empty)
-    //     m_vTrack.erase(ch);
+    // Removing empty tracks
+    for (uint32_t ch : empty)
+        m_vTrack.erase(m_vTrack.begin() + ch);
 
 } // enhanceTracks

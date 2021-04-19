@@ -99,7 +99,7 @@ target_link_libraries(ALIGN
 add_library(TRAJECTORY
     SHARED
         "${CMAKE_SOURCE_DIR}/src/methods/spot.cpp"
-        # "${CMAKE_SOURCE_DIR}/src/methods/trajectory.cpp"
+        "${CMAKE_SOURCE_DIR}/src/methods/trajectory.cpp"
 
 )
 

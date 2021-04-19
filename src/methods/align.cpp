@@ -211,7 +211,9 @@ Align::Align(uint32_t nFrames, const MatXd *im1, const MatXd *im2, Mailbox *mail
     vIm1.resize(nFrames);
     RT = TransformData(im1[0].cols(), im1[0].rows());
 
-    Message::Progress *msg = mail->create<Message::Progress>("Treating images...");
+    Message::Progress *msg = nullptr;
+    if (mbox)
+        msg = mail->create<Message::Progress>("Treating images...");
 
     // Setup transform properties
     auto parallel_image_treatment = [&](uint32_t tid, uint32_t nThr) -> void {
@@ -220,7 +222,7 @@ Align::Align(uint32_t nFrames, const MatXd *im1, const MatXd *im2, Mailbox *mail
             vIm0[k] = (255.0 * treatImage(im1[k], 3, 5.0, 32, 32)).array().round().cast<uint8_t>();
             vIm1[k] = (255.0 * treatImage(im2[k], 3, 5.0, 32, 32)).array().round().cast<uint8_t>();
 
-            if (tid == 0)
+            if (tid == 0 && msg)
                 msg->progress = float(k + 1) / float(nFrames);
         }
     };
@@ -232,7 +234,8 @@ Align::Align(uint32_t nFrames, const MatXd *im1, const MatXd *im2, Mailbox *mail
     for (auto &thr : vThr)
         thr.join();
 
-    msg->progress = 1.0f;
+    if (msg)
+        msg->progress = 1.0f;
 
 } // constructor
 

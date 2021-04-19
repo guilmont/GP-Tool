@@ -22,8 +22,8 @@ struct Track
         ERRY = 5,
         SIZEX = 6,
         SIZEY = 7,
-        SIGNAL = 8,
-        BG = 9,
+        BG = 8,
+        SIGNAL = 9,
         NCOLS = 10
     };
 };
@@ -42,6 +42,10 @@ public:
 
     Track &getTrack(const uint32_t ch = 0) { return m_vTrack[ch]; }
     const Track &getTrack(const uint32_t ch = 0) const { return m_vTrack.at(ch); }
+
+private:
+    void enhancePoint(uint32_t trackID, uint32_t trajID, uint32_t tid);
+    void enhanceTrajectory(uint32_t trackID, uint32_t trajID);
 
 private:
     Movie *movie = nullptr;
