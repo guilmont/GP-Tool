@@ -89,7 +89,7 @@ namespace Tiffer
 
             } // else - clear_code
 
-            uint16_t s = table.size();
+            uint16_t s = uint16_t(table.size());
             if (s == 511 || s == 1023 || s == 2047)
                 B++;
 
@@ -111,7 +111,7 @@ namespace Tiffer
         uint16_t val = reinterpret_cast<uint16_t *>(buffer.data() + pos)[0];
 
         if (bigEndian)
-            return __builtin_bswap16(val);
+            return (val << 8) | (val >> 8);
         else
             return val;
 
@@ -122,7 +122,10 @@ namespace Tiffer
         uint32_t val = reinterpret_cast<uint32_t *>(buffer.data() + pos)[0];
 
         if (bigEndian)
-            return __builtin_bswap32(val);
+        {
+            val = (val & 0x0000FFFF) << 16 | (val & 0xFFFF0000) >> 16;
+            return (val & 0x00FF00FF) << 8 | (val & 0xFF00FF00) >> 8;
+        }
         else
             return val;
 
@@ -273,7 +276,7 @@ Tiffer::Read::Read(const std::string &movie_path, Mailbox *mail)
     } // while - next IFD
 
     // to simplify verifications later
-    this->numDir = vIFD.size();
+    this->numDir = uint32_t(vIFD.size());
 
 } // constructor
 
@@ -342,7 +345,7 @@ Tiffer::ImData Tiffer::Read::getImageData(const uint32_t id)
     auto &dir = vIFD.at(id).field;
 
     uint32_t count = dir[STRIPOFFSETS].count;
-    std::vector<std::pair<uint32_t, uint32_t>> vStrip(count);
+    std::vector<std::pair<uint32_t, size_t>> vStrip(count);
 
     // Setting up strips to read
     if (count == 1)

@@ -81,7 +81,7 @@ bool GDialog::openDialog(void)
     }
 
     static char loc[1024] = {0};
-    sprintf(loc, "%s", main_path.c_str());
+    sprintf_s(loc, "%s", main_path.c_str());
 
     float width = ImGui::GetContentRegionAvailWidth();
 
@@ -166,7 +166,7 @@ bool GDialog::saveDialog(void)
     }
 
     static char loc[1024];
-    sprintf(loc, "%s", main_path.c_str());
+    sprintf_s(loc, "%s", main_path.c_str());
 
     float width = ImGui::GetContentRegionAvailWidth();
 
@@ -195,7 +195,7 @@ bool GDialog::saveDialog(void)
         currentExt = filename.substr(pos);
     }
 
-    ImGui::PushItemWidth(0.333 * width);
+    ImGui::PushItemWidth(0.333f * width);
     if (ImGui::InputText("##inp", buf, 64))
         filename = std::string(buf) + currentExt;
     ImGui::PopItemWidth();
@@ -261,8 +261,14 @@ void GDialog::systemLoop(void)
     {
         if (std::filesystem::is_directory(entry))
         {
-            String arq = entry.path();
+            String arq = entry.path().string();
+
+#ifdef _WIN32
+            size_t pos = arq.find_last_of("\\");
+#elif
             size_t pos = arq.find_last_of("/");
+#endif
+
             arq = arq.substr(pos + 1);
             if (arq[0] == '.')
                 continue;
@@ -273,9 +279,14 @@ void GDialog::systemLoop(void)
 
         else if (std::filesystem::is_regular_file(entry))
         {
-            String arq = entry.path();
+            String arq = entry.path().string();
 
+#ifdef _WIN32
+            size_t pos = arq.find_last_of("\\");
+#elif
             size_t pos = arq.find_last_of("/");
+#endif
+
             arq = arq.substr(pos + 1);
 
             // Excluding hidden files
@@ -291,7 +302,7 @@ void GDialog::systemLoop(void)
 
 bool GDialog::systemDisplay(const String &url)
 {
-    ImGui::PushStyleColor(ImGuiCol_ChildBg, {0.02, 0.02, 0.02, 1.0});
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, {0.02f, 0.02f, 0.02f, 1.0f});
 
     lFolders.clear();
     lFiles.clear();
@@ -352,9 +363,9 @@ bool GDialog::systemDisplay(const String &url)
         bool check = selected.compare(folder) == 0;
         if (check)
         {
-            ImGui::PushStyleColor(ImGuiCol_Header, {0.6, 0.1, 0.1, 1.0});
-            ImGui::PushStyleColor(ImGuiCol_HeaderActive, {0.6, 0.1, 0.1, 1.0});
-            ImGui::PushStyleColor(ImGuiCol_HeaderHovered, {0.7, 0.2, 0.2, 1.0});
+            ImGui::PushStyleColor(ImGuiCol_Header, {0.6f, 0.1f, 0.1f, 1.0f});
+            ImGui::PushStyleColor(ImGuiCol_HeaderActive, {0.6f, 0.1f, 0.1f, 1.0f});
+            ImGui::PushStyleColor(ImGuiCol_HeaderHovered, {0.7f, 0.2f, 0.2f, 1.0f});
         }
 
         if (ImGui::Selectable(folder.c_str(), true, ImGuiSelectableFlags_AllowDoubleClick))
@@ -380,9 +391,9 @@ bool GDialog::systemDisplay(const String &url)
 
         if (check)
         {
-            ImGui::PushStyleColor(ImGuiCol_Header, {0.1, 0.6, 0.1, 1.0});
-            ImGui::PushStyleColor(ImGuiCol_HeaderActive, {0.1, 0.6, 0.1, 1.0});
-            ImGui::PushStyleColor(ImGuiCol_HeaderHovered, {0.2, 0.7, 0.2, 1.0});
+            ImGui::PushStyleColor(ImGuiCol_Header, {0.1f, 0.6f, 0.1f, 1.0f});
+            ImGui::PushStyleColor(ImGuiCol_HeaderActive, {0.1f, 0.6f, 0.1f, 1.0f});
+            ImGui::PushStyleColor(ImGuiCol_HeaderHovered, {0.2f, 0.7f, 0.2f, 1.0f});
         }
 
         if (ImGui::Selectable(arq.c_str(), check, ImGuiSelectableFlags_AllowDoubleClick))

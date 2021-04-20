@@ -32,13 +32,15 @@ class Trajectory
 {
 
 public:
-    Trajectory(Movie *mov, Mailbox *mail = nullptr);
+    Trajectory(const Movie *mov, Mailbox *mail = nullptr);
     ~Trajectory(void);
 
     uint32_t spotSize = 3;
     bool useICY(const std::string &xmlTrack, uint32_t ch = 0);
     bool useCSV(const std::string &csvTrack, uint32_t ch = 0);
     void enhanceTracks(void);
+
+    uint32_t getNumTracks(void) const { return uint32_t(m_vTrack.size()); }
 
     Track &getTrack(const uint32_t ch = 0) { return m_vTrack[ch]; }
     const Track &getTrack(const uint32_t ch = 0) const { return m_vTrack.at(ch); }
@@ -48,7 +50,7 @@ private:
     void enhanceTrajectory(uint32_t trackID, uint32_t trajID);
 
 private:
-    Movie *movie = nullptr;
+    const Movie *movie = nullptr;
     Mailbox *mbox = nullptr;
 
     std::vector<Track> m_vTrack;

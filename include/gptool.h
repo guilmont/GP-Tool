@@ -6,8 +6,9 @@
 class PluginManager;
 #include "plugins/manager.h"
 
-struct GPTool : public Renderer
+class GPTool : public Renderer
 {
+public:
     GPTool(void);
 
     void onUserUpdate(float deltaTime) override;

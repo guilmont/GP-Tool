@@ -6,7 +6,7 @@
 
 using String = std::string;
 
-#define HOME_DIR "/home/gmo"
-#define PROJECT_DIR "/run/media/gmo/MCard/Dropbox/Software/GP-Tool"
-#define INI_PATH "/run/media/gmo/MCard/Dropbox/Software/GP-Tool/assets/gptool.ini"
+#define HOME_DIR "C:/Users/GM Oliveira/Dropbox/Software/GP-Tool"
+#define PROJECT_DIR "C:/Users/GM Oliveira/Dropbox/Software/GP-Tool"
+#define INI_PATH "C:/Users/GM Oliveira/Dropbox/Software/GP-Tool/assets/gptool.ini"
 #define DPI_FACTOR 1

@@ -2,8 +2,8 @@
 
 static void removeRow(MatXd &matrix, uint32_t rowToRemove)
 {
-    unsigned int numRows = matrix.rows() - 1;
-    unsigned int numCols = matrix.cols();
+    uint32_t numRows = uint32_t(matrix.rows()) - 1;
+    uint32_t numCols = uint32_t(matrix.cols());
 
     if (rowToRemove < numRows)
         matrix.block(rowToRemove, 0, numRows - rowToRemove, numCols) =
@@ -16,8 +16,9 @@ static glm::dvec2 thresOutliers(VecXd vec)
 {
     std::sort(vec.data(), vec.data() + vec.size());
 
-    uint32_t N = 0.5 * vec.size(),
-             FQ = 0.25 * vec.size(), TQ = 0.75 * vec.size();
+    uint32_t N = uint32_t(0.5f * vec.size()),
+             FQ = uint32_t(0.25f * vec.size()),
+             TQ = uint32_t(0.75f * vec.size());
 
     double fifty = vec(TQ) - vec(FQ);
     return {vec(N) - 2.0 * fifty, vec(N) + 2.0 * fifty};
@@ -120,7 +121,7 @@ static MatXd loadFromTextFile(const std::string &path, char delimiter,
         return MatXd(0, 0);
     }
 
-    const uint32_t
+    const size_t
         NX = mat[0].size(),
         NY = mat.size();
 
@@ -161,9 +162,9 @@ void Trajectory::enhancePoint(uint32_t trackID, uint32_t trajID, uint32_t tid)
     {
 
         // Get frame and coordinates
-        int frame = route(pt, Track::FRAME),
-            px = route(pt, Track::POSX),
-            py = route(pt, Track::POSY);
+        int frame = int(route(pt, Track::FRAME)),
+            px = int(route(pt, Track::POSX)),
+            py = int(route(pt, Track::POSY));
 
         // Loading a pointer to image
         const MatXd &img = movie->getImage(trackID, frame);
@@ -242,7 +243,7 @@ void Trajectory::enhanceTrajectory(uint32_t trackID, uint32_t trajID)
     // Removing rows that didn't converge during enhancement
     MatXd &route = m_vTrack[trackID].traj[trajID];
 
-    uint32_t nRows = route.rows();
+    uint32_t nRows = uint32_t(route.rows());
     for (int32_t k = nRows - 1; k >= 0; k--)
         if (route(k, 0) < 0)
             removeRow(route, k);
@@ -251,7 +252,7 @@ void Trajectory::enhanceTrajectory(uint32_t trackID, uint32_t trajID)
         return;
 
     // Finally, we check if there are outliers in detection and remove them
-    nRows = route.rows();
+    nRows = uint32_t(route.rows());
     VecXd dx = route.block(1, Track::POSX, nRows - 1, 1) -
                route.block(0, Track::POSX, nRows - 1, 1);
 
@@ -319,7 +320,7 @@ void Trajectory::enhanceTrajectory(uint32_t trackID, uint32_t trajID)
 ///////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 
-Trajectory::Trajectory(Movie *mov, Mailbox *mail) : movie(mov), mbox(mail)
+Trajectory::Trajectory(const Movie *mov, Mailbox *mail) : movie(mov), mbox(mail)
 {
     uint32_t SC = movie->getMetadata().SizeC;
     m_vTrack.resize(SC); // one track per channel
@@ -366,7 +367,7 @@ bool Trajectory::useICY(const std::string &xmlTrack, uint32_t ch)
             mat(counter, Track::POSY) = txy[2];
 
             if (meta.hasPlanes())
-                mat(counter, Track::TIME) = meta.getPlane(ch, 0, txy[0]).DeltaT;
+                mat(counter, Track::TIME) = meta.getPlane(ch, 0, int(txy[0])).DeltaT;
             else
                 mat(counter, Track::TIME) = txy[0] * meta.TimeIncrement;
 
@@ -399,8 +400,8 @@ bool Trajectory::useCSV(const std::string &csvTrack, uint32_t ch)
     // Splitting particles
 
     uint32_t row = 0,
-             partID = particles(0, 0),
-             nRows = particles.rows();
+             partID = uint32_t(particles(0, 0)),
+             nRows = uint32_t(particles.rows());
 
     for (uint32_t k = 0; k < nRows; k++)
         if (particles(k, 0) != partID || k == nRows - 1)
@@ -414,7 +415,7 @@ bool Trajectory::useCSV(const std::string &csvTrack, uint32_t ch)
 
             for (uint32_t r = 0; r < N; r++)
             {
-                uint32_t fr = particles(row + r, 1);
+                uint32_t fr = uint32_t(particles(row + r, 1));
 
                 loc(r, Track::FRAME) = fr;
                 loc(r, Track::POSX) = particles(row + r, 2);
@@ -428,7 +429,7 @@ bool Trajectory::useCSV(const std::string &csvTrack, uint32_t ch)
 
             track.traj.emplace_back(loc);
 
-            partID = particles(k, 0);
+            partID = uint32_t(particles(k, 0));
             row = k;
         }
 
@@ -443,7 +444,7 @@ void Trajectory::enhanceTracks(void)
     for (uint32_t ch = 0; ch < m_vTrack.size(); ch++)
     {
         Track &track = m_vTrack[ch];
-        const uint32_t N = track.traj.size();
+        const uint32_t N = uint32_t(track.traj.size());
 
         Message::Progress *ptr = nullptr;
 

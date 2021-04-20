@@ -1,10 +1,19 @@
 cmake_minimum_required(VERSION 3.10)
 
 ## GLOBALLY INSTALLED LIBRARIES
-find_package(PkgConfig REQUIRED)
+if (WIN32)
+    add_subdirectory("C:/Software/glm-master" glm)
+    add_subdirectory("C:/Software/glfw-3.3.4" glfw)
 
-find_package(glfw3 REQUIRED)
-find_package(glm REQUIRED)
+
+else()
+    find_package(glfw3 REQUIRED)
+    find_package(glm REQUIRED)
+endif()
+
+
+
+# find_package(PkgConfig REQUIRED)
 # find_package(HDF5 COMPONENTS CXX REQUIRED) 
 # pkg_check_modules(jsoncpp REQUIRED IMPORTED_TARGET jsoncpp)
 
@@ -13,7 +22,7 @@ find_package(glm REQUIRED)
 ## GLAD ###################################################
 
 add_library(glad 
-    SHARED
+    STATIC
         "${CMAKE_CURRENT_SOURCE_DIR}/glad/src/glad.c"
 )   
 
@@ -27,13 +36,13 @@ target_include_directories(glad
         "${CMAKE_CURRENT_SOURCE_DIR}/glad/include"
 )
 
-set_property(TARGET glad PROPERTY POSITION_INDEPENDENT_CODE ON)
+# set_property(TARGET glad PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 ###########################################################
 ## PUGIXML ################################################
 
 add_library(pugixml
-    SHARED 
+    STATIC 
         "${CMAKE_CURRENT_SOURCE_DIR}/pugixml/src/pugixml.cpp"
 )
 
@@ -49,7 +58,7 @@ target_include_directories(pugixml
 add_compile_definitions(IMGUI_IMPL_OPENGL_LOADER_GLAD)
 
 add_library(imgui 
-    SHARED 
+    STATIC 
         "${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui_draw.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui_widgets.cpp"
@@ -75,7 +84,7 @@ target_include_directories(imgui
 ## IMPLOT #################################################
 
 add_library(implot 
-    SHARED 
+    STATIC 
         "${CMAKE_CURRENT_SOURCE_DIR}/implot/implot.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/implot/implot_demo.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/implot/implot_items.cpp"

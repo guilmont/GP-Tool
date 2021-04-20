@@ -4,24 +4,26 @@ project(GP_FBM_LIBRARY VERSION 0.2.0)
 # We need standard 17 for some functions
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+
+find_package(Threads REQUIRED)
+
 
 # GENERAL PURPOSE VENDOR
 add_subdirectory("${CMAKE_SOURCE_DIR}/vendor")
 
 # CONFIGURATION FILE
 set(DPI_FACTOR "1")
-set(HOME_DIR "$ENV{HOME}")
+set(HOME_DIR "${CMAKE_SOURCE_DIR}")
 set(PROJECT_DIR "${CMAKE_SOURCE_DIR}")
 set(INI_PATH "${CMAKE_SOURCE_DIR}/assets/gptool.ini")
-configure_file("config.h.in" "${CMAKE_SOURCE_DIR}/include/renderer/config.h" @ONLY)
+configure_file("${CMAKE_SOURCE_DIR}/config.h.in" "${CMAKE_SOURCE_DIR}/include/renderer/config.h" NEWLINE_STYLE UNIX)
 
 
 ###########################################################
 # UTILS
 
 add_library(GOPTIMIZE
-    SHARED
+    STATIC
     "${CMAKE_SOURCE_DIR}/src/utils/goptimize.cpp"
 )
 
@@ -34,7 +36,7 @@ target_include_directories(GOPTIMIZE
 #############################
 
 add_library(MAILBOX
-    SHARED
+    STATIC
         "${CMAKE_SOURCE_DIR}/src/utils/mailbox.cpp"
 )
 
@@ -54,7 +56,7 @@ target_link_libraries(MAILBOX
 
 
 add_library(MOVIE
-    SHARED
+    STATIC
         "${CMAKE_SOURCE_DIR}/src/methods/movie.cpp"
         "${CMAKE_SOURCE_DIR}/src/methods/metadata.cpp"
         "${CMAKE_SOURCE_DIR}/src/utils/gtiffer.cpp"
@@ -64,19 +66,20 @@ target_include_directories(MOVIE
     PUBLIC
     "${CMAKE_SOURCE_DIR}/include"
     "${CMAKE_SOURCE_DIR}/vendor"
-    "${GLM_INCLUDE_DIRS}"
+    "${glm_INCLUDE_DIRS}"
 )
 
 target_link_libraries(MOVIE
     PUBLIC
         pugixml
         MAILBOX
+        glm
 )
 
 #############################
 
 add_library(ALIGN
-    SHARED
+    STATIC
         "${CMAKE_SOURCE_DIR}/src/methods/align.cpp"
 )
 
@@ -97,7 +100,7 @@ target_link_libraries(ALIGN
 #############################
 
 add_library(TRAJECTORY
-    SHARED
+    STATIC
         "${CMAKE_SOURCE_DIR}/src/methods/spot.cpp"
         "${CMAKE_SOURCE_DIR}/src/methods/trajectory.cpp"
 
@@ -121,7 +124,7 @@ target_link_libraries(TRAJECTORY
 # RENDERER FOR GUI
 
 add_library(RENDERER 
-    SHARED
+    STATIC
         "${CMAKE_SOURCE_DIR}/src/renderer/shader.cpp"
         "${CMAKE_SOURCE_DIR}/src/renderer/texture.cpp"
         "${CMAKE_SOURCE_DIR}/src/renderer/framebuffer.cpp"
@@ -136,7 +139,7 @@ target_include_directories(RENDERER
     PUBLIC 
         "${CMAKE_SOURCE_DIR}/vendor"
         "${CMAKE_SOURCE_DIR}/include"
-        "${GLM_INCLUDE_DIRS}"
+        "${glm_INCLUDE_DIRS}"
 )
 
 target_link_libraries(RENDERER
@@ -145,17 +148,19 @@ target_link_libraries(RENDERER
         glad
         imgui
         MAILBOX
+        glm
 )
 
 ###########################################################
 # PLUGIN MANAGER 
 
 add_library(GPTOOL
-    SHARED
+    STATIC
         "${CMAKE_SOURCE_DIR}/src/gptool.cpp"
         "${CMAKE_SOURCE_DIR}/src/plugins/manager.cpp"
         "${CMAKE_SOURCE_DIR}/src/plugins/moviePlugin.cpp"
         "${CMAKE_SOURCE_DIR}/src/plugins/alignPlugin.cpp"
+        "${CMAKE_SOURCE_DIR}/src/plugins/trajPlugin.cpp"
 )
 
 target_include_directories(GPTOOL
@@ -169,6 +174,8 @@ target_link_libraries(GPTOOL
         RENDERER
         MOVIE
         ALIGN
+        TRAJECTORY
+        Threads::Threads
 )
 
 
@@ -188,6 +195,7 @@ target_include_directories(App
 target_link_libraries(App
     PUBLIC
         GPTOOL
+
 )
 
 

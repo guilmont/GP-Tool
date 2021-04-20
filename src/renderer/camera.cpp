@@ -5,7 +5,7 @@
 glm::mat4 Camera::getViewMatrix(void)
 {
     glm::vec3 front(0.0, 0.0, -1.0), up(0.0, 1.0, 0.0);
-    glm::mat4 proj = glm::perspective(float(M_PI_2), aspect, fNear, fFar);
+    glm::mat4 proj = glm::perspective(1.5707963f, aspect, fNear, fFar);
     glm::mat4 view = glm::lookAt(position, position + front, up);
 
     return proj * view;

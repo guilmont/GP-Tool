@@ -133,9 +133,12 @@ namespace Tiffer
                 if (sizeof(T) == 1)
                     img(row, col++) = val;
                 else if (sizeof(T) == 2)
-                    img(row, col++) = __builtin_bswap16(val);
+                    img(row, col++) = (val << 8) | (val >> 8);
                 else if (sizeof(T) == 4)
-                    img(row, col++) = __builtin_bswap32(val);
+                {
+                    val = (val & 0x0000FFFF) << 16 | (val & 0xFFFF0000) >> 16;
+                    img(row, col++) = (val & 0x00FF00FF) << 8 | (val & 0xFF00FF00) >> 8;
+                }
             }
             else
                 img(row, col++) = val;

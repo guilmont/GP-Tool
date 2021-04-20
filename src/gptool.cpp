@@ -57,7 +57,7 @@ void GPTool::onUserUpdate(float deltaTime)
 
     viewBuf->bind();
     glad_glClear(GL_COLOR_BUFFER_BIT);
-    glad_glClearColor(0.6, 0.6, 0.6, 1.0);
+    glad_glClearColor(0.6f, 0.6f, 0.6f, 1.0f);
 
     shader->useProgram("viewport");
     manager->updateAll(deltaTime);
@@ -72,6 +72,7 @@ void GPTool::ImGuiLayer(void)
 {
     manager->showHeader();
     manager->showProperties();
+    manager->showWindows();
 
     ///////////////////////////////////////////////////////
 
@@ -114,14 +115,13 @@ void GPTool::ImGuiMenuLayer(void)
                 tool->openMovie(tool->dialog.getPath());
             });
 
-        bool enable = false;
-        if (ImGui::MenuItem("Load trajectories...", NULL, nullptr, enable))
-        {
-        }
+        TrajPlugin *traj = (TrajPlugin *)manager->getPlugin("TRAJECTORY");
+        if (ImGui::MenuItem("Load trajectories...", NULL, nullptr, traj != nullptr))
+            traj->loadTracks();
 
-        if (ImGui::MenuItem("Save as ...", NULL, nullptr, enable))
-        {
-        }
+        // if (ImGui::MenuItem("Save as ...", NULL, nullptr, enable))
+        // {
+        // }
 
         if (ImGui::MenuItem("Exit"))
             closeApp();
@@ -138,7 +138,7 @@ void GPTool::ImGuiMenuLayer(void)
             mbox.setActive();
 
         char buf[64] = {0};
-        sprintf(buf, "FPS: %.0f", ImGui::GetIO().Framerate);
+        sprintf_s(buf, "FPS: %.0f", ImGui::GetIO().Framerate);
         ImGui::MenuItem(buf);
 
         // if (ImGui::MenuItem("How to cite"))
@@ -168,17 +168,25 @@ void GPTool::openMovie(const String &path)
         {
             camera.reset();
 
+            // Setup plugin manager
+            // pluygin pointers will be owned and destroyed by manager
             manager = std::make_unique<PluginManager>(&fonts);
+
+            // Including movie plugin into the manager
             manager->addPlugin("MOVIE", movpl);
             manager->setActive("MOVIE");
 
+            // Determine if we need the alignment plugin
             const Movie *movie = movpl->getMovie();
-
             if (movie->getMetadata().SizeC > 1)
             {
                 AlignPlugin *alg = new AlignPlugin(movie, this);
                 manager->addPlugin("ALIGNMENT", alg);
             }
+
+            // Let's also activate the trajectory plugin
+            TrajPlugin *traj = new TrajPlugin(movie, this);
+            manager->addPlugin("TRAJECTORY", traj);
         }
         else
             delete movpl;

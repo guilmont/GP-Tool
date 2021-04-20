@@ -57,6 +57,13 @@ void PluginManager::showHeader(void)
 
 } // showHeader
 
+void PluginManager::showWindows(void)
+{
+    for (auto &[name, ptr] : plugins)
+        if (ptr)
+            ptr->showWindows();
+}
+
 void PluginManager::showProperties(void)
 {
     if (pActive)

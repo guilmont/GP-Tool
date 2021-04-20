@@ -8,7 +8,7 @@ private:
       float
           fNear = 0.001f,
           fFar = 1000.0f,
-          maxZoom = 0.05,
+          maxZoom = 0.05f,
           minZoom = 1.0f,
           speed = 1.0f,
           sensitivity = 0.2f,

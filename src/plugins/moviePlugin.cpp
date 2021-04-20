@@ -62,7 +62,8 @@ MoviePlugin::MoviePlugin(const std::string &movie_path, GPTool *ptr) : tool(ptr)
     {
 
         const MatXd &mat = movie.getImage(ch, current_frame);
-        float low = mat.minCoeff(), high = mat.maxCoeff(),
+        float low = static_cast<float>(mat.minCoeff()),
+              high = static_cast<float>(mat.maxCoeff()),
               minValue = 0.8f * low, maxValue = 1.2f * high;
 
         info[ch].lut_name = lut.names[ch + 1];
@@ -262,10 +263,13 @@ void MoviePlugin::calcHistogram(uint32_t channel)
     const MatXd &mat = movie.getImage(channel, current_frame);
 
     loc->histogram.fill(0.0f);
-    for (size_t k = 0; k < mat.size(); k++)
+    const size_t N = mat.cols() * mat.rows();
+    for (size_t k = 0; k < N; k++)
     {
-        uint32_t val = 255.0f * (mat.data()[k] - minValue) / (maxValue - minValue + 0.01f);
-        loc->histogram[val]++;
+        float val = 255.0f * (float(mat.data()[k]) - minValue);
+        val /= (maxValue - minValue + 0.01f);
+
+        loc->histogram[uint32_t(val)]++;
     }
 
     float norma = std::accumulate(loc->histogram.begin(), loc->histogram.end(), 0.0f);

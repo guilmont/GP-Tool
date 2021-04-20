@@ -12,4 +12,5 @@ struct Plugin
 
     virtual void update(float deltaTime) = 0;
     virtual void showProperties(void) = 0;
+    virtual void showWindows(void) {}
 };

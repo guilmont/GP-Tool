@@ -6,6 +6,7 @@
 #include "plugin.h"
 #include "moviePlugin.h"
 #include "alignPlugin.h"
+#include "trajPlugin.h"
 
 #include "renderer/fonts.h"
 
@@ -18,6 +19,7 @@ public:
     ~PluginManager(void);
 
     void showHeader(void);
+    void showWindows(void);
     void showProperties(void);
     void updateAll(float deltaTime);
 
