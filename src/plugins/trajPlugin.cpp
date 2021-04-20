@@ -165,7 +165,7 @@ void TrajPlugin::winLoadTracks(void)
         ImGui::Text("%s", txt.c_str());
         ImGui::SameLine();
 
-        strcpy(buf, trackInfo.path[ch].c_str());
+        strcpy_s(buf, trackInfo.path[ch].c_str());
 
         ImGui::SetNextItemWidth(width);
         ImGui::InputText("##input", buf, 1024, ImGuiInputTextFlags_ReadOnly);

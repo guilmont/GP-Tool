@@ -85,7 +85,7 @@ void GPTool::ImGuiLayer(void)
     glm::vec2 view = viewBuf->getSize();
     if (port.x != view.x || port.y != view.y)
     {
-        viewBuf = std::make_unique<Framebuffer>(port.x, port.y);
+        viewBuf = std::make_unique<Framebuffer>(uint32_t(port.x), uint32_t(port.y));
         camera.setAspectRatio(port.x / port.y);
     }
 

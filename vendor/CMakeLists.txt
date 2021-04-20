@@ -1,16 +1,9 @@
 cmake_minimum_required(VERSION 3.10)
 
 ## GLOBALLY INSTALLED LIBRARIES
-if (WIN32)
-    add_subdirectory("C:/Software/glm-master" glm)
-    add_subdirectory("C:/Software/glfw-3.3.4" glfw)
 
-
-else()
-    find_package(glfw3 REQUIRED)
-    find_package(glm REQUIRED)
-endif()
-
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/glm" glm)
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/glfw" glfw)
 
 
 # find_package(PkgConfig REQUIRED)

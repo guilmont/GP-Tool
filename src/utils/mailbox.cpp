@@ -28,7 +28,7 @@ static std::string time2String(const TimePoint &t1, const TimePoint &t2)
     float fSecs = float(secs.count()) + 1e-3f * float(ms.count());
 
     char buf[16];
-    sprintf(buf, "%.3f secs ", fSecs);
+    sprintf_s(buf, "%.3f secs ", fSecs);
     txt += buf;
 
     return txt;
@@ -39,7 +39,7 @@ static std::string time2String(const TimePoint &t1, const TimePoint &t2)
 
 void Message::Info::show(void)
 {
-    ImGui::PushStyleColor(ImGuiCol_Text, {0.180, 0.800, 0.443, 1.0});
+    ImGui::PushStyleColor(ImGuiCol_Text, {0.180f, 0.800f, 0.443f, 1.0f});
     ImGui::Text("INFO:");
     ImGui::PopStyleColor();
     ImGui::SameLine();
@@ -50,7 +50,7 @@ void Message::Info::show(void)
 
 void Message::Warn::show(void)
 {
-    ImGui::PushStyleColor(ImGuiCol_Text, {0.957, 0.816, 0.247, 1.0});
+    ImGui::PushStyleColor(ImGuiCol_Text, {0.957f, 0.816f, 0.247f, 1.0f});
     ImGui::Text("WARNING:");
     ImGui::PopStyleColor();
     ImGui::SameLine();
@@ -61,7 +61,7 @@ void Message::Warn::show(void)
 
 void Message::Error::show(void)
 {
-    ImGui::PushStyleColor(ImGuiCol_Text, {0.8, 0.0, 0.0, 1.0});
+    ImGui::PushStyleColor(ImGuiCol_Text, {0.8f, 0.0f, 0.0f, 1.0f});
     ImGui::Text("ERROR:");
     ImGui::PopStyleColor();
     ImGui::SameLine();
@@ -136,7 +136,7 @@ void Mailbox::showMessages(void)
 
     ImGui::Begin("Mailbox", &active);
 
-    ImGui::PushStyleColor(ImGuiCol_ChildBg, {0.02, 0.02, 0.02, 1.0});
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, {0.02f, 0.02f, 0.02f, 1.0f});
 
     ImVec2 size = {0.95f * ImGui::GetWindowWidth(), 0.8f * ImGui::GetWindowHeight()};
     ImGui::BeginChild("mail_child", size, true, ImGuiWindowFlags_HorizontalScrollbar);

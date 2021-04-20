@@ -172,7 +172,7 @@ void MoviePlugin::showProperties(void)
             float port = ImGui::GetContentRegionAvail().x;
             if (port != size.x)
             {
-                histo[ch] = std::make_unique<Framebuffer>(port, size.y);
+                histo[ch] = std::make_unique<Framebuffer>(uint32_t(port), uint32_t(size.y));
                 updateTexture(ch);
             }
 

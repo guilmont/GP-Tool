@@ -5,7 +5,8 @@ std::pair<double, double> getMeanDev(const VecXd &vec)
   double a = 0.0,
          a2 = 0.0;
 
-  for (uint32_t k = 0; k < vec.size(); k++)
+  const uint32_t N = uint32_t(vec.size());
+  for (uint32_t k = 0; k < N; k++)
   {
     a += vec(k);
     a2 += vec(k) * vec(k);
@@ -19,8 +20,10 @@ std::pair<double, double> getMeanDev(const VecXd &vec)
 
 /////////////////////////////
 
-Spot::Spot(const MatXd &mat) : NX(mat.cols()), NY(mat.rows())
+Spot::Spot(const MatXd &mat)
 {
+  this->NX = int(mat.cols());
+  this->NY = int(mat.rows());
 
   // Converting to integer for Poisson noise
   roi = mat.array().round();

@@ -50,6 +50,6 @@ void Quad::draw(void)
 {
     gl_call(glad_glBindVertexArray(vao));
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    gl_call(glad_glDrawElements(GL_TRIANGLES, vIndex.size(), GL_UNSIGNED_INT, 0));
+    gl_call(glad_glDrawElements(GL_TRIANGLES, int(vIndex.size()), GL_UNSIGNED_INT, 0));
     gl_call(glad_glBindVertexArray(0));
 } // drawObject

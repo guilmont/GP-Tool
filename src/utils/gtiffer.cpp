@@ -151,7 +151,7 @@ Tiffer::Read::Read(const std::string &movie_path, Mailbox *mail)
     }
 
     arq.seekg(0, std::ios::end);
-    size_t len = arq.tellg();
+    size_t len = size_t(arq.tellg());
     buffer.resize(len);
     arq.seekg(0, std::ios::beg);
     arq.read((char *)buffer.data(), len);

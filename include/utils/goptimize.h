@@ -163,7 +163,7 @@ MatXd GOptimize::sampleParameters(const VecXd &params, const uint32_t sample_siz
 {
     // This functions will sample the used parameters via MCMC.
 
-    const uint32_t N = params.size(); // number of parameters
+    const uint32_t N = uint32_t(params.size()); // number of parameters
 
     VecXd DA(params), da(params);
     MatXd mcmc(sample_size, N);
@@ -172,7 +172,8 @@ MatXd GOptimize::sampleParameters(const VecXd &params, const uint32_t sample_siz
     double LIKE = -(ptr->*func)(DA);
     double S = 0.02; // proposal deviation
 
-    std::mt19937 rng(time(NULL));
+    std::random_device rnd;
+    std::mt19937 rng(rnd());
     std::uniform_real_distribution<double> unif(0.0, 1.0);
     std::normal_distribution<double> normal(0.0, S);
 

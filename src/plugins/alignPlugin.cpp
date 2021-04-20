@@ -17,13 +17,13 @@ void AlignPlugin::showProperties(void)
     const uint32_t nChannels = movie->getMetadata().SizeC;
 
     char txt[128] = {0};
-    sprintf(txt, "Channel %d", chAlign);
+    sprintf_s(txt, "Channel %d", chAlign);
 
     if (ImGui::BeginCombo("To align", txt))
     {
         for (uint32_t ch = 1; ch < nChannels; ch++)
         {
-            sprintf(txt, "Channel %d", ch);
+            sprintf_s(txt, "Channel %d", ch);
             if (ImGui::Selectable(txt))
             {
                 chAlign = ch;
@@ -156,7 +156,8 @@ void AlignPlugin::runAlignment(void)
     tool->mbox.create<Message::Info>("Running alignment algorithm...");
 
     uint32_t nFrames = movie->getMetadata().SizeT;
-    nFrames = nFrames < 20 ? nFrames : 0.05f * nFrames;
+    nFrames = uint32_t(0.05f * nFrames);
+    nFrames = nFrames == 0 ? 1 : nFrames;
 
     std::vector<MatXd> vi1, vi2;
 

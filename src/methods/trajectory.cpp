@@ -41,7 +41,7 @@ static MatXd loadFromTextFile(const std::string &path, char delimiter,
 
     std::string data;
     arq.seekg(0, arq.end);
-    data.resize(arq.tellg());
+    data.resize(size_t(arq.tellg()));
 
     arq.seekg(0, arq.beg);
     arq.read(data.data(), data.size());
@@ -158,7 +158,7 @@ void Trajectory::enhancePoint(uint32_t trackID, uint32_t trajID, uint32_t tid)
 
     MatXd &route = m_vTrack[trackID].traj[trajID];
 
-    for (uint32_t pt = tid; pt < route.rows(); pt += nThreads)
+    for (uint32_t pt = tid; pt < uint32_t(route.rows()); pt += nThreads)
     {
 
         // Get frame and coordinates

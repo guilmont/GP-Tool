@@ -22,10 +22,10 @@ public:
     void setMatrix3f(const String &, const float *);
     void setMatrix4f(const String &, const float *);
 
-    void setIntArray(const String &, const int *, size_t);
+    void setIntArray(const String &, const int *, int);
 
-    void setFloatArray(const String &, const float *, size_t);
-    void setVec2fArray(const String &, const float *, size_t);
-    void setVec3fArray(const String &, const float *, size_t);
-    void setMat3Array(const String &, const float *, size_t);
+    void setFloatArray(const String &, const float *, int);
+    void setVec2fArray(const String &, const float *, int);
+    void setVec3fArray(const String &, const float *, int);
+    void setMat3Array(const String &, const float *, int);
 }; // class-shadear

@@ -54,11 +54,11 @@ static MatXd treatImage(MatXd img, int medianSize, double clipLimit,
     // Creating look-up table
 
     const uint32_t
-        nCols = img.cols(),
-        nRows = img.rows(),
+        nCols = uint32_t(img.cols()),
+        nRows = uint32_t(img.rows()),
         tileArea = tileSizeX * tileSizeY,
-        TX = ceil(nCols / double(tileSizeX)),
-        TY = ceil(nRows / double(tileSizeY)),
+        TX = uint32_t(std::ceil(nCols / double(tileSizeX))),
+        TY = uint32_t(std::ceil(nRows / double(tileSizeY))),
         NT = TX * TY;
 
     clipLimit *= tileArea / 256.0;
@@ -69,12 +69,12 @@ static MatXd treatImage(MatXd img, int medianSize, double clipLimit,
     for (uint32_t k = 0; k < nRows; k++)
         for (uint32_t l = 0; l < nCols; l++)
         {
-            uint32_t y = k / double(tileSizeX),
-                     x = l / double(tileSizeY);
+            uint32_t y = uint32_t(k / double(tileSizeX)),
+                     x = uint32_t(l / double(tileSizeY));
 
             uint32_t tid = y * TX + x;
 
-            uint32_t id = 255.0 * img(k, l);
+            uint32_t id = uint32_t(255.0 * img(k, l));
             lut(id, tid)++;
         }
 
@@ -145,7 +145,7 @@ static MatXd treatImage(MatXd img, int medianSize, double clipLimit,
             px = px > 0.5 ? px - 0.5 : 0.5 - px;
             py = py > 0.5 ? py - 0.5 : 0.5 - py;
 
-            uint32_t bin = 255.0 * img(k, l),
+            uint32_t bin = uint32_t(255.0 * img(k, l)),
                      tid0 = (y + 0) * TX + (x + 0),
                      tid1 = (y + 0) * TX + (x + dx),
                      tid2 = (y + dy) * TX + (x + 0),
@@ -180,7 +180,7 @@ static MatXd treatImage(MatXd img, int medianSize, double clipLimit,
 
                 std::sort(vec.begin(), vec.end());
 
-                uint32_t pos = 0.5f * vec.size();
+                uint32_t pos = uint32_t(0.5f * vec.size());
                 img(k, l) = vec.at(pos);
             } // loop-median
 
@@ -209,7 +209,7 @@ Align::Align(uint32_t nFrames, const MatXd *im1, const MatXd *im2, Mailbox *mail
 
     vIm0.resize(nFrames);
     vIm1.resize(nFrames);
-    RT = TransformData(im1[0].cols(), im1[0].rows());
+    RT = TransformData(uint32_t(im1[0].cols()), uint32_t(im1[0].rows()));
 
     Message::Progress *msg = nullptr;
     if (mbox)
@@ -244,8 +244,8 @@ void Align::calcEnergy(const uint32_t id, const uint32_t nThr)
     global_energy.at(id) = 0.0;
 
     const uint32_t
-        width = vIm0[0].cols(),
-        height = vIm0[0].rows();
+        width = uint32_t(vIm0[0].cols()),
+        height = uint32_t(vIm0[0].rows());
 
     for (uint32_t fr = id; fr < vIm0.size(); fr += nThr)
     {
@@ -253,8 +253,13 @@ void Align::calcEnergy(const uint32_t id, const uint32_t nThr)
         for (uint32_t x = 0; x < width; x++)
             for (uint32_t y = 0; y < height; y++)
             {
-                int i = itrf[0][0] * (x + 0.5) + itrf[0][1] * (y + 0.5) + itrf[0][2],
-                    j = itrf[1][0] * (x + 0.5) + itrf[1][1] * (y + 0.5) + itrf[1][2];
+                int i = int(std::round(itrf[0][0] * (x + 0.5f) +
+                                       itrf[0][1] * (y + 0.5f) +
+                                       itrf[0][2]));
+
+                int j = int(std::round(itrf[1][0] * (x + 0.5f) +
+                                       itrf[1][1] * (y + 0.5f) +
+                                       itrf[1][2]));
 
                 double dr = double(vIm0[fr](y, x));
                 if (i >= 0 && i < int(width) && j >= 0 && j < int(height))
@@ -313,8 +318,8 @@ double Align::weightTransRot(const VecXd &p)
 double Align::weightScale(const VecXd &p)
 {
     double sx = p[0], sy = p[1],
-           width = vIm0[0].cols(),
-           height = vIm0[0].rows();
+           width = static_cast<double>(vIm0[0].cols()),
+           height = static_cast<double>(vIm0[0].rows());
 
     // Transformation matrices
     glm::mat3 A(sx, 0.0f, 0.5f * width * (1.0f - sx),

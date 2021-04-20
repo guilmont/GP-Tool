@@ -133,7 +133,7 @@ namespace Tiffer
                 if (sizeof(T) == 1)
                     img(row, col++) = val;
                 else if (sizeof(T) == 2)
-                    img(row, col++) = (val << 8) | (val >> 8);
+                    img(row, col++) = (val & 0x00FF) << 8 | (val & 0xFF00) >> 8;
                 else if (sizeof(T) == 4)
                 {
                     val = (val & 0x0000FFFF) << 16 | (val & 0xFFFF0000) >> 16;

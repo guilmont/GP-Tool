@@ -41,7 +41,7 @@ Framebuffer::~Framebuffer(void)
 void Framebuffer::bind(void)
 {
     gl_call(glad_glBindFramebuffer(GL_FRAMEBUFFER, bufferID));
-    gl_call(glad_glViewport(0, 0, size.x, size.y));
+    gl_call(glad_glViewport(0, 0, int(size.x), int(size.y)));
 }
 
 void Framebuffer::unbind(void)

@@ -31,7 +31,7 @@ GOptimize::Vertex &GOptimize::Vertex::operator=(Vertex &&vt)
 
 GOptimize::NMSimplex::NMSimplex(const VecXd &vec, double thres, double step)
 {
-    this->numParams = vec.size();
+    this->numParams = uint32_t(vec.size());
     this->sizeThres = thres;
     this->step = step;
     this->params = vec;
@@ -40,7 +40,7 @@ GOptimize::NMSimplex::NMSimplex(const VecXd &vec, double thres, double step)
 
 GOptimize::NMSimplex::NMSimplex(VecXd &&vec, double thres, double step)
 {
-    this->numParams = vec.size();
+    this->numParams = uint32_t(vec.size());
     this->sizeThres = thres;
     this->step = step;
     this->params = std::move(vec);
