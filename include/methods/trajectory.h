@@ -6,9 +6,7 @@
 
 struct Track
 {
-    uint32_t channel;
-    std::string path;
-    std::string description = "No description";
+    std::string path, description = "No description";
 
     std::vector<MatXd> traj;
 

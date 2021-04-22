@@ -229,7 +229,7 @@ Align::Align(uint32_t nFrames, const MatXd *im1, const MatXd *im2, Mailbox *mail
 
     std::vector<std::thread> vThr(std::thread::hardware_concurrency());
     for (uint32_t tid = 0; tid < vThr.size(); tid++)
-        vThr[tid] = std::thread(parallel_image_treatment, tid, vThr.size());
+        vThr[tid] = std::thread(parallel_image_treatment, tid, uint32_t(vThr.size()));
 
     for (auto &thr : vThr)
         thr.join();

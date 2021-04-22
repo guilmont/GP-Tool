@@ -8,7 +8,7 @@ PluginManager::PluginManager(Fonts *fonts) : fonts(fonts)
     plugins["ALIGNMENT"] = nullptr;
     plugins["GPROCESS"] = nullptr;
     plugins["MOVIE"] = nullptr;
-    plugins["TRAJECTORIES"] = nullptr;
+    plugins["TRAJECTORY"] = nullptr;
 }
 
 PluginManager::~PluginManager(void) {}

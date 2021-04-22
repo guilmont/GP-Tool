@@ -28,7 +28,7 @@ static std::string time2String(const TimePoint &t1, const TimePoint &t2)
     float fSecs = float(secs.count()) + 1e-3f * float(ms.count());
 
     char buf[16];
-    sprintf_s(buf, "%.3f secs ", fSecs);
+    sprintf(buf, "%.3f secs ", fSecs);
     txt += buf;
 
     return txt;

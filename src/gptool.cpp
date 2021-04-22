@@ -4,7 +4,7 @@
 
 GPTool::GPTool(void)
 {
-    initialize("GShader", 1200 * DPI_FACTOR, 800 * DPI_FACTOR);
+    initialize("GP-Tool", 1200 * DPI_FACTOR, 800 * DPI_FACTOR);
     shader = std::make_unique<Shader>();
     quad = std::make_unique<Quad>();
 
@@ -18,7 +18,6 @@ GPTool::GPTool(void)
 void GPTool::onUserUpdate(float deltaTime)
 {
     // Control signal hanfling
-
     bool check = keyboard[Key::LEFT_CONTROL] == Event::PRESS;
     check |= keyboard[Key::RIGHT_CONTROL] == Event::PRESS;
     check &= keyboard['O'] == Event::RELEASE;
@@ -30,13 +29,13 @@ void GPTool::onUserUpdate(float deltaTime)
 
     if (viewport_hover)
     {
-        // move camera -- add roi points
+        // move camera
         if (mouse[Mouse::LEFT] == Event::PRESS)
         {
             glm::vec2 dr = mouse.offset * deltaTime;
             camera.moveHorizontal(dr.x);
             camera.moveVertical(dr.y);
-        } // left-button-pressed
+        }
 
         // zoom
         if (mouse.wheel.y > 0.0f)
@@ -47,29 +46,26 @@ void GPTool::onUserUpdate(float deltaTime)
     }
 
     ///////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////
-    // Handling plugins
-
-    ///////////////////////////////////////////////////////
     // Renderering
-    // if (!updateViewport)
-    //     return;
 
     viewBuf->bind();
+
+    // Clearing buffer
     glad_glClear(GL_COLOR_BUFFER_BIT);
     glad_glClearColor(0.6f, 0.6f, 0.6f, 1.0f);
 
-    shader->useProgram("viewport");
-    manager->updateAll(deltaTime);
-    quad->draw();
-    viewBuf->unbind();
+    shader->useProgram("viewport"); // chooseing rendering program
+    manager->updateAll(deltaTime);  // Let all plugins do what they need
+    quad->draw();                   // rendering final image
 
-    // std::cout << deltaTime << std::endl;
+    viewBuf->unbind();
 
 } // function
 
 void GPTool::ImGuiLayer(void)
 {
+    // ImGui::ShowDemoWindow();
+
     manager->showHeader();
     manager->showProperties();
     manager->showWindows();
@@ -138,7 +134,7 @@ void GPTool::ImGuiMenuLayer(void)
             mbox.setActive();
 
         char buf[64] = {0};
-        sprintf_s(buf, "FPS: %.0f", ImGui::GetIO().Framerate);
+        sprintf(buf, "FPS: %.0f", ImGui::GetIO().Framerate);
         ImGui::MenuItem(buf);
 
         // if (ImGui::MenuItem("How to cite"))

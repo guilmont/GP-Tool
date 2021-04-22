@@ -5,12 +5,7 @@
 
 #include "gptool.h"
 
-struct UITraj
-{
-    uint32_t trackID, trajID;
-    bool display = true;
-    glm::vec3 color;
-};
+using UITraj = std::vector<std::pair<bool, glm::vec3>>;
 
 class TrajPlugin : public Plugin
 {
@@ -32,13 +27,22 @@ private:
         std::vector<std::string> path;
     } trackInfo;
 
+    struct
+    {
+        bool show = false;
+        uint32_t trackID, trajID;
+    } detail;
+
     void winLoadTracks(void);
+    void winDetail(void);
 
 private:
     const Movie *movie = nullptr;
     GPTool *tool = nullptr;
 
     std::unique_ptr<Trajectory> m_traj = nullptr;
+
+    UITraj *uitraj = nullptr;
 
     void enhanceTracks(void);
 };

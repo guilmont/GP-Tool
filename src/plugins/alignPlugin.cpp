@@ -17,13 +17,13 @@ void AlignPlugin::showProperties(void)
     const uint32_t nChannels = movie->getMetadata().SizeC;
 
     char txt[128] = {0};
-    sprintf_s(txt, "Channel %d", chAlign);
+    sprintf(txt, "Channel %d", chAlign);
 
     if (ImGui::BeginCombo("To align", txt))
     {
         for (uint32_t ch = 1; ch < nChannels; ch++)
         {
-            sprintf_s(txt, "Channel %d", ch);
+            sprintf(txt, "Channel %d", ch);
             if (ImGui::Selectable(txt))
             {
                 chAlign = ch;

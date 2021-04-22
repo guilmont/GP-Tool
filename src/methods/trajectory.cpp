@@ -347,7 +347,6 @@ bool Trajectory::useICY(const std::string &xmlTrack, uint32_t ch)
     pugi::xml_node group = doc.child("root").child("trackgroup");
 
     m_vTrack[ch].path = std::move(xmlTrack);
-    m_vTrack[ch].channel = ch;
     m_vTrack[ch].description = group.attribute("description").as_string();
 
     for (auto xtr : group.children("track"))
@@ -394,7 +393,6 @@ bool Trajectory::useCSV(const std::string &csvTrack, uint32_t ch)
         return false;
 
     Track track;
-    track.channel = ch;
     track.path = std::move(csvTrack);
 
     // Splitting particles

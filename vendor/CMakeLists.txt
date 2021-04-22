@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 3.10)
 
 ## GLOBALLY INSTALLED LIBRARIES
 
+
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/glm" glm)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/glfw" glfw)
-
 
 # find_package(PkgConfig REQUIRED)
 # find_package(HDF5 COMPONENTS CXX REQUIRED) 

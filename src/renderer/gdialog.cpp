@@ -81,7 +81,7 @@ bool GDialog::openDialog(void)
     }
 
     static char loc[1024] = {0};
-    sprintf_s(loc, "%s", main_path.c_str());
+    sprintf(loc, "%s", main_path.c_str());
 
     float width = ImGui::GetContentRegionAvailWidth();
 
@@ -166,7 +166,7 @@ bool GDialog::saveDialog(void)
     }
 
     static char loc[1024];
-    sprintf_s(loc, "%s", main_path.c_str());
+    sprintf(loc, "%s", main_path.c_str());
 
     float width = ImGui::GetContentRegionAvailWidth();
 
@@ -265,7 +265,7 @@ void GDialog::systemLoop(void)
 
 #ifdef _WIN32
             size_t pos = arq.find_last_of("\\");
-#elif
+#else
             size_t pos = arq.find_last_of("/");
 #endif
 
@@ -283,7 +283,7 @@ void GDialog::systemLoop(void)
 
 #ifdef _WIN32
             size_t pos = arq.find_last_of("\\");
-#elif
+#else
             size_t pos = arq.find_last_of("/");
 #endif
 

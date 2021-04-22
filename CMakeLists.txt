@@ -8,12 +8,26 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 find_package(Threads REQUIRED)
 
 
+
 # GENERAL PURPOSE VENDOR
 add_subdirectory("${CMAKE_SOURCE_DIR}/vendor")
 
 # CONFIGURATION FILE
-set(DPI_FACTOR "1")
-set(HOME_DIR "${CMAKE_SOURCE_DIR}")
+option(HIGH_DPI "Setup scale for High DPI monitors" OFF)
+
+if (${HIGH_DPI})
+    set(DPI_FACTOR "2")
+else()
+    set(DPI_FACTOR "1")
+endif()
+
+if (WIN32)
+    file(TO_CMAKE_PATH "$ENV{USERPROFILE}" HOME_DIR)
+else()
+    set(HOME_DIR "$ENV{HOME}")
+endif()
+
+
 set(PROJECT_DIR "${CMAKE_SOURCE_DIR}")
 set(INI_PATH "${CMAKE_SOURCE_DIR}/assets/gptool.ini")
 configure_file("${CMAKE_SOURCE_DIR}/config.h.in" "${CMAKE_SOURCE_DIR}/include/renderer/config.h" NEWLINE_STYLE UNIX)
@@ -152,15 +166,15 @@ target_link_libraries(RENDERER
 )
 
 ###########################################################
-# PLUGIN MANAGER 
+# PLUGIN MANAGER AND MAIN EXECUTABLE
 
-add_library(GPTOOL
-    STATIC
-        "${CMAKE_SOURCE_DIR}/src/gptool.cpp"
-        "${CMAKE_SOURCE_DIR}/src/plugins/manager.cpp"
-        "${CMAKE_SOURCE_DIR}/src/plugins/moviePlugin.cpp"
-        "${CMAKE_SOURCE_DIR}/src/plugins/alignPlugin.cpp"
-        "${CMAKE_SOURCE_DIR}/src/plugins/trajPlugin.cpp"
+add_executable(GPTOOL
+    "${CMAKE_SOURCE_DIR}/src/main.cpp"
+    "${CMAKE_SOURCE_DIR}/src/gptool.cpp"
+    "${CMAKE_SOURCE_DIR}/src/plugins/manager.cpp"
+    "${CMAKE_SOURCE_DIR}/src/plugins/moviePlugin.cpp"
+    "${CMAKE_SOURCE_DIR}/src/plugins/alignPlugin.cpp"
+    "${CMAKE_SOURCE_DIR}/src/plugins/trajPlugin.cpp"
 )
 
 target_include_directories(GPTOOL
@@ -180,25 +194,7 @@ target_link_libraries(GPTOOL
 
 
 ###########################################################
-# MAIN EXECUTABLE
-
-add_executable(App 
-    "${CMAKE_SOURCE_DIR}/src/main.cpp"
-)
-
-
-target_include_directories(App
-    PUBLIC
-        "${CMAKE_SOURCE_DIR}/include"
-)
-
-target_link_libraries(App
-    PUBLIC
-        GPTOOL
-
-)
-
-
+# INSTALLATION SETUP
 
 # install(TARGETS GPTool DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
 # install(DIRECTORY "${CMAKE_SOURCE_DIR}/gui/assets" DESTINATION "${CMAKE_INSTALL_PREFIX}")

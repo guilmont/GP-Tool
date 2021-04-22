@@ -155,7 +155,10 @@ void MoviePlugin::showProperties(void)
             {
                 bool selected = name.compare(info[ch].lut_name) == 0;
                 if (ImGui::Selectable(name.c_str(), &selected))
+                {
                     info[ch].lut_name = name;
+                    updateTexture(ch);
+                }
 
                 if (selected)
                     ImGui::SetItemDefaultFocus();

@@ -1,5 +1,8 @@
 .DS_Store
 .vscode
+.vs
 build
 gui/GPTool
 test
+CMakeSettings.json
+out

@@ -1,17 +1,24 @@
 #include "trajPlugin.h"
 
+#include <random>
+
 TrajPlugin::TrajPlugin(const Movie *mov, GPTool *ptr) : movie(mov), tool(ptr)
 {
     const uint32_t SC = mov->getMetadata().SizeC;
     trackInfo.path.resize(SC);
+
+    uitraj = new UITraj[SC];
 }
 
-TrajPlugin::~TrajPlugin(void) {}
+TrajPlugin::~TrajPlugin(void) { delete[] uitraj; }
 
 void TrajPlugin::showWindows(void)
 {
     if (trackInfo.show)
         winLoadTracks();
+
+    if (detail.show)
+        winDetail();
 }
 
 void TrajPlugin::showProperties(void)
@@ -62,57 +69,43 @@ void TrajPlugin::showProperties(void)
                     ImGui::Spacing();
                     ImGui::Spacing();
 
-                    // // std::vector<View> &view = data.track->getTrack(ch).view;
-                    // // ImGui::Text("Select: ");
-                    // // ImGui::SameLine();
-                    // // if (ImGui::Button("All"))
-                    // // {
-                    // //     for (uint32_t k = 0; k < view.size(); k++)
-                    // //         view[k].first = true;
+                    ImGui::Text("Select: ");
+                    ImGui::SameLine();
+                    if (ImGui::Button("All"))
+                        for (auto &[show, cor] : uitraj[ch])
+                            show = true;
 
-                    // //     data.updateViewport_flag = true;
-                    // // }
+                    ImGui::SameLine();
+                    if (ImGui::Button("None"))
+                        for (auto &[show, cor] : uitraj[ch])
+                            show = false;
 
-                    // // ImGui::SameLine();
-                    // // if (ImGui::Button("None"))
-                    // // {
-                    // //     for (uint32_t k = 0; k < view.size(); k++)
-                    // //         view[k].first = false;
+                    ImGui::Spacing();
+                    ImGui::Columns(2);
 
-                    // //     data.updateViewport_flag = true;
-                    // // }
+                    for (uint32_t k = 0; k < uitraj[ch].size(); k++)
+                    {
+                        auto &[show, cor] = uitraj[ch].at(k);
 
-                    // // ImGui::Spacing();
+                        txt = "Trajectory " + std::to_string(k);
+                        ImGui::PushID(txt.c_str());
 
-                    // // ImGui::Columns(2);
-                    // // for (uint32_t k = 0; k < view.size(); k++)
-                    // // {
-                    // //     auto &[show, cor] = view.at(k);
-                    // //     txt = "Trajectory " + std::to_string(k);
-                    // //     ImGui::PushID(txt.c_str());
+                        ImGui::Checkbox("##check", &show);
 
-                    // //     if (ImGui::Checkbox("##check", &show))
-                    // //         data.updateViewport_flag = true;
+                        ImGui::SameLine();
+                        ImGui::PushStyleColor(ImGuiCol_Text, {cor.r, cor.g, cor.b, 1.0f});
+                        tool->fonts.text(txt, "bold");
+                        ImGui::PopStyleColor();
+                        ImGui::NextColumn();
 
-                    // //     ImGui::SameLine();
-                    // //     ImGui::PushStyleColor(ImGuiCol_Text, {cor[0], cor[1], cor[2], 1.0});
-                    // //     ui.fonts.text(txt, "bold");
-                    // //     ImGui::PopStyleColor();
-                    // //     ImGui::NextColumn();
+                        if (ImGui::Button("Detail"))
+                            detail = {true, ch, k};
 
-                    // //     if (ImGui::Button("Detail"))
-                    // //     {
-                    // //         winTrajectory *win = (winTrajectory *)ui.mWindows["trajectory"].get();
-                    // //         win->setInfo(ch, k);
-                    // //         win->show();
-                    // //     }
+                        ImGui::NextColumn();
+                        ImGui::PopID();
+                    } // loop-traj
 
-                    // //     ImGui::NextColumn();
-
-                    //     ImGui::PopID();
-                    // }
-
-                    // ImGui::Columns(1);
+                    ImGui::Columns(1);
 
                     ImGui::PopID();
                     ImGui::EndTabItem();
@@ -135,10 +128,123 @@ void TrajPlugin::showProperties(void)
 
 void TrajPlugin::update(float deltaTime)
 {
-}
+    if (m_traj == nullptr)
+        return;
+
+    MoviePlugin *mov = reinterpret_cast<MoviePlugin *>(tool->manager->getPlugin("MOVIE"));
+
+    const Metadata &meta = movie->getMetadata();
+
+    const uint32_t frame = mov->current_frame,
+                   nChannels = movie->getMetadata().SizeC;
+
+    const glm::vec2 size = {float(meta.SizeY), float(meta.SizeX)};
+    glm::mat3 trf(1.0f);
+
+    uint32_t nPts = 0;
+    std::array<glm::vec3, 128> vCor, vPos;
+    for (uint32_t ch = 0; ch < nChannels; ch++)
+    {
+        int32_t ct = -1;
+        const Track &track = m_traj->getTrack(ch);
+
+        if (ch > 0)
+        {
+            AlignPlugin *al = (AlignPlugin *)tool->manager->getPlugin("ALIGNMENT");
+            trf = al->data[ch].trf;
+        }
+
+        for (auto &[show, cor] : uitraj[ch])
+        {
+            ct++;
+            if (!show)
+                continue;
+
+            const MatXd &mat = track.traj.at(ct);
+            for (uint32_t k = 0; k < uint32_t(mat.rows()); k++)
+                if (uint32_t(mat(k, 0)) == frame)
+                {
+                    float x = float(mat(k, Track::POSX)),
+                          y = float(mat(k, Track::POSY)),
+                          rx = float(mat(k, Track::SIZEX)) / size.x,
+                          ry = float(mat(k, Track::SIZEY)) / size.y;
+
+                    float r = 0.5f * std::sqrtf(rx * rx + ry * ry);
+
+                    float nx = trf[0][0] * x + trf[0][1] * y + trf[0][2],
+                          ny = trf[1][0] * x + trf[1][1] * y + trf[1][2];
+
+                    vPos[nPts] = {nx, ny, r};
+                    vCor[nPts] = cor;
+
+                    if (++nPts == uint32_t(vPos.size()))
+                        goto excess;
+
+                    continue;
+                }
+
+        } // loop-traj
+
+    } // loop-tracks
+
+excess:
+
+    tool->shader->setInteger("u_nPoints", nPts);
+    tool->shader->setVec3fArray("u_ptPos", &vPos[0][0], nPts);
+    tool->shader->setVec3fArray("u_ptColor", &vCor[0][0], nPts);
+
+} // update
 
 ////////////////////////////////////////////////////////////////////////.//////
 // PRIVATE FUNCTIONS
+
+void TrajPlugin::enhanceTracks(void)
+{
+    m_traj = std::make_unique<Trajectory>(movie, &(tool->mbox));
+
+    m_traj->spotSize = trackInfo.spotSize;
+    const uint32_t nChannels = movie->getMetadata().SizeC;
+
+    for (uint32_t ch = 0; ch < nChannels; ch++)
+    {
+        std::string &path = trackInfo.path[ch];
+        size_t pos = path.find_last_of('.');
+        std::string ext = path.substr(pos + 1);
+
+        if (ext.compare("xml") == 0)
+            m_traj->useICY(path, ch);
+        else if (ext.compare("csv") == 0)
+            m_traj->useCSV(path, ch);
+
+    } // loop - channels
+
+    tool->mbox.create<Message::Info>("Optimizing trajectories...");
+    std::thread(
+        [](Trajectory *m_traj, UITraj *uitraj, uint32_t nChannels) {
+            m_traj->enhanceTracks();
+
+            std::random_device rng;
+            std::default_random_engine eng(rng());
+            std::uniform_real_distribution<float> unif(0.0f, 1.0f);
+
+            for (uint32_t ch = 0; ch < nChannels; ch++)
+            {
+                const Track &track = m_traj->getTrack(ch);
+                const uint32_t NT = uint32_t(track.traj.size());
+
+                uitraj[ch].resize(NT);
+                for (uint32_t t = 0; t < NT; t++)
+                    uitraj[ch].at(t) = {true, {unif(eng), unif(eng), unif(eng)}};
+
+            } // loop-channels
+        },
+        m_traj.get(), uitraj, nChannels)
+        .detach();
+
+} // enhanceTracks
+
+///////////////////////////////////////////////////////////////////////////////
+// Windows
 
 void TrajPlugin::winLoadTracks(void)
 {
@@ -165,7 +271,7 @@ void TrajPlugin::winLoadTracks(void)
         ImGui::Text("%s", txt.c_str());
         ImGui::SameLine();
 
-        strcpy_s(buf, trackInfo.path[ch].c_str());
+        strcpy(buf, trackInfo.path[ch].c_str());
 
         ImGui::SetNextItemWidth(width);
         ImGui::InputText("##input", buf, 1024, ImGuiInputTextFlags_ReadOnly);
@@ -209,25 +315,92 @@ void TrajPlugin::winLoadTracks(void)
     ImGui::End();
 }
 
-void TrajPlugin::enhanceTracks(void)
+void TrajPlugin::winDetail(void)
 {
-    m_traj = std::make_unique<Trajectory>(movie, &(tool->mbox));
+    const Track &track = m_traj->getTrack(detail.trackID);
+    const MatXd &mat = track.traj.at(detail.trajID);
+    const uint32_t nRows = static_cast<uint32_t>(mat.rows());
 
-    m_traj->spotSize = trackInfo.spotSize;
-    for (uint32_t ch = 0; ch < trackInfo.path.size(); ch++)
+    ImGui::Begin("Trajectory", &(detail.show));
+
+    tool->fonts.text("Path: ", "bold");
+    ImGui::SameLine();
+    ImGui::Text("%s", track.path.c_str());
+
+    tool->fonts.text("Description: ", "bold");
+    ImGui::SameLine();
+    ImGui::Text("%s", track.description.c_str());
+
+    tool->fonts.text("Channel: ", "bold");
+    ImGui::SameLine();
+    ImGui::Text("%d", detail.trackID);
+
+    tool->fonts.text("Trajectory: ", "bold");
+    ImGui::SameLine();
+    ImGui::Text("%d", detail.trajID);
+
+    tool->fonts.text("Length: ", "bold");
+    ImGui::SameLine();
+    ImGui::Text("%ld points", nRows);
+
+    ImGui::Spacing();
+
+    if (ImGui::Button("Export"))
     {
-        std::string &path = trackInfo.path[ch];
+        // std::pair<const MatrixXd *, UI *> info{&data.track->getTrack(ch).traj[id], ui};
 
-        size_t pos = path.find_last_of('.');
-        std::string ext = path.substr(pos + 1);
+        // FileDialog *dialog = (FileDialog *)ui->mWindows["dialog"].get();
+        // dialog->createDialog(DIALOG_SAVE, "Save CSV file...", {".csv"});
+        // dialog->callback(saveCSV, info);
+    }
 
-        if (ext.compare("xml") == 0)
-            m_traj->useICY(path, ch);
-        else if (ext.compare("csv") == 0)
-            m_traj->useCSV(path, ch);
+    ImGui::SameLine();
 
-    } // loop - channels
+    if (ImGui::Button("View plots"))
+    {
+        // winPlotTrajectory *win = (winPlotTrajectory *)ui->mWindows["plotTraj"].get();
+        // win->setInfo(&data.track->getTrack(ch).traj[id], "Movement");
+        // win->show();
+    }
 
-    tool->mbox.create<Message::Info>("Optimizing trajectories...");
-    std::thread([&](void) { m_traj->enhanceTracks(); }).detach();
+    ImGui::Spacing();
+    ImGui::Spacing();
+
+    // Creating table
+    const char *names[] = {"Frame", "Time",
+                           "Position X", "Position Y",
+                           "Error X", "Error Y",
+                           "Size X", "Size Y",
+                           "Background", "Signal"};
+
+    ImGuiTableFlags flags = ImGuiTableFlags_ScrollY;
+    flags |= ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_BordersV;
+
+    if (ImGui::BeginTable("table1", Track::NCOLS, flags))
+    {
+        // Header
+        for (uint32_t k = 0; k < Track::NCOLS; k++)
+            ImGui::TableSetupColumn(names[k]);
+        ImGui::TableHeadersRow();
+
+        // Mainbody
+        for (uint32_t row = 0; row < nRows; row++)
+        {
+            ImGui::TableNextRow();
+
+            //Frame column presents integer values
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("%.0f", mat(row, 0));
+
+            // remains columns
+            for (uint32_t column = 1; column < Track::NCOLS; column++)
+            {
+                ImGui::TableSetColumnIndex(column);
+                ImGui::Text("%.4f", mat(row, column));
+            }
+        }
+        ImGui::EndTable();
+    }
+
+    ImGui::End();
 }
