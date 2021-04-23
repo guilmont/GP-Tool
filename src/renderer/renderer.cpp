@@ -49,6 +49,7 @@ Renderer::~Renderer(void)
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
 
+    ImPlot::DestroyContext();
     ImGui::DestroyContext();
 
     glfwTerminate();
@@ -113,6 +114,7 @@ void Renderer::initialize(const String &name, uint32_t width, uint32_t height)
 
     // Setup Platform/Renderer bindings
     ImGui::CreateContext();
+    ImPlot::CreateContext();
     ImGui::StyleColorsClassic();
 
     // Floating windows off main windows

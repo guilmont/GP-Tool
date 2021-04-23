@@ -163,6 +163,7 @@ target_link_libraries(RENDERER
         imgui
         MAILBOX
         glm
+        implot
 )
 
 ###########################################################

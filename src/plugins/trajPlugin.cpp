@@ -448,20 +448,20 @@ void TrajPlugin::winPlots(void)
         const double ymin = std::min(lowX.minCoeff(), lowY.minCoeff()),
                      ymax = std::max(highX.maxCoeff(), highY.maxCoeff());
 
-        // ImPlot::SetNextPlotLimits(xmin, xmax, ymin, ymax);
+        ImPlot::SetNextPlotLimits(xmin, xmax, ymin, ymax);
 
-        // if (ImPlot::BeginPlot("Movement", "Frame", "Position", size))
-        // {
-        //     ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.5f);
-        //     ImPlot::PlotShaded("X-Axis", frame.data(), lowX.data(), highX.data(), nPts);
-        //     ImPlot::PlotLine("X-Axis", frame.data(), X.data(), nPts);
+        if (ImPlot::BeginPlot("Movement", "Frame", "Position", size))
+        {
+            ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.5f);
+            ImPlot::PlotShaded("X-Axis", frame.data(), lowX.data(), highX.data(), nPts);
+            ImPlot::PlotLine("X-Axis", frame.data(), X.data(), nPts);
 
-        //     ImPlot::PlotShaded("Y-Axis", frame.data(), lowY.data(), highY.data(), nPts);
-        //     ImPlot::PlotLine("Y-Axis", frame.data(), Y.data(), nPts);
-        //     ImPlot::PopStyleVar();
+            ImPlot::PlotShaded("Y-Axis", frame.data(), lowY.data(), highY.data(), nPts);
+            ImPlot::PlotLine("Y-Axis", frame.data(), Y.data(), nPts);
+            ImPlot::PopStyleVar();
 
-        //     ImPlot::EndPlot();
-        // }
+            ImPlot::EndPlot();
+        }
     } // if-movement
 
     else if (id == 1) // Spot size
@@ -472,14 +472,14 @@ void TrajPlugin::winPlots(void)
         const double ymin = 0.5 * std::min(szx.minCoeff(), szy.minCoeff()),
                      ymax = 1.2 * std::max(szx.maxCoeff(), szy.maxCoeff());
 
-        // ImPlot::SetNextPlotLimits(xmin, xmax, ymin, ymax);
+        ImPlot::SetNextPlotLimits(xmin, xmax, ymin, ymax);
 
-        // if (ImPlot::BeginPlot("Spot size", "Frame", "Size", size))
-        // {
-        //     ImPlot::PlotLine("X-Axis", frame.data(), szx.data(), nPts);
-        //     ImPlot::PlotLine("Y-Axis", frame.data(), szy.data(), nPts);
-        //     ImPlot::EndPlot();
-        // }
+        if (ImPlot::BeginPlot("Spot size", "Frame", "Size", size))
+        {
+            ImPlot::PlotLine("X-Axis", frame.data(), szx.data(), nPts);
+            ImPlot::PlotLine("Y-Axis", frame.data(), szy.data(), nPts);
+            ImPlot::EndPlot();
+        }
     } // if-size
 
     else // Signal and background
@@ -490,14 +490,14 @@ void TrajPlugin::winPlots(void)
         const double ymin = 0.5 * std::min(bg.minCoeff(), sig.minCoeff()),
                      ymax = 1.2 * std::max(bg.maxCoeff(), sig.maxCoeff());
 
-        // ImPlot::SetNextPlotLimits(xmin, xmax, ymin, ymax);
+        ImPlot::SetNextPlotLimits(xmin, xmax, ymin, ymax);
 
-        // if (ImPlot::BeginPlot("Signal", "Frame", "Signal", size))
-        // {
-        //     ImPlot::PlotLine("Spot", mat.col(0).data(), sig.data(), nPts);
-        //     ImPlot::PlotLine("Background", mat.col(0).data(), bg.data(), nPts);
-        //     ImPlot::EndPlot();
-        // }
+        if (ImPlot::BeginPlot("Signal", "Frame", "Signal", size))
+        {
+            ImPlot::PlotLine("Spot", mat.col(0).data(), sig.data(), nPts);
+            ImPlot::PlotLine("Background", mat.col(0).data(), bg.data(), nPts);
+            ImPlot::EndPlot();
+        }
     } // else-signal
 
     ImGui::End();

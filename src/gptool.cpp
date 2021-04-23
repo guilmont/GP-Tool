@@ -64,8 +64,8 @@ void GPTool::onUserUpdate(float deltaTime)
 
 void GPTool::ImGuiLayer(void)
 {
-    ImGui::ShowDemoWindow();
-    ImPlot::ShowDemoWindow();
+    // ImGui::ShowDemoWindow();
+    // ImPlot::ShowDemoWindow();
 
     manager->showHeader();
     manager->showProperties();
