@@ -1,7 +1,6 @@
 #include "manager.h"
 
 #include <imgui.h>
-#include <iostream>
 
 PluginManager::PluginManager(Fonts *fonts) : fonts(fonts)
 {
