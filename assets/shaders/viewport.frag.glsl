@@ -22,6 +22,7 @@ out vec4 fragColor;
 void main()
 {
 
+    // Main image and alignment
     fragColor = vec4(0.0,0.0,0.0,1.0);
     for (int ch = 0; ch < u_nChannels; ch++)
     {
@@ -29,8 +30,10 @@ void main()
         fragColor.rgb += u_color[ch] * texture(u_texture[ch], nCoord).x;
     }
 
-    float dr = 0.0007; // rim thickness
-            
+    ///////////////////////////////////////////////////////
+    // Spots
+
+    float dr = 0.0007; // rim thickness           
     for (int pt = 0; pt < u_nPoints; pt++)
     {
         float rad = u_ptPos[pt].z;
@@ -41,5 +44,7 @@ void main()
         fragColor.rgb = mix(fragColor.rgb, u_ptColor[pt], w);
     }
    
-                                                                                
+    ///////////////////////////////////////////////////////
+    // ROI
+
 } // main

@@ -1,4 +1,5 @@
 #include "trajPlugin.h"
+#include "vendor/implot/implot.h"
 
 #include <random>
 
@@ -19,6 +20,9 @@ void TrajPlugin::showWindows(void)
 
     if (detail.show)
         winDetail();
+
+    if (plot.show)
+        winPlots();
 }
 
 void TrajPlugin::showProperties(void)
@@ -347,20 +351,16 @@ void TrajPlugin::winDetail(void)
 
     if (ImGui::Button("Export"))
     {
-        // std::pair<const MatrixXd *, UI *> info{&data.track->getTrack(ch).traj[id], ui};
-
-        // FileDialog *dialog = (FileDialog *)ui->mWindows["dialog"].get();
-        // dialog->createDialog(DIALOG_SAVE, "Save CSV file...", {".csv"});
-        // dialog->callback(saveCSV, info);
     }
 
     ImGui::SameLine();
 
     if (ImGui::Button("View plots"))
     {
-        // winPlotTrajectory *win = (winPlotTrajectory *)ui->mWindows["plotTraj"].get();
-        // win->setInfo(&data.track->getTrack(ch).traj[id], "Movement");
-        // win->show();
+        plot.show = true;
+        plot.plotID = 0;
+        plot.trackID = detail.trackID;
+        plot.trajID = detail.trajID;
     }
 
     ImGui::Spacing();
@@ -396,11 +396,110 @@ void TrajPlugin::winDetail(void)
             for (uint32_t column = 1; column < Track::NCOLS; column++)
             {
                 ImGui::TableSetColumnIndex(column);
-                ImGui::Text("%.4f", mat(row, column));
+                ImGui::Text("%.3f", mat(row, column));
             }
         }
         ImGui::EndTable();
     }
 
     ImGui::End();
-}
+} // winDetail
+
+void TrajPlugin::winPlots(void)
+{
+    ImGui::Begin("Plots", &(plot.show));
+
+    uint32_t &id = plot.plotID;
+    if (ImGui::BeginCombo("Choose", plot.options[id]))
+    {
+        for (uint32_t k = 0; k < 3; k++)
+            if (ImGui::Selectable(plot.options[k]))
+            {
+                id = k;
+                ImGui::SetItemDefaultFocus();
+            } // if-selected
+
+        ImGui::EndCombo();
+    }
+
+    // Plot size
+    const float avail = ImGui::GetContentRegionAvailWidth();
+    const ImVec2 size = {avail, 0.6f * avail};
+
+    // Data to plot
+    const MatXd &mat = m_traj->getTrack(plot.trackID).traj[plot.trajID];
+
+    const uint32_t nPts = uint32_t(mat.rows());
+    const double xmin = mat(0, 0),
+                 xmax = mat(nPts - 1, 0);
+
+    const VecXd &frame = mat.col(Track::FRAME);
+
+    if (id == 0) // Movement
+    {
+        VecXd X = mat.col(Track::POSX).array() - mat(0, Track::POSX),
+              Y = mat.col(Track::POSY).array() - mat(0, Track::POSY);
+
+        VecXd errx = 1.96 * mat.col(Track::ERRX),
+              erry = 1.96 * mat.col(Track::ERRY);
+
+        VecXd lowX = X - errx, highX = X + errx;
+        VecXd lowY = Y - erry, highY = Y + erry;
+
+        const double ymin = std::min(lowX.minCoeff(), lowY.minCoeff()),
+                     ymax = std::max(highX.maxCoeff(), highY.maxCoeff());
+
+        ImPlot::SetNextPlotLimits(xmin, xmax, ymin, ymax);
+
+        if (ImPlot::BeginPlot("Movement", "Frame", "Position", size))
+        {
+            ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.5f);
+            ImPlot::PlotShaded("X-Axis", frame.data(), lowX.data(), highX.data(), nPts);
+            ImPlot::PlotLine("X-Axis", frame.data(), X.data(), nPts);
+
+            ImPlot::PlotShaded("Y-Axis", frame.data(), lowY.data(), highY.data(), nPts);
+            ImPlot::PlotLine("Y-Axis", frame.data(), Y.data(), nPts);
+            ImPlot::PopStyleVar();
+
+            ImPlot::EndPlot();
+        }
+    } // if-movement
+
+    else if (id == 1) // Spot size
+    {
+        const VecXd &szx = mat.col(Track::SIZEX),
+                    &szy = mat.col(Track::SIZEY);
+
+        const double ymin = 0.5 * std::min(szx.minCoeff(), szy.minCoeff()),
+                     ymax = 1.2 * std::max(szx.maxCoeff(), szy.maxCoeff());
+
+        ImPlot::SetNextPlotLimits(xmin, xmax, ymin, ymax);
+
+        if (ImPlot::BeginPlot("Spot size", "Frame", "Size", size))
+        {
+            ImPlot::PlotLine("X-Axis", frame.data(), szx.data(), nPts);
+            ImPlot::PlotLine("Y-Axis", frame.data(), szy.data(), nPts);
+            ImPlot::EndPlot();
+        }
+    } // if-size
+
+    else // Signal and background
+    {
+        const VecXd &bg = mat.col(Track::BG),
+                    &sig = mat.col(Track::SIGNAL);
+
+        const double ymin = 0.5 * std::min(bg.minCoeff(), sig.minCoeff()),
+                     ymax = 1.2 * std::max(bg.maxCoeff(), sig.maxCoeff());
+
+        ImPlot::SetNextPlotLimits(xmin, xmax, ymin, ymax);
+
+        if (ImPlot::BeginPlot("Signal", "Frame", "Signal", size))
+        {
+            ImPlot::PlotLine("Spot", mat.col(0).data(), sig.data(), nPts);
+            ImPlot::PlotLine("Background", mat.col(0).data(), bg.data(), nPts);
+            ImPlot::EndPlot();
+        }
+    } // else-signal
+
+    ImGui::End();
+} // winPlots

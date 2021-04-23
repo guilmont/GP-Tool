@@ -33,8 +33,16 @@ private:
         uint32_t trackID, trajID;
     } detail;
 
+    struct
+    {
+        bool show = false;
+        uint32_t trackID, trajID, plotID = 0;
+        const char *options[3] = {"Movement", "Spot size", "Signal"};
+    } plot;
+
     void winLoadTracks(void);
     void winDetail(void);
+    void winPlots(void);
 
 private:
     const Movie *movie = nullptr;

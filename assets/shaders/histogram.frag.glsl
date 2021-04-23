@@ -26,9 +26,7 @@ void main()
             fragColor.rgb = vec3(0.0);
         else
             fragColor.rgb = 0.85*color;
-
     }
-
 
     // Darker color for contrast bars
     if (fragCoord.x < contrast.x || fragCoord.x > contrast.y)

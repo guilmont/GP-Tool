@@ -190,6 +190,7 @@ target_link_libraries(GPTOOL
         ALIGN
         TRAJECTORY
         Threads::Threads
+        implot
 )
 
 
