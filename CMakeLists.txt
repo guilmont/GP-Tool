@@ -56,6 +56,8 @@ target_link_libraries(MAILBOX
         imgui
 )
 
+set_property(TARGET MAILBOX PROPERTY POSITION_INDEPENDENT_CODE ON)
+
 ###########################################################
 ## METHODS ################################################
 
@@ -213,6 +215,7 @@ target_link_libraries(GPTool
 #         MOVIE
 #         ALIGN
 #         TRAJECTORY
+#         GP_FBM
 
 #     DESTINATION lib
 # )

@@ -5,6 +5,9 @@
 #include "eigen/Eigen/LU"
 #include "eigen/Eigen/Cholesky"
 
+///////////////////////////////////////////////////////////////////////////////
+// HELPER FUNCTIONS
+
 static void removeRow(MatXd &mat, uint32_t row)
 {
     uint32_t nRows = uint32_t(mat.rows()) - 1;
@@ -16,11 +19,7 @@ static void removeRow(MatXd &mat, uint32_t row)
     mat.conservativeResize(nRows, nCols);
 } // removeRow
 
-///////////////////////////////////////////////////////////////////////////////
-// HELPER FUNCTIONS
-
-static MatXd calcKernel(const double D, const double A,
-                        const VecXd &T1, const VecXd &T2)
+static MatXd calcKernel(const double D, const double A, const VecXd &T1, const VecXd &T2)
 {
     const uint32_t
         NROWS = uint32_t(T1.size()),
@@ -52,47 +51,6 @@ static MatXd calcKernel(const double D, const double A,
     return kernel;
 
 } // calcKernel
-
-// static MatXd calcDensity(const MatXd &mcmc)
-// {
-//     const uint32_t nHisto = mcmc.cols(),
-//                    nRows = mcmc.rows();
-
-//     // Using Sturges' rule for histogram bin
-//     const uint32_t nPoints = 1 + ceil(log2(double(nRows))),
-//                    nCols = 2 * nHisto;
-
-//     MatXd mHisto(nPoints, nCols);
-//     mHisto.fill(0);
-
-//     for (uint32_t histo = 0; histo < nHisto; histo++)
-//     {
-//         // Calculate min and max values for bin width
-//         double minValue = INFINITY, maxValue = -INFINITY;
-//         for (uint32_t k = 0; k < nRows; k++)
-//         {
-//             minValue = mcmc(k, histo) < minValue ? mcmc(k, histo) : minValue;
-//             maxValue = mcmc(k, histo) > maxValue ? mcmc(k, histo) : maxValue;
-//         }
-
-//         double binWidth = (maxValue - minValue) / nPoints;
-
-//         mHisto.col(2 * histo) = VecXd::LinSpaced(nPoints, minValue, maxValue);
-
-//         for (uint32_t k = 0; k < nRows; k++)
-//         {
-//             uint32_t id = std::min<uint32_t>((mcmc(k, histo) - minValue) / binWidth, nPoints - 1);
-//             mHisto(id, 2 * histo + 1)++;
-//         }
-
-//         double sum = mHisto.col(2 * histo + 1).sum();
-//         mHisto.col(2 * histo + 1).array() /= sum;
-
-//     } // loop-cols
-
-//     return mHisto;
-
-// } // calcDensity
 
 ///////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -282,292 +240,253 @@ GP_FBM::CDA *GP_FBM::coupledModel(void)
     return cpl_da.get();
 } // coupledModel
 
-// ////////////// ESTIMATE TRAJECTORIES  /////////////////////
+///////////////////////////////////////////////////////////////////////////////
+// AVERAGE TRAJECTORIES ///////////////////////////////////////////////////////
 
-// void GP_FBM::calcAvgTrajectory(const VecXd &vFrame, const VecXd &vTime,
-//                                const uint32_t id)
-// {
-//     if (id >= route.size())
-//         mail->createMessage<MSG_Error>("(GP_FBM::calcAvgTrajectory) id doesn't exist!!");
+MatXd GP_FBM::calcAvgTrajectory(const VecXd &vTime, uint32_t id)
+{
 
-//     // Create output matrix
-//     MatXd traj(vTime.size(), route[id].cols());
-//     traj.col(TrajColumns::FRAME) = vFrame;
-//     traj.col(TrajColumns::TIME) = vTime;
+    if (id >= route.size())
+    {
+        std::string txt = "(GP_FBM::calcAvgTrajectory) id doesn't exist!!";
+        if (mbox)
+            mbox->create<Message::Error>(txt);
+        else
+            std::cerr << "ERROR " << txt << std::endl;
 
-//     // Getting particle's dynamical parameters
-//     const double
-//         D = parSingle[id].D,
-//         A = parSingle[id].A;
+        return MatXd(0, 0);
+    }
 
-//     // Importing trajectory
-//     MatXd mat = route[id];
-//     for (uint32_t k = 0; k < nDims; k++)
-//         mat.col(TrajColumns::POSX + 2 * k).array() -= parSingle[id].mu[k];
+    // Create output matrix
+    const uint32_t
+        nRows = uint32_t(vTime.size()),
+        nCols = uint32_t(route[id].cols());
 
-//     const VecXd &VT = mat.col(TrajColumns::TIME);
+    MatXd traj(nRows, nCols);
+    traj.col(Track::TIME) = vTime;
 
-//     MatXd
-//         K = calcKernel(D, A, VT, VT),
-//         Ks = calcKernel(D, A, VT, vTime),
-//         KsT = Ks.transpose(),
-//         K2s = calcKernel(D, A, vTime, vTime);
+    // Getting particle's dynamical parameters
+    DA *da = singleModel(id);
 
-//     VecXd diagK = K.diagonal();
+    // Importing trajectory
+    MatXd mat = route[id];
+    mat.col(Track::POSX).array() -= da->mu.x;
+    mat.col(Track::POSY).array() -= da->mu.y;
 
-//     for (uint8_t ch = 0; ch < nDims; ch++)
-//     {
-//         K.diagonal() = diagK + route[id].col(TrajColumns::ERRX + 2 * ch);
+    const VecXd &VT = mat.col(Track::TIME);
 
-//         // Calculating particle's expected position
-//         Eigen::LLT<MatXd> cholesky = K.llt();
-//         VecXd alpha = cholesky.solve(mat.col(TrajColumns::POSX + 2 * ch));
+    MatXd K = calcKernel(da->D, da->A, VT, VT),
+          Ks = calcKernel(da->D, da->A, VT, vTime),
+          KsT = Ks.transpose(),
+          K2s = calcKernel(da->D, da->A, vTime, vTime);
 
-//         traj.col(TrajColumns::POSX + 2 * ch) = KsT * alpha;
-//         traj.col(TrajColumns::POSX + 2 * ch).array() += parSingle[id].mu[ch];
+    VecXd diagK = K.diagonal();
 
-//         // Calculating positioning expected error
+    for (uint8_t k = 0; k < 2; k++)
+    {
+        K.diagonal() = diagK + route[id].col(Track::ERRX + k);
 
-//         const VecXd ver1 = K2s.diagonal();
-//         const VecXd ver2 = (KsT * cholesky.solve(Ks)).diagonal();
+        // Calculating particle's expected position
+        Eigen::LLT<MatXd> cholesky = K.llt();
+        VecXd alpha = cholesky.solve(mat.col(Track::POSX + k));
 
-//         traj.col(TrajColumns::ERRX + 2 * ch) = (ver1 - ver2).array().sqrt();
-//         traj(0, TrajColumns::ERRX + 2 * ch) = sqrt(route[id](0, TrajColumns::ERRX + 2 * ch));
-//     }
+        traj.col(Track::POSX + k) = KsT * alpha;
+        traj.col(Track::POSX + k).array() += da->mu[k];
 
-//     vecAvgTraj[id] = traj;
+        // Calculating positioning expected error
+        const VecXd ver1 = K2s.diagonal();
+        const VecXd ver2 = (KsT * cholesky.solve(Ks)).diagonal();
 
-// } // dataTreatment
+        traj.col(Track::ERRX + k) = (ver1 - ver2).array().sqrt();
+        traj(0, Track::ERRX + k) = sqrt(route[id](0, Track::ERRX + k));
+    }
 
-// void GP_FBM::estimateSubstrateMovement(void)
-// {
-//     if (!bControl[COUPLED])
-//     {
-//         mail->createMessage<MSG_Warning>("(GP_FBM::estimateSubstrateMovement) "
-//                                          "'coupledModel' must run before "
-//                                          "estimateSubstrateMovement'!!");
-//         if (!coupledModel())
-//         {
-//             mail->createMessage<MSG_Error>("(GP_FBM::estimateSubstrateMovement) "
-//                                            "'coupledModel' didn't converge!");
-//             return;
-//         }
-//     }
-//     // Let's determine time points which we need to calculate substrate movement
-//     // Determine maximum number of frames
-//     uint32_t maxFR = 0;
-//     for (auto &mat : route)
-//     {
-//         const uint32_t k = mat.rows() - 1;
-//         maxFR = std::max<uint32_t>(maxFR, mat(k, TrajColumns::FRAME));
-//     }
+    return traj.block(0, 1, nRows, nCols - 1);
 
-//     // Check all frames present
-//     std::vector<std::pair<bool, double>> vfr(maxFR + 1);
-//     for (auto &mat : route)
-//     {
-//         const uint32_t N = mat.rows();
-//         for (uint32_t k = 0; k < N; k++)
-//             vfr[int(mat(k, 0))] = {true, mat(k, TrajColumns::TIME)};
-//     }
+} // dataTreatment
 
-//     // We use those present
-//     std::vector<double> auxFrame, auxTime;
-//     for (uint32_t k = 0; k < vfr.size(); k++)
-//         if (vfr[k].first)
-//         {
-//             auxFrame.push_back(k);
-//             auxTime.push_back(vfr[k].second);
-//         }
+MatXd GP_FBM::estimateSubstrateMovement(void)
+{
+    // Let's determine time points which we need to calculate substrate movement
+    // Determine maximum number of frames
+    uint32_t maxFR = 0;
+    for (auto &mat : route)
+    {
+        const uint32_t k = uint32_t(mat.rows()) - 1;
+        maxFR = std::max(maxFR, uint32_t(mat(k, Track::FRAME)));
+    }
 
-//     // Let's calculate average trajectories with precision
-//     VecXd vFrame = VecXd::Map(auxFrame.data(), auxFrame.size());
-//     VecXd vTime = VecXd::Map(auxTime.data(), auxTime.size());
+    // Check all frames present
+    std::vector<std::pair<bool, double>> vfr(maxFR + 1);
+    for (auto &mat : route)
+    {
+        const uint32_t N = uint32_t(mat.rows());
+        for (uint32_t k = 0; k < N; k++)
+            vfr[int(mat(k, 0))] = {true, mat(k, Track::TIME)};
+    }
 
-//     std::vector<MatXd> avgRoute;
-//     for (uint32_t k = 0; k < route.size(); k++)
-//     {
-//         calcAvgTrajectory(vFrame, vTime, k);
-//         MatXd mat = getAvgTrajectory(k);
-//         for (uint8_t ch = 0; ch < nDims; ch++)
-//         {
-//             // We will need variance for next steps
-//             mat.col(TrajColumns::ERRX + 2 * ch).array() *=
-//                 mat.col(TrajColumns::ERRX + 2 * ch).array();
+    // We use those present
+    std::vector<double> auxFrame, auxTime;
+    for (uint32_t k = 0; k < vfr.size(); k++)
+        if (vfr[k].first)
+        {
+            auxFrame.push_back(k);
+            auxTime.push_back(vfr[k].second);
+        }
 
-//             // We should subtract average position to estimate substrate movement
-//             mat.col(TrajColumns::POSX + 2 * ch).array() -= parSingle[k].mu[ch];
-//         }
+    // Let's calculate average trajectories with precision
+    VecXd vFrame = VecXd::Map(auxFrame.data(), auxFrame.size());
+    VecXd vTime = VecXd::Map(auxTime.data(), auxTime.size());
 
-//         avgRoute.emplace_back(std::move(mat));
-//     }
+    std::vector<MatXd> avgRoute;
+    for (uint32_t k = 0; k < route.size(); k++)
+    {
+        MatXd mat = calcAvgTrajectory(vTime, k);
+        for (uint8_t k = 0; k < 2; k++)
+        {
+            // We will need variance for next steps
+            mat.col(Track::ERRX + k - 1) *= mat.col(Track::ERRX + k - 1);
 
-//     // We shall calculate all kernels now
-//     std::vector<MatXd> vKernel(route.size());
-//     for (uint32_t k = 0; k < route.size(); k++)
-//     {
-//         const double
-//             D = parCoupled.particle[k].D,
-//             A = parCoupled.particle[k].A;
+            // We should subtract average position to estimate substrate movement
+            DA *da = singleModel(k);
+            mat.col(Track::POSX + k - 1).array() -= da->mu[k];
+        }
 
-//         vKernel[k] = calcKernel(D, A, vTime, vTime);
-//     }
+        avgRoute.emplace_back(std::move(mat));
+    }
 
-//     // Kernel for substrate
-//     MatXd iKR = calcKernel(parCoupled.DR, parCoupled.AR, vTime, vTime);
-//     iKR.diagonal().array() += 0.0001;
-//     iKR = iKR.inverse();
+    // We shall calculate all kernels now
+    CDA *cda = coupledModel();
 
-//     // Let's estimate substrate movement
-//     substrate = MatXd(vTime.size(), 2 * nDims + TrajColumns::POSX);
-//     substrate.col(TrajColumns::FRAME) = vFrame;
-//     substrate.col(TrajColumns::TIME) = vTime;
+    std::vector<MatXd> vKernel(route.size());
+    for (uint32_t k = 0; k < route.size(); k++)
+        vKernel[k] = calcKernel(cda->da[k].D, cda->da[k].A, vTime, vTime);
 
-//     for (uint8_t ch = 0; ch < nDims; ch++)
-//     {
-//         MatXd A = iKR;
-//         VecXd vec = VecXd::Zero(vTime.size());
+    // Kernel for substrate
+    MatXd iKR = calcKernel(cda->DR, cda->AR, vTime, vTime);
+    iKR.diagonal().array() += 0.0001;
+    iKR = iKR.inverse();
 
-//         for (uint32_t k = 0; k < route.size(); k++)
-//         {
-//             MatXd iK = vKernel[k];
-//             iK.diagonal() += avgRoute[k].col(TrajColumns::ERRX + 2 * ch);
-//             iK = iK.inverse();
+    // Let's estimate substrate movement
+    const uint32_t nRows = uint32_t(vTime.size()),
+                   nCols = Track::NCOLS;
 
-//             A += iK;
-//             vec += iK * avgRoute[k].col(TrajColumns::POSX + 2 * ch);
+    MatXd substrate = MatXd(nRows, nCols);
+    substrate.col(Track::FRAME) = vFrame;
+    substrate.col(Track::TIME) = vTime;
 
-//         } // loop-particles
+    for (uint8_t ch = 0; ch < 2; ch++)
+    {
+        MatXd A = iKR;
+        VecXd vec = VecXd::Zero(nRows);
 
-//         A = A.inverse();
-//         substrate.col(TrajColumns::POSX + 2 * ch) = A * vec;
-//         substrate.col(TrajColumns::ERRX + 2 * ch) = A.diagonal().array().sqrt();
-//     } // loop-dims
+        for (uint32_t k = 0; k < nParticles; k++)
+        {
+            MatXd iK = vKernel[k];
+            iK.diagonal() += avgRoute[k].col(Track::ERRX + ch - 1);
+            iK = iK.inverse();
 
-//     bControl.set(SUBSTRATE);
+            A += iK;
+            vec += iK * avgRoute[k].col(Track::POSX + ch - 1);
 
-// } // estimateSubstrateMovement
+        } // loop-particles
 
-// /////////////////  RUN DISTRIBUTIONS ///////////////////
-// void GP_FBM::distrib_singleModel(void)
-// {
-//     if (!bControl[SINGLE])
-//     {
-//         mail->createMessage<MSG_Warning>("(GP_FBM::distrib_singleModel) We need to "
-//                                          "run optimizer before distribution!!");
+        A = A.inverse();
+        substrate.col(Track::POSX + ch) = A * vec;
+        substrate.col(Track::ERRX + ch) = A.diagonal().array().sqrt();
+    } // loop-dims
 
-//         if (!singleModel())
-//         {
-//             mail->createMessage<MSG_Error>("(GP_FBM::distrib_singleModel) 'singleModel' "
-//                                            "didn't converge!");
-//             return;
-//         }
-//     }
+    return substrate;
 
-//     // Loop over all the trajectories
-//     for (uint32_t id = 0; id < route.size(); id++)
-//     {
-//         runId = id;
-//         ParamDA &p = parSingle.at(id);
+} // estimateSubstrateMovement
 
-//         uint32_t svec = 3;
-//         svec = nDims == 2 ? 4 : svec;
-//         svec = nDims == 3 ? 5 : svec;
+///////////////////////////////////////////////////////////////////////////////
+// RUN DISTRIBUTIONS //////////////////////////////////////////////////////////
 
-//         VecXd vec(svec);
-//         vec(0) = log(p.D);
-//         vec(1) = -log(2.0 / p.A - 1.0);
+const MatXd &GP_FBM::distrib_singleModel(uint32_t sample_size, uint32_t id)
+{
 
-//         for (uint8_t ch = 0; ch < nDims; ch++)
-//             vec(ch + 2) = p.mu[ch];
+    if (distribSingle[id])
+        return *(distribSingle[id].get());
 
-//         MatXd mcmc =
-//             GOptimize::sampleParameters<double, VecXd, MatXd>(
-//                 vec, maxMCS, &transferSingle, this);
+    // Loop over all the trajectories
+    runID = id;
+    DA *da = singleModel(id);
 
-//         for (uint32_t k = 0; k < maxMCS; k++)
-//         {
-//             mcmc(k, 0) = exp(mcmc(k, 0)); // D
+    VecXd vec(4);
+    vec << log(da->D), -log(2.0 / da->A - 1.0), da->mu.x, da->mu.y;
 
-//             double eA = exp(mcmc(k, 1)); // A
-//             mcmc(k, 1) = 2.0f * eA / (eA + 1.0f);
-//         }
+    MatXd mcmc = GOptimize::sampleParameters(vec, sample_size,
+                                             &GP_FBM::weightSingle, this);
 
-//         // Appending to class variable
-//         distribSingle.push_back(calcDensity(mcmc));
-//     } // loop-particles
+    for (uint32_t k = 0; k < sample_size; k++)
+    {
+        mcmc(k, 0) = exp(mcmc(k, 0)); // D
 
-//     // Signaling distribution was calculated
-//     bControl.set(DTB_SINGLE);
+        double eA = exp(mcmc(k, 1)); // A
+        mcmc(k, 1) = 2.0f * eA / (eA + 1.0f);
+    }
 
-// } // distrib_singleModel
+    // Appending to class variable
+    distribSingle[id] = std::make_unique<MatXd>(std::move(mcmc));
+    return *(distribSingle[id].get());
 
-// void GP_FBM::distrib_coupledModel(void)
-// {
-//     if (!bControl[COUPLED])
-//     {
-//         mail->createMessage<MSG_Warning>("(GP_FBM::distrib_coupledModel) Must run "
-//                                          "coupled optimization first!!");
+} // distrib_singleModel
 
-//         if (!coupledModel())
-//         {
-//             mail->createMessage<MSG_Error>("(GP_FBM::distrib_coupledModel) "
-//                                            "'coupledModel' didn't converge!!");
-//             return;
-//         }
-//     }
+const MatXd &GP_FBM::distrib_coupledModel(uint32_t sample_size)
+{
 
-//     // Generating vector with values that maximize likelihood
-//     const uint32_t nParticles = route.size();
-//     VecXd vec(2 * nParticles + 2);
+    if (distribCoupled)
+        return *(distribCoupled.get());
 
-//     vec(2 * nParticles) = log(parCoupled.DR);
-//     vec(2 * nParticles + 1) = -log(2.0 / parCoupled.AR - 1.0);
+    // Generating vector with values that maximize likelihood
+    CDA *cda = coupledModel();
+    VecXd vec(2 * nParticles + 2);
 
-//     for (uint32_t k = 0; k < nParticles; k++)
-//     {
-//         ParamDA &p = parCoupled.particle.at(k);
-//         vec(k) = log(p.D);
-//         vec(nParticles + k) = -log(2.0 / p.A - 1.0);
-//     }
+    vec(2 * nParticles) = log(cda->DR);
+    vec(2 * nParticles + 1) = -log(2.0 / cda->AR - 1.0);
 
-//     // Generate distribution
-//     MatXd mcmc = GOptimize::sampleParameters<double, VecXd, MatXd>(
-//         vec, maxMCS, &transferCoupled, this);
+    for (uint32_t k = 0; k < nParticles; k++)
+    {
+        vec(k) = log(cda->da[k].D);
+        vec(nParticles + k) = -log(2.0 / cda->da[k].A - 1.0);
+    }
 
-//     // Let's convert results to approppriate space
-//     for (uint32_t k = 0; k < maxMCS; k++)
-//     {
-//         for (uint32_t l = 0; l < nParticles; l++)
-//         {
-//             mcmc(k, 2 * l) = expf(mcmc(k, 2 * l)); // D
+    // Generate distribution
+    MatXd mcmc = GOptimize::sampleParameters(vec, sample_size,
+                                             &GP_FBM::weightCoupled, this);
 
-//             double val = expf(mcmc(k, 2 * l + 1));
-//             mcmc(k, 2 * l + 1) = 2.0f * val / (val + 1.0f); // alpha
-//         }
+    // Let's convert results to approppriate space
+    for (uint32_t k = 0; k < sample_size; k++)
+    {
+        for (uint32_t l = 0; l < nParticles; l++)
+        {
+            mcmc(k, 2 * l) = expf(mcmc(k, 2 * l)); // D
 
-//         // substrate
-//         const uint32_t num = 2 * nParticles;
-//         mcmc(k, num) = expf(mcmc(k, num)); // D
+            double val = expf(mcmc(k, 2 * l + 1));
+            mcmc(k, 2 * l + 1) = 2.0f * val / (val + 1.0f); // alpha
+        }
 
-//         double val = expf(mcmc(k, num + 1));
-//         mcmc(k, num + 1) = 2.0f * val / (1.0f + val); // alpha
+        // substrate
+        const uint32_t num = 2 * nParticles;
+        mcmc(k, num) = expf(mcmc(k, num)); // D
 
-//     } // loop-rows
+        double val = expf(mcmc(k, num + 1));
+        mcmc(k, num + 1) = 2.0f * val / (1.0f + val); // alpha
 
-//     distribCoupled = calcDensity(mcmc);
+    } // loop-rows
 
-//     // Signaling distribution was done
-//     bControl.set(DTB_COUPLED);
+    distribCoupled = std::make_unique<MatXd>(std::move(mcmc));
 
-// } // distrib_coupledModel
+    return *(distribCoupled.get());
+
+} // distrib_coupledModel
 
 ///////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 
 void GP_FBM::initialize(void)
 {
-    avgTraj.resize(nParticles);
     distribSingle.resize(nParticles);
     v_da.resize(nParticles);
 

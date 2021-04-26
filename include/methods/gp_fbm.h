@@ -29,13 +29,11 @@ public:
     API DA *singleModel(uint32_t id = 0);
     API CDA *coupledModel(void);
 
-    // MatXd distrib_singleModel(uint32_t sample_size, uint32_t id = 0);
-    // MatXd distrib_coupledModel(uint32_t sample_size);
+    API const MatXd &distrib_singleModel(uint32_t sample_size, uint32_t id = 0);
+    API const MatXd &distrib_coupledModel(uint32_t sample_size);
 
-    // MatXd calcAvgTrajectory(const VectorXd &vFrame, const VectorXd &vTime,
-    //                         uint32_t id = 0);
-
-    // MatXd estimateSubstrateMovement(void);
+    API MatXd calcAvgTrajectory(const VecXd &vTime, uint32_t id = 0);
+    API MatXd estimateSubstrateMovement(void);
 
 private:
     Mailbox *mbox = nullptr;
@@ -69,10 +67,8 @@ private:
     std::vector<MatXd> route; // Holders all particles's routes
     MatXd cRoute;             // concatenates all routes in one
 
-    // // We save these results first time functions are called, after we just return these
-    // MatXd substrate;
-    // MatXd distribCoupled;
-    std::vector<MatXd> distribSingle;
-    std::vector<MatXd> avgTraj;
+    // We save these results first time functions are called, after we just return these
+    std::unique_ptr<MatXd> distribCoupled = nullptr;
+    std::vector<std::unique_ptr<MatXd>> distribSingle;
 
 }; // class-GP_FBM
