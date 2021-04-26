@@ -4,9 +4,11 @@
 #include <fstream>
 #include <thread>
 
-#include "utils/goptimize.h"
+#ifdef STATIC_API
 #include "utils/mailbox.h"
-
+#else
+class Mailbox;
+#endif
 // vendor
 #include "glm/glm/glm.hpp"
 #include "eigen/Eigen/Core"

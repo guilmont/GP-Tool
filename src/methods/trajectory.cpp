@@ -31,10 +31,12 @@ static MatXd loadFromTextFile(const std::string &path, char delimiter,
     std::ifstream arq(path, std::fstream::binary);
     if (arq.fail())
     {
-        if (mbox)
-            mbox->create<Message::Error>("(Trajectory::useCSV): Cannot open " + path);
-        else
-            std::cerr << "ERROR (Trajectory::useCSV) ==> Cannot open " << path << std::endl;
+
+#ifdef STATIC_API
+        mbox->create<Message::Error>("(Trajectory::useCSV): Cannot open " + path);
+#else
+        std::cerr << "ERROR (Trajectory::useCSV) ==> Cannot open " << path << std::endl;
+#endif
 
         return MatXd(0, 0);
     }
@@ -57,14 +59,14 @@ static MatXd loadFromTextFile(const std::string &path, char delimiter,
         pos = data.find('\n', pos) + 1;
         if (pos == std::string::npos)
         {
+            std::string
+                msg = "(Trajectory::useCSV): More skip_rows than number of rows!" + path;
 
-            std::string msg = "(Trajectory::useCSV): More skip_rows than number of rows!! " + path;
-
-            if (mbox)
-                mbox->create<Message::Error>(msg);
-            else
-                std::cerr << "ERROR " << msg << std::endl;
-
+#ifdef STATIC_API
+            mbox->create<Message::Error>(msg);
+#else
+            std::cerr << "ERROR " << msg << std::endl;
+#endif
             return MatXd(0, 0);
         }
     } // loop-skip-rows
@@ -113,10 +115,11 @@ static MatXd loadFromTextFile(const std::string &path, char delimiter,
     {
         std::string msg = "(Trajectory::useCSV): Input matrix is empty!! " + path;
 
-        if (mbox)
-            mbox->create<Message::Error>(msg);
-        else
-            std::cerr << "ERROR " << msg << std::endl;
+#ifdef STATIC_API
+        mbox->create<Message::Error>(msg);
+#else
+        std::cerr << "ERROR " << msg << std::endl;
+#endif
 
         return MatXd(0, 0);
     }
@@ -129,10 +132,11 @@ static MatXd loadFromTextFile(const std::string &path, char delimiter,
     {
         std::string msg = "(Trajectory::useCSV): Input txt have rows of different widths!! " + path;
 
-        if (mbox)
-            mbox->create<Message::Error>(msg);
-        else
-            std::cerr << "ERROR " << msg << std::endl;
+#ifdef STATIC_API
+        mbox->create<Message::Error>(msg);
+#else
+        std::cerr << "ERROR " << msg << std::endl;
+#endif
 
         return MatXd(0, 0);
     }
@@ -335,11 +339,12 @@ bool Trajectory::useICY(const std::string &xmlTrack, uint32_t ch)
     pugi::xml_document doc;
     if (!doc.load_file(xmlTrack.c_str()))
     {
-        if (mbox)
-            mbox->create<Message::Error>("(Trajectory::useICY_XML): Couldn't open " + xmlTrack);
-        else
-            std::cerr << "ERROR (Trajectory::useICY_XML) ==> Couldn't open " << xmlTrack
-                      << std::endl;
+#ifdef STATIC_API
+        mbox->create<Message::Error>("(Trajectory::useICY_XML): Couldn't open " + xmlTrack);
+#else
+        std::cerr << "ERROR (Trajectory::useICY_XML) ==> Couldn't open " << xmlTrack
+                  << std::endl;
+#endif
 
         return false;
     }
@@ -444,12 +449,13 @@ void Trajectory::enhanceTracks(void)
         Track &track = m_vTrack[ch];
         const uint32_t N = uint32_t(track.traj.size());
 
-        Message::Progress *ptr = nullptr;
+#ifdef STATIC_API
 
-        if (mbox)
-            ptr = mbox->create<Message::Progress>("Enhancing " + std::to_string(N) +
-                                                  " trajectories for channel " +
-                                                  std::to_string(ch));
+        Message::Progress
+            *ptr = mbox->create<Message::Progress>("Enhancing " + std::to_string(N) +
+                                                   " trajectories for channel " +
+                                                   std::to_string(ch));
+#endif
 
         std::vector<uint32_t> toRemove;
         for (uint32_t k = 0; k < N; k++)
@@ -458,12 +464,20 @@ void Trajectory::enhanceTracks(void)
 
             if (track.traj[k].rows() < 10)
             {
-                mbox->create<Message::Warn>("Trajectory smaller than 10 frames removed!!");
+                std::string txt = "Trajectory smaller than 10 frames removed!!";
+
+#ifdef STATIC_API
+                mbox->create<Message::Warn>(txt);
+#else
+                std::cout << "WARN >> " << txt << std::endl;
+#endif
+
                 toRemove.push_back(k);
             }
 
-            if (ptr)
-                ptr->progress = float(k + 1) / float(track.traj.size());
+#ifdef STATIC_API
+            ptr->progress = float(k + 1) / float(track.traj.size());
+#endif
         } // loop-tracks
 
         std::reverse(toRemove.begin(), toRemove.end());

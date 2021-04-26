@@ -1,5 +1,7 @@
 #include "spot.h"
 
+#include "utils/goptimize.h"
+
 std::pair<double, double> getMeanDev(const VecXd &vec)
 {
   double a = 0.0,

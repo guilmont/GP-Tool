@@ -71,7 +71,13 @@ bool Metadata::parseOME(const std::string &inputString)
     pugi::xml_document doc;
     if (!doc.load_string(inputString.c_str()))
     {
+#ifdef STATIC_API
         mbox->create<Message::Warn>("Cannot parse OME metadata!!");
+#else
+        std::cerr << "ERROR >> (Metadata::parseOME) : Cannot parse OME metadata!! "
+                  << movie_name << std::endl;
+#endif
+
         return false;
     }
 
@@ -241,10 +247,11 @@ const Plane &Metadata::getPlane(uint32_t c, uint32_t z, uint32_t t) const
     std::string txt = "(Metadata::getPlane): No plane was found for (c,z,t): " +
                       std::to_string(c) + ", " + std::to_string(z) + ", " + std::to_string(t);
 
-    if (mbox)
-        mbox->create<Message::Error>(txt);
-    else
-        std::cerr << "ERROR " << txt << std::endl;
+#ifdef STATIC_API
+    mbox->create<Message::Error>(txt);
+#else
+    std::cerr << "ERROR " << txt << std::endl;
+#endif
 
     return vPlanes.front();
 

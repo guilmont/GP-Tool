@@ -142,11 +142,12 @@ Tiffer::Read::Read(const std::string &movie_path, Mailbox *mail)
     if (arq.fail())
     {
         success = false;
-        if (mbox)
-            mbox->create<Message::Error>("Cannot open file: " + movie_path);
-        else
-            std::cerr << "ERROR (Tiffer::Read) ==> Cannot read file: " << movie_path << std::endl;
-
+#ifdef STATIC_API
+        mbox->create<Message::Error>("Cannot open file: " + movie_path);
+#else
+        std::cerr << "ERROR (Tiffer::Read) ==> Cannot read file: "
+                  << movie_path << std::endl;
+#endif
         return;
     }
 
@@ -164,10 +165,12 @@ Tiffer::Read::Read(const std::string &movie_path, Mailbox *mail)
     if (get_uint16(2) != 42)
     {
         success = false;
-        if (mbox)
-            mbox->create<Message::Error>("Not tiff file: " + movie_path);
-        else
-            std::cerr << "ERROR (Tiffer::Read) ==> Not tiff file: " + movie_path << std::endl;
+
+#ifdef STATIC_API
+        mbox->create<Message::Error>("Not tiff file: " + movie_path);
+#else
+        std::cerr << "ERROR (Tiffer::Read) ==> Not tiff file: " + movie_path << std::endl;
+#endif
 
         return;
     }
@@ -209,25 +212,28 @@ Tiffer::Read::Read(const std::string &movie_path, Mailbox *mail)
                 else
                 {
                     success = false;
-                    if (mbox)
-                        mbox->create<Message::Error>("Compression format is not supported!");
-                    else
-                        std::cerr << "ERROR (Tiffer::Read): Compression format is not supported! - "
-                                  << movie_path << std::endl;
-
+#ifdef STATIC_API
+                    mbox->create<Message::Error>("Compression format is not #supported!");
+#else
+                    std::cerr << "ERROR (Tiffer::Read): Compression format is not "
+                              << "supported! - " << movie_path << std::endl;
+#endif
                     return;
                 }
+
             } // compression
 
             if (tag == SAMPLESPERPIXEL && value != 1)
             {
                 success = false;
-                if (mbox)
-                    mbox->create<Message::Error>("Only grayscale format is supported!");
-                else
-                    std::cerr << "ERROR (Tiffer::Read::load) ==> "
-                              << "Only grayscale format is supported! - "
-                              << movie_path << std::endl;
+
+#ifdef STATIC_API
+                mbox->create<Message::Error>("Only grayscale format is supported!");
+#else
+                std::cerr << "ERROR (Tiffer::Read::load) ==> "
+                          << "Only grayscale format is supported! - "
+                          << movie_path << std::endl;
+#endif
 
                 return;
             }
@@ -249,13 +255,16 @@ Tiffer::Read::Read(const std::string &movie_path, Mailbox *mail)
                 if (value < 8 || value > 32)
                 {
                     success = false;
-                    if (mbox)
-                        mbox->create<Message::Error>("Only 8/16/32 bits grayscale "
-                                                     "images are accepted!");
-                    else
-                        std::cerr << "ERROR (Tiffer::Read::load) ==> "
-                                  << "Only 8/16/32 bits grayscale images are accepted! - "
-                                  << movie_path << std::endl;
+
+#ifdef STATIC_API
+                    mbox->create<Message::Error>("Only 8/16/32 bits grayscale "
+                                                 "images are accepted!");
+#else
+                    std::cerr << "ERROR (Tiffer::Read::load) ==> "
+                              << "Only 8/16/32 bits grayscale images are accepted! - "
+                              << movie_path << std::endl;
+#endif
+
                     return;
                 }
 
@@ -288,12 +297,12 @@ std::string Tiffer::Read::getDateTime(void)
 {
     if (vIFD.at(0).field.find(DATETIME) == vIFD.at(0).field.end())
     {
-        if (mbox)
-            mbox->create<Message::Warn>("Movie doesn't contain a time stamp!");
-        else
-            std::cout << "WARN (Tiffer::Read::getDateTime): Movie doesn't contain a time stamp - "
-                      << movie_path << std::endl;
-
+#ifdef STATIC_API
+        mbox->create<Message::Warn>("Movie doesn't contain a time stamp!");
+#else
+        std::cout << "WARN (Tiffer::Read::getDateTime): Movie doesn't contain a "
+                  << "time stamp - " << movie_path << std::endl;
+#endif
         return "";
     }
     else

@@ -19,6 +19,9 @@ public:
 
     void loadTracks(void) { trackInfo.show = true; }
 
+    const Trajectory *getTrajectory(void) { return m_traj.get(); }
+    const UITraj *getUITrajectory(void) { return uitraj; }
+
 private:
     struct
     {

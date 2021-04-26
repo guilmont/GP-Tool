@@ -27,12 +27,12 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/vendor")
 ###########################################################
 ## UTILS ##################################################
 
-add_library(GOPTIMIZE
+add_library(goptimize
     STATIC
     "${CMAKE_SOURCE_DIR}/src/utils/goptimize.cpp"
 )
 
-target_include_directories(GOPTIMIZE
+target_include_directories(goptimize
     PUBLIC
         "${CMAKE_SOURCE_DIR}/include"
         "${CMAKE_SOURCE_DIR}/vendor"
@@ -40,120 +40,110 @@ target_include_directories(GOPTIMIZE
 
 #############################
 
-add_library(MAILBOX
+add_library(mailbox
     STATIC
         "${CMAKE_SOURCE_DIR}/src/utils/mailbox.cpp"
 )
 
-target_include_directories(MAILBOX
+target_include_directories(mailbox
     PUBLIC
        "${CMAKE_SOURCE_DIR}/include" 
        "${CMAKE_SOURCE_DIR}/vendor" 
 )
 
-target_link_libraries(MAILBOX
+target_link_libraries(mailbox
     PUBLIC
         imgui
 )
 
-set_property(TARGET MAILBOX PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 ###########################################################
 ## METHODS ################################################
 
 
-add_library(MOVIE
-    SHARED
-        "${CMAKE_SOURCE_DIR}/src/methods/movie.cpp"
+set(SRC "${CMAKE_SOURCE_DIR}/src/methods/movie.cpp"
         "${CMAKE_SOURCE_DIR}/src/methods/metadata.cpp"
-        "${CMAKE_SOURCE_DIR}/src/utils/gtiffer.cpp"
-)
+        "${CMAKE_SOURCE_DIR}/src/utils/gtiffer.cpp")
 
-target_include_directories(MOVIE 
-    PUBLIC
-    "${CMAKE_SOURCE_DIR}/include"
-    "${CMAKE_SOURCE_DIR}/vendor"
-    "${glm_INCLUDE_DIRS}"
-)
+set(HEAD "${CMAKE_SOURCE_DIR}/include"
+         "${CMAKE_SOURCE_DIR}/vendor"
+         "${glm_INCLUDE_DIRS}")
 
-target_link_libraries(MOVIE
-    PUBLIC
-        pugixml
-        MAILBOX
-        glm
-)
 
-#############################
 
-add_library(ALIGN
-    SHARED
-        "${CMAKE_SOURCE_DIR}/src/methods/align.cpp"
-)
+add_library(movie_static STATIC ${SRC})
+target_include_directories(movie_static PUBLIC ${HEAD})
+target_link_libraries(movie_static PUBLIC pugixml glm mailbox)
+target_compile_definitions(movie_static PRIVATE STATIC_API)
 
-target_include_directories(ALIGN 
-    PUBLIC
-    "${CMAKE_SOURCE_DIR}/include"
-    "${CMAKE_SOURCE_DIR}/include/methods"
-)
 
-target_link_libraries(ALIGN
-    PUBLIC
-        imgui
-        GOPTIMIZE
-        MOVIE
-)
+
+add_library(movie SHARED ${SRC})
+target_include_directories(movie PUBLIC ${HEAD})
+target_link_libraries(movie PUBLIC pugixml glm)
 
 
 #############################
 
-add_library(TRAJECTORY
-    SHARED
-        "${CMAKE_SOURCE_DIR}/src/methods/spot.cpp"
-        "${CMAKE_SOURCE_DIR}/src/methods/trajectory.cpp"
+set(SRC "${CMAKE_SOURCE_DIR}/src/methods/align.cpp")
 
-)
+set(HEAD "${CMAKE_SOURCE_DIR}/include"
+         "${CMAKE_SOURCE_DIR}/include/methods")
 
-target_include_directories(TRAJECTORY 
-    PUBLIC
-    "${CMAKE_SOURCE_DIR}/include"
-    "${CMAKE_SOURCE_DIR}/include/methods"
-)
+add_library(align_static STATIC ${SRC})
+target_include_directories(align_static PUBLIC ${HEAD})
+target_link_libraries(align_static PUBLIC goptimize mailbox)
+target_compile_definitions(align_static PRIVATE STATIC_API)
 
-target_link_libraries(TRAJECTORY
-    PUBLIC
-        pugixml
-        GOPTIMIZE
-        MOVIE
-)
-
+add_library(align SHARED ${SRC})
+target_include_directories(align PUBLIC ${HEAD})
+target_link_libraries(align PUBLIC goptimize glm)
+         
 
 #############################
 
-add_library(GP_FBM
-    SHARED
-        "${CMAKE_SOURCE_DIR}/src/methods/gp_fbm.cpp"    
-)
+set(SRC "${CMAKE_SOURCE_DIR}/src/methods/spot.cpp"
+        "${CMAKE_SOURCE_DIR}/src/methods/trajectory.cpp")
 
-target_include_directories(GP_FBM
-    PUBLIC
-        "${CMAKE_SOURCE_DIR}/include"
-        "${CMAKE_SOURCE_DIR}/include/methods"
-)
+set(HEAD "${CMAKE_SOURCE_DIR}/include"
+         "${CMAKE_SOURCE_DIR}/vendor"
+         "${CMAKE_SOURCE_DIR}/include/methods")
 
-target_link_libraries(GP_FBM
-    PUBLIC
-        GOPTIMIZE
-        MAILBOX
-)
+
+add_library(trajectory_static STATIC ${SRC})
+target_include_directories(trajectory_static PUBLIC ${HEAD})
+target_link_libraries(trajectory_static PUBLIC pugixml goptimize mailbox)
+target_compile_definitions(trajectory_static PRIVATE STATIC_API)
+
+add_library(trajectory SHARED ${SRC})
+target_include_directories(trajectory PUBLIC ${HEAD})
+target_link_libraries(trajectory PUBLIC pugixml goptimize movie)
+
+#############################
+
+set(SRC "${CMAKE_SOURCE_DIR}/src/methods/gp_fbm.cpp")
+
+set(HEAD "${CMAKE_SOURCE_DIR}/include"
+         "${CMAKE_SOURCE_DIR}/include/methods")
+
+
+add_library(gpfbm_static STATIC ${SRC})
+target_include_directories(gpfbm_static PUBLIC ${HEAD})
+target_link_libraries(gpfbm_static PUBLIC goptimize mailbox)
+target_compile_definitions(gpfbm_static PRIVATE STATIC_API)
+
+add_library(gpfbm SHARED ${SRC})
+target_include_directories(gpfbm PUBLIC ${HEAD})
+target_link_libraries(gpfbm PUBLIC goptimize mailbox)
 
 ###########################################################
 ## RENDERER ###############################################
 
-add_library(RENDERER 
+add_library(renderer 
     STATIC
+        "${CMAKE_SOURCE_DIR}/src/renderer/framebuffer.cpp"
         "${CMAKE_SOURCE_DIR}/src/renderer/shader.cpp"
         "${CMAKE_SOURCE_DIR}/src/renderer/texture.cpp"
-        "${CMAKE_SOURCE_DIR}/src/renderer/framebuffer.cpp"
         "${CMAKE_SOURCE_DIR}/src/renderer/quad.cpp"
         "${CMAKE_SOURCE_DIR}/src/renderer/camera.cpp"
         "${CMAKE_SOURCE_DIR}/src/renderer/fonts.cpp"
@@ -161,21 +151,18 @@ add_library(RENDERER
         "${CMAKE_SOURCE_DIR}/src/renderer/renderer.cpp"
 )
 
-target_include_directories(RENDERER
-    PUBLIC 
+target_include_directories(renderer
+    PUBLIC  
         "${CMAKE_SOURCE_DIR}/vendor"
         "${CMAKE_SOURCE_DIR}/include"
         "${glm_INCLUDE_DIRS}"
 )
 
-target_link_libraries(RENDERER
+target_link_libraries(renderer
     PUBLIC
-        glfw
-        glad
-        imgui
-        MAILBOX
         glm
         implot
+        mailbox
 )
 
 ###########################################################
@@ -188,6 +175,7 @@ add_executable(GPTool
     "${CMAKE_SOURCE_DIR}/src/plugins/moviePlugin.cpp"
     "${CMAKE_SOURCE_DIR}/src/plugins/alignPlugin.cpp"
     "${CMAKE_SOURCE_DIR}/src/plugins/trajPlugin.cpp"
+    "${CMAKE_SOURCE_DIR}/src/plugins/gpPlugin.cpp"
 )
 
 target_include_directories(GPTool
@@ -198,44 +186,44 @@ target_include_directories(GPTool
 
 target_link_libraries(GPTool
     PUBLIC
-        RENDERER
-        MOVIE
-        ALIGN
-        TRAJECTORY
         Threads::Threads
-        implot
+        renderer
+        movie_static
+        align_static
+        trajectory_static
+        gpfbm_static
 )
 
-###########################################################
-## INSTALLATION SETUP #####################################
+# ###########################################################
+# ## INSTALLATION SETUP #####################################
 
 
-# install(
-#     TARGETS 
-#         MOVIE
-#         ALIGN
-#         TRAJECTORY
-#         GP_FBM
+# # install(
+# #     TARGETS 
+# #         MOVIE
+# #         ALIGN
+# #         TRAJECTORY
+# #         GP_FBM
 
-#     DESTINATION lib
-# )
+# #     DESTINATION lib
+# # )
 
-# install(
-#     DIRECTORY ${CMAKE_SOURCE_DIR}/include/
-#     DESTINATION include
-#     FILES_MATCHING PATTERN "*.h*"
-# )
+# # install(
+# #     DIRECTORY ${CMAKE_SOURCE_DIR}/include/
+# #     DESTINATION include
+# #     FILES_MATCHING PATTERN "*.h*"
+# # )
 
-# install(
-#     DIRECTORY ${CMAKE_SOURCE_DIR}/assets/
-#     DESTINATION assets
-#     FILES_MATCHING PATTERN "*"
-# )
+# # install(
+# #     DIRECTORY ${CMAKE_SOURCE_DIR}/assets/
+# #     DESTINATION assets
+# #     FILES_MATCHING PATTERN "*"
+# # )
 
 
-# install(
-#     TARGETS GPTool
-#     DESTINATION bin
-# )
+# # install(
+# #     TARGETS GPTool
+# #     DESTINATION bin
+# # )
 
 

@@ -97,12 +97,13 @@ namespace Tiffer
     {
         if (id >= numDir)
         {
-            if (mbox)
-                mbox->create<Message::Error>("Tiffer::Read::getImage >> "
-                                             "Number of directories exceeded!");
-            else
-                std::cerr << "ERROR (Tiffer::Read::getImage): Number of directories exceeded!"
-                          << std::endl;
+#ifdef STATIC_API
+            mbox->create<Message::Error>("Tiffer::Read::getImage >> "
+                                         "Number of directories exceeded!");
+#else
+            std::cerr << "ERROR (Tiffer::Read::getImage): Number of directories exceeded!"
+                      << std::endl;
+#endif
 
             return Image<T>(0, 0);
         }
@@ -112,11 +113,12 @@ namespace Tiffer
         size_t check = buf.size() / (width * height);
         if (check != sizeof(T))
         {
-            if (mbox)
-                mbox->create<Message::Error>("Movie expects " + std::to_string(check) + " bytes!!");
-            else
-                std::cerr << "ERROR (Tiffer::Read::getImage): Movie expects " << check
-                          << " bytes!!" << std::endl;
+#ifdef STATIC_API
+            mbox->create<Message::Error>("Movie expects " + std::to_string(check) + " bytes!!");
+#else
+            std::cerr << "ERROR (Tiffer::Read::getImage): Movie expects " << check
+                      << " bytes!!" << std::endl;
+#endif
 
             return Image<T>(0, 0);
         }

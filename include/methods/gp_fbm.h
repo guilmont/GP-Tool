@@ -22,9 +22,16 @@ public:
         double DR, AR;
     };
 
+    struct ParticleID
+    {
+        uint32_t trackID, trajID;
+    };
+
 public:
     API GP_FBM(const MatXd &mat, Mailbox *mail = nullptr);
     API GP_FBM(const std::vector<MatXd> &vMat, Mailbox *mail = nullptr);
+
+    std::vector<ParticleID> partID;
 
     API DA *singleModel(uint32_t id = 0);
     API CDA *coupledModel(void);
@@ -34,6 +41,8 @@ public:
 
     API MatXd calcAvgTrajectory(const VecXd &vTime, uint32_t id = 0);
     API MatXd estimateSubstrateMovement(void);
+
+    API uint32_t getNumParticles(void) const { return nParticles; }
 
 private:
     Mailbox *mbox = nullptr;

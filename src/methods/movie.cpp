@@ -22,10 +22,11 @@ Movie::Movie(const std::string &movie_path, Mailbox *mail) : mbox(mail)
         std::string msg = "Movie has wrong axes format: " + meta.DimensionOrder;
         msg += " :: Expected -> XYCZT";
 
-        if (mbox)
-            mbox->create<Message::Warn>(msg);
-        else
-            std::cerr << "ERROR (Movie::Movie): " << msg << " -> " << movie_path << std::endl;
+#ifdef STATIC_API
+        mbox->create<Message::Warn>(msg);
+#else
+        std::cerr << "ERROR (Movie::Movie): " << msg << " -> " << movie_path << std::endl;
+#endif
 
         return;
     }
@@ -37,13 +38,10 @@ Movie::Movie(const std::string &movie_path, Mailbox *mail) : mbox(mail)
         counter = 0,
         nImg = tif.getNumDirectories();
 
-    Message::Progress *ptr = nullptr;
-
-    if (mbox)
-    {
-        mbox->create<Message::Info>("Openning  \"" + meta.movie_name + "\"");
-        ptr = mbox->create<Message::Progress>("Loading images");
-    }
+#ifdef STATIC_API
+    mbox->create<Message::Info>("Openning  \"" + meta.movie_name + "\"");
+    Message::Progress *ptr = mbox->create<Message::Progress>("Loading images");
+#endif
 
     vImg.resize(meta.SizeC * meta.SizeT);
 
@@ -62,15 +60,14 @@ Movie::Movie(const std::string &movie_path, Mailbox *mail) : mbox(mail)
             // Increasing counter
             counter++;
 
-            if (ptr)
+#ifdef STATIC_API
+            ptr->progress = float(counter) / float(nImg);
+            if (ptr->cancelled)
             {
-                ptr->progress = float(counter) / float(nImg);
-                if (ptr->cancelled)
-                {
-                    success = false;
-                    return;
-                }
+                success = false;
+                return;
             }
+#endif
 
         } // loop-images
 
@@ -80,23 +77,24 @@ const MatXd &Movie::getImage(uint32_t channel, uint32_t frame) const
 {
     if (channel >= meta.SizeC)
     {
-        if (mbox)
-            mbox->create<Message::Warn>("(Movie::getImage) >>  Channel overflow!!");
-        else
-            std::cout << "WARN (Movie::getImage) >> Channel overflow: " << meta.movie_name
-                      << std::endl;
+#ifdef STATIC_API
+        mbox->create<Message::Warn>("(Movie::getImage) >>  Channel overflow!!");
+#else
+        std::cout << "WARN (Movie::getImage) >> Channel overflow: "
+                  << meta.movie_name << std::endl;
+#endif
 
         return vImg[0];
     }
 
     if (frame >= meta.SizeT)
     {
-        if (mbox)
-            mbox->create<Message::Warn>("(Movie::getImage) >> Frame overflow!!");
-        else
-            std::cout << "WARN (Movie::getImage) >> Frame overflow: " << meta.movie_name
-                      << std::endl;
-
+#ifdef STATIC_API
+        mbox->create<Message::Warn>("(Movie::getImage) >> Frame overflow!!");
+#else
+        std::cout << "WARN (Movie::getImage) >> Frame overflow: "
+                  << meta.movie_name << std::endl;
+#endif
         return vImg[channel];
     }
 

@@ -1,5 +1,7 @@
 #include "align.h"
 
+#include "utils/goptimize.h"
+
 TransformData::TransformData(uint32_t width, uint32_t height) : size(width, height)
 {
     translate = {0.0f, 0.0f};
@@ -211,9 +213,9 @@ Align::Align(uint32_t nFrames, const MatXd *im1, const MatXd *im2, Mailbox *mail
     vIm1.resize(nFrames);
     RT = TransformData(uint32_t(im1[0].cols()), uint32_t(im1[0].rows()));
 
-    Message::Progress *msg = nullptr;
-    if (mbox)
-        msg = mail->create<Message::Progress>("Treating images...");
+#ifdef STATIC_API
+    Message::Progress *msg = mail->create<Message::Progress>("Treating images...");
+#endif
 
     // Setup transform properties
     auto parallel_image_treatment = [&](uint32_t tid, uint32_t nThr) -> void {
@@ -222,8 +224,10 @@ Align::Align(uint32_t nFrames, const MatXd *im1, const MatXd *im2, Mailbox *mail
             vIm0[k] = (255.0 * treatImage(im1[k], 3, 5.0, 32, 32)).array().round().cast<uint8_t>();
             vIm1[k] = (255.0 * treatImage(im2[k], 3, 5.0, 32, 32)).array().round().cast<uint8_t>();
 
-            if (tid == 0 && msg)
+#ifdef STATIC_API
+            if (tid == 0)
                 msg->progress = float(k + 1) / float(nFrames);
+#endif
         }
     };
 
@@ -234,8 +238,9 @@ Align::Align(uint32_t nFrames, const MatXd *im1, const MatXd *im2, Mailbox *mail
     for (auto &thr : vThr)
         thr.join();
 
-    if (msg)
-        msg->progress = 1.0f;
+#ifdef STATIC_API
+    msg->progress = 1.0f;
+#endif
 
 } // constructor
 
@@ -352,10 +357,9 @@ double Align::weightScale(const VecXd &p)
 
 bool Align::alignCameras(void)
 {
-
-    Message::Timer *msg = nullptr;
-    if (mbox)
-        msg = mbox->create<Message::Timer>("Correcting camera aligment...");
+#ifdef STATIC_API
+    Message::Timer *msg = mbox->create<Message::Timer>("Correcting camera aligment...");
+#endif
 
     VecXd vec(5);
     vec << RT.translate.x, RT.translate.y, RT.rotate.x, RT.rotate.y, RT.rotate.z;
@@ -371,8 +375,9 @@ bool Align::alignCameras(void)
     RT.rotate = {vec(2), vec(3), vec(4)};
     RT.update();
 
-    if (msg)
-        msg->stop();
+#ifdef STATIC_API
+    msg->stop();
+#endif
 
     return true;
 
@@ -380,10 +385,11 @@ bool Align::alignCameras(void)
 
 bool Align::correctAberrations(void)
 {
-    Message::Timer *msg = nullptr;
 
-    if (mbox)
-        msg = mbox->create<Message::Timer>("Correcting chromatic aberraction...");
+#ifdef STATIC_API
+    Message::Timer
+        *msg = mbox->create<Message::Timer>("Correcting chromatic aberraction...");
+#endif
 
     VecXd vec(2);
     vec << RT.scale.x, RT.scale.y;
@@ -397,8 +403,9 @@ bool Align::correctAberrations(void)
     RT.scale = {vec(0), vec(1)};
     RT.update();
 
-    if (msg)
-        msg->stop();
+#ifdef STATIC_API
+    msg->stop();
+#endif
 
     return true;
 

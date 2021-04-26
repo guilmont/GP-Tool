@@ -36,7 +36,6 @@ target_include_directories(glad
         "${CMAKE_CURRENT_SOURCE_DIR}/glad/include"
 )
 
-set_property(TARGET glad PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 ###########################################################
 ## PUGIXML ################################################
@@ -82,7 +81,6 @@ target_include_directories(imgui
         "${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends"
 )
 
-set_property(TARGET imgui PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 ###########################################################
 ## IMPLOT #################################################

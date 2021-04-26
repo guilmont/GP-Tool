@@ -4,6 +4,7 @@
 
 #include "eigen/Eigen/LU"
 #include "eigen/Eigen/Cholesky"
+#include "utils/goptimize.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 // HELPER FUNCTIONS
@@ -88,10 +89,12 @@ GP_FBM::DA *GP_FBM::singleModel(uint32_t id)
     if (!nms.runSimplex(&GP_FBM::weightSingle, this))
     {
         std::string txt = "(GP_FBM::singleModel) Model didn't converge!";
-        if (mbox)
-            mbox->create<Message::Warn>(txt);
-        else
-            std::cout << "Warn " << txt << std::endl;
+
+#ifdef STATIC_API
+        mbox->create<Message::Warn>(txt);
+#else
+        std::cout << "Warn " << txt << std::endl;
+#endif
 
         return nullptr;
     }
@@ -115,10 +118,11 @@ GP_FBM::CDA *GP_FBM::coupledModel(void)
     {
         std::string txt = "(GP_FBM::coupledModel) Cannot run on single trajectory!!";
 
-        if (mbox)
-            mbox->create<Message::Error>(txt);
-        else
-            std::cerr << "ERROR " << txt << std::endl;
+#ifdef STATIC_API
+        mbox->create<Message::Error>(txt);
+#else
+        std::cerr << "ERROR " << txt << std::endl;
+#endif
 
         return nullptr;
     }
@@ -165,10 +169,12 @@ GP_FBM::CDA *GP_FBM::coupledModel(void)
         if (uint32_t(mat.rows()) < minSizePerTraj)
         {
             std::string txt = "(GP_FBM::coupledModel) Not all trajectories intersect!!";
-            if (mbox)
-                mbox->create<Message::Warn>(txt);
-            else
-                std::cout << "WARN " << txt << std::endl;
+
+#ifdef STATIC_API
+            mbox->create<Message::Warn>(txt);
+#else
+            std::cout << "WARN " << txt << std::endl;
+#endif
 
             return nullptr;
         }
@@ -210,10 +216,12 @@ GP_FBM::CDA *GP_FBM::coupledModel(void)
     if (!nms.runSimplex(&GP_FBM::weightCoupled, this))
     {
         std::string txt = "(GP_FBM::coupledModel) Model didn't converge!";
-        if (mbox)
-            mbox->create<Message::Warn>(txt);
-        else
-            std::cout << "Warn " << txt << std::endl;
+
+#ifdef STATIC_API
+        mbox->create<Message::Warn>(txt);
+#else
+        std::cout << "Warn " << txt << std::endl;
+#endif
 
         return nullptr;
     }
@@ -249,10 +257,12 @@ MatXd GP_FBM::calcAvgTrajectory(const VecXd &vTime, uint32_t id)
     if (id >= route.size())
     {
         std::string txt = "(GP_FBM::calcAvgTrajectory) id doesn't exist!!";
-        if (mbox)
-            mbox->create<Message::Error>(txt);
-        else
-            std::cerr << "ERROR " << txt << std::endl;
+
+#ifdef STATIC_API
+        mbox->create<Message::Error>(txt);
+#else
+        std::cerr << "ERROR " << txt << std::endl;
+#endif
 
         return MatXd(0, 0);
     }
@@ -461,17 +471,17 @@ const MatXd &GP_FBM::distrib_coupledModel(uint32_t sample_size)
     {
         for (uint32_t l = 0; l < nParticles; l++)
         {
-            mcmc(k, 2 * l) = expf(mcmc(k, 2 * l)); // D
+            mcmc(k, 2 * l) = exp(mcmc(k, 2 * l)); // D
 
-            double val = expf(mcmc(k, 2 * l + 1));
+            double val = exp(mcmc(k, 2 * l + 1));
             mcmc(k, 2 * l + 1) = 2.0f * val / (val + 1.0f); // alpha
         }
 
         // substrate
         const uint32_t num = 2 * nParticles;
-        mcmc(k, num) = expf(mcmc(k, num)); // D
+        mcmc(k, num) = exp(mcmc(k, num)); // D
 
-        double val = expf(mcmc(k, num + 1));
+        double val = exp(mcmc(k, num + 1));
         mcmc(k, num + 1) = 2.0f * val / (1.0f + val); // alpha
 
     } // loop-rows

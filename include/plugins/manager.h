@@ -7,6 +7,7 @@
 #include "moviePlugin.h"
 #include "alignPlugin.h"
 #include "trajPlugin.h"
+#include "gpPlugin.h"
 
 #include "renderer/fonts.h"
 

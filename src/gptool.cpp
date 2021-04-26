@@ -181,9 +181,15 @@ void GPTool::openMovie(const String &path)
                 manager->addPlugin("ALIGNMENT", alg);
             }
 
-            // Let's also activate the trajectory plugin
+            // Let's also activate:
+
+            // trajectory plugin
             TrajPlugin *traj = new TrajPlugin(movie, this);
             manager->addPlugin("TRAJECTORY", traj);
+
+            // Gaussian process plugin
+            GPPlugin *gp = new GPPlugin(this);
+            manager->addPlugin("GPROCESS", gp);
         }
         else
             delete movpl;
