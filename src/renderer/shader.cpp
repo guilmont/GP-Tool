@@ -5,7 +5,7 @@
 #include <sstream>
 #include <cstring>
 
-static void CheckShaderError(int32_t shader, int32_t flag, bool isProgram, String msg)
+static void CheckShaderError(int32_t shader, int32_t flag, bool isProgram, std::string msg)
 {
     int success = 0;
     char error[1024] = {0};
@@ -48,7 +48,7 @@ static int32_t CreateShader(const char *shaderSource, GLenum shaderType)
     int sourceLength = int(strlen(shaderSource));
     gl_call(glShaderSource(shader, 1, &shaderSource, &sourceLength));
 
-    String error = "\nError: Shader compilation failed => ";
+    std::string error = "\nError: Shader compilation failed => ";
 
     gl_call(glCompileShader(shader));
     CheckShaderError(shader, GL_COMPILE_STATUS, false, error);
@@ -56,10 +56,10 @@ static int32_t CreateShader(const char *shaderSource, GLenum shaderType)
     return shader;
 } // CreateShader
 
-static int32_t genShader(const String &vertex_shader, const String &frag_shader)
+static int32_t genShader(const std::string &vertex_shader, const std::string &frag_shader)
 {
 
-    auto readShader = [](const String &path) -> String {
+    auto readShader = [](const std::string &path) -> std::string {
         std::ifstream arq(path);
         std::stringstream shader;
         shader << arq.rdbuf();
@@ -76,7 +76,7 @@ static int32_t genShader(const String &vertex_shader, const String &frag_shader)
     gl_call(glad_glAttachShader(program, frg));
 
     // Link shaders to program
-    String error = "ERROR: Cannot link shader programs => ";
+    std::string error = "ERROR: Cannot link shader programs => ";
 
     gl_call(glad_glLinkProgram(program));
     CheckShaderError(program, GL_LINK_STATUS, true, error);
@@ -98,17 +98,12 @@ static int32_t genShader(const String &vertex_shader, const String &frag_shader)
 
 Shader::Shader(void)
 {
-    String path(PROJECT_DIR);
-    vProgram["basic"] = genShader(path + "/assets/shaders/basic.vtx.glsl",
-                                  path + "/assets/shaders/basic.frag.glsl");
+    vProgram["histogram"] = genShader("../assets/shaders/basic.vtx.glsl",
+                                      "../assets/shaders/histogram.frag.glsl");
 
-    vProgram["histogram"] = genShader(path + "/assets/shaders/basic.vtx.glsl",
-                                      path + "/assets/shaders/histogram.frag.glsl");
+    vProgram["viewport"] = genShader("../assets/shaders/basic.vtx.glsl",
+                                     "../assets/shaders/viewport.frag.glsl");
 
-    vProgram["viewport"] = genShader(path + "/assets/shaders/basic.vtx.glsl",
-                                     path + "/assets/shaders/viewport.frag.glsl");
-
-    // vProgram["trajectory"] = genShader(basic_vert, trajectory_frag);
     // vProgram["selectRoi"] = genShader(basic_vert, selectRoi_frag);
 
 } // constructor
@@ -120,7 +115,7 @@ Shader::~Shader(void)
 
 } // destructor
 
-void Shader::useProgram(const String &name)
+void Shader::useProgram(const std::string &name)
 {
     program_used = vProgram[name];
     gl_call(glUseProgram(program_used));
@@ -129,75 +124,75 @@ void Shader::useProgram(const String &name)
 ///////////////////////////////////////////////////////////////////////////////
 // UNIFORMS
 
-void Shader::setInteger(const String &name, int val)
+void Shader::setInteger(const std::string &name, int val)
 {
     gl_call(int32_t loc = glad_glGetUniformLocation(program_used, name.c_str()));
     gl_call(glad_glUniform1i(loc, val));
 
 } // setUniform1i
 
-void Shader::setFloat(const String &name, float val)
+void Shader::setFloat(const std::string &name, float val)
 {
     gl_call(int32_t loc = glad_glGetUniformLocation(program_used, name.c_str()));
     gl_call(glad_glUniform1f(loc, val));
 
 } // setUniform1i
 
-void Shader::setVec2f(const String &name, const float *v)
+void Shader::setVec2f(const std::string &name, const float *v)
 {
     gl_call(int32_t loc = glad_glGetUniformLocation(program_used, name.c_str()));
     gl_call(glad_glUniform2f(loc, v[0], v[1]));
 } // setUnifom3f
 
-void Shader::setVec3f(const String &name, const float *v)
+void Shader::setVec3f(const std::string &name, const float *v)
 {
     gl_call(int32_t loc = glad_glGetUniformLocation(program_used, name.c_str()));
     gl_call(glad_glUniform3f(loc, v[0], v[1], v[2]));
 } // setUnifom3f
 
-void Shader::setVec4f(const String &name, const float *v)
+void Shader::setVec4f(const std::string &name, const float *v)
 {
     gl_call(int32_t loc = glad_glGetUniformLocation(program_used, name.c_str()));
     gl_call(glad_glUniform4f(loc, v[0], v[1], v[2], v[3]));
 } // setUnifom3f
 
-void Shader::setMatrix3f(const String &name, const float *mat)
+void Shader::setMatrix3f(const std::string &name, const float *mat)
 {
     gl_call(int32_t loc = glad_glGetUniformLocation(program_used, name.c_str()));
     gl_call(glad_glUniformMatrix3fv(loc, 1, GL_FALSE, mat));
 } //setUniformMatrix4f
 
-void Shader::setMatrix4f(const String &name, const float *mat)
+void Shader::setMatrix4f(const std::string &name, const float *mat)
 {
     gl_call(int32_t loc = glad_glGetUniformLocation(program_used, name.c_str()));
     gl_call(glad_glUniformMatrix4fv(loc, 1, GL_FALSE, mat));
 } //setUniformMatrix4f
 
-void Shader::setIntArray(const String &name, const int *ptr, int32_t N)
+void Shader::setIntArray(const std::string &name, const int *ptr, int32_t N)
 {
     gl_call(int32_t loc = glad_glGetUniformLocation(program_used, name.c_str()));
     gl_call(glad_glUniform1iv(loc, N, ptr));
 }
 
-void Shader::setFloatArray(const String &name, const float *ptr, int32_t N)
+void Shader::setFloatArray(const std::string &name, const float *ptr, int32_t N)
 {
     gl_call(int32_t loc = glad_glGetUniformLocation(program_used, name.c_str()));
     gl_call(glad_glUniform1fv(loc, N, ptr));
 }
 
-void Shader::setVec2fArray(const String &name, const float *ptr, int32_t N)
+void Shader::setVec2fArray(const std::string &name, const float *ptr, int32_t N)
 {
     gl_call(int32_t loc = glad_glGetUniformLocation(program_used, name.c_str()));
     gl_call(glad_glUniform2fv(loc, N, ptr));
 }
 
-void Shader::setVec3fArray(const String &name, const float *ptr, int32_t N)
+void Shader::setVec3fArray(const std::string &name, const float *ptr, int32_t N)
 {
     gl_call(int32_t loc = glad_glGetUniformLocation(program_used, name.c_str()));
     gl_call(glad_glUniform3fv(loc, N, ptr));
 }
 
-void Shader::setMat3Array(const String &name, const float *ptr, int32_t N)
+void Shader::setMat3Array(const std::string &name, const float *ptr, int32_t N)
 {
     gl_call(int32_t loc = glad_glGetUniformLocation(program_used, name.c_str()));
     gl_call(glad_glUniformMatrix3fv(loc, N, true, ptr));

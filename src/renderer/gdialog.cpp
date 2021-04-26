@@ -1,5 +1,9 @@
 #include "renderer/gdialog.h"
 
+#include <filesystem>
+#include <cstdlib>
+#include <iostream>
+
 int inputTextCallback(ImGuiInputTextCallbackData *data)
 {
     GDialog *diag = (GDialog *)data->UserData;
@@ -7,7 +11,7 @@ int inputTextCallback(ImGuiInputTextCallbackData *data)
     {
         diag->main_path += "/" + diag->lFolders.front();
 
-        String diff = diag->main_path.substr(data->BufTextLen) + "/";
+        std::string diff = diag->main_path.substr(data->BufTextLen) + "/";
         data->InsertChars(data->BufTextLen, diff.c_str());
     }
 
@@ -17,7 +21,18 @@ int inputTextCallback(ImGuiInputTextCallbackData *data)
 ///////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 
-void GDialog::createDialog(uint32_t type, const String &title, const std::list<String> &ext,
+GDialog::GDialog(void)
+{
+#ifdef WIN32
+    main_path = std::getenv("USERPROFILE");
+#else
+    main_path = std::getenv("HOME");
+#endif
+}
+
+GDialog::~GDialog(void) {}
+
+void GDialog::createDialog(uint32_t type, const std::string &title, const std::list<std::string> &ext,
                            void *data, void (*callback)(void *))
 {
     active = true;
@@ -91,7 +106,7 @@ bool GDialog::openDialog(void)
 
     ImGui::PopItemWidth();
 
-    String prov(loc);
+    std::string prov(loc);
     if (prov.size() == 0)
         prov = main_path;
 
@@ -103,7 +118,7 @@ bool GDialog::openDialog(void)
     ImGui::PushItemWidth(100);
     if (ImGui::BeginCombo("##combo", currentExt.c_str()))
     {
-        for (const String &ext : lExtension)
+        for (const std::string &ext : lExtension)
         {
             bool check = currentExt.compare(ext) == 0;
             if (ImGui::Selectable(ext.c_str(), &check))
@@ -176,7 +191,7 @@ bool GDialog::saveDialog(void)
 
     ImGui::PopItemWidth();
 
-    String prov(loc);
+    std::string prov(loc);
     if (prov.size() == 0)
         prov = main_path;
 
@@ -205,7 +220,7 @@ bool GDialog::saveDialog(void)
     ImGui::PushItemWidth(100);
     if (ImGui::BeginCombo("##combo", currentExt.c_str()))
     {
-        for (const String &ext : lExtension)
+        for (const std::string &ext : lExtension)
         {
             bool check = currentExt.compare(ext) == 0;
             if (ImGui::Selectable(ext.c_str(), &check))
@@ -261,7 +276,7 @@ void GDialog::systemLoop(void)
     {
         if (std::filesystem::is_directory(entry))
         {
-            String arq = entry.path().string();
+            std::string arq = entry.path().string();
 
 #ifdef _WIN32
             size_t pos = arq.find_last_of("\\");
@@ -279,7 +294,7 @@ void GDialog::systemLoop(void)
 
         else if (std::filesystem::is_regular_file(entry))
         {
-            String arq = entry.path().string();
+            std::string arq = entry.path().string();
 
 #ifdef _WIN32
             size_t pos = arq.find_last_of("\\");
@@ -293,14 +308,14 @@ void GDialog::systemLoop(void)
             if (arq[0] == '.')
                 continue;
 
-            if (arq.find(currentExt) != String::npos)
+            if (arq.find(currentExt) != std::string::npos)
                 lFiles.push_back(arq);
         }
     } // loop-exists
 
 } // loop-directories
 
-bool GDialog::systemDisplay(const String &url)
+bool GDialog::systemDisplay(const std::string &url)
 {
     ImGui::PushStyleColor(ImGuiCol_ChildBg, {0.02f, 0.02f, 0.02f, 1.0f});
 
@@ -322,8 +337,8 @@ bool GDialog::systemDisplay(const String &url)
         size_t pos = url.find_last_of('/');
         main_path = url.substr(0, pos);
 
-        for (const String &ext : lExtension)
-            if (url.find(ext) != String::npos)
+        for (const std::string &ext : lExtension)
+            if (url.find(ext) != std::string::npos)
             {
                 selected = url.substr(pos + 1);
                 break;
@@ -340,14 +355,14 @@ bool GDialog::systemDisplay(const String &url)
         systemLoop();
 
         pos = pos == 1 ? pos : pos + 1;
-        String diff = url.substr(pos);
+        std::string diff = url.substr(pos);
 
-        lFolders.remove_if([&](const String &name) -> bool {
-            return name.find(diff) == String::npos;
+        lFolders.remove_if([&](const std::string &name) -> bool {
+            return name.find(diff) == std::string::npos;
         });
 
-        lFiles.remove_if([&](const String &name) -> bool {
-            return name.find(diff) == String::npos;
+        lFiles.remove_if([&](const std::string &name) -> bool {
+            return name.find(diff) == std::string::npos;
         });
     }
 

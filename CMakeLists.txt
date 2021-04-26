@@ -1,40 +1,31 @@
 cmake_minimum_required(VERSION 3.10.0)
 project(GP_FBM_LIBRARY VERSION 0.2.0)
 
-# We need standard 17 for some functions
+# CONFIGURATION 
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-
 find_package(Threads REQUIRED)
 
-
-
-# GENERAL PURPOSE VENDOR
-add_subdirectory("${CMAKE_SOURCE_DIR}/vendor")
-
-# CONFIGURATION FILE
-option(HIGH_DPI "Setup scale for High DPI monitors" OFF)
-
-if (${HIGH_DPI})
-    set(DPI_FACTOR "2")
-else()
-    set(DPI_FACTOR "1")
-endif()
-
 if (WIN32)
-    file(TO_CMAKE_PATH "$ENV{USERPROFILE}" HOME_DIR)
-else()
-    set(HOME_DIR "$ENV{HOME}")
+    add_compile_definitions(_CRT_SECURE_NO_WARNINGS)  # sprintf and strcpy warnings
 endif()
 
-
-set(PROJECT_DIR "${CMAKE_SOURCE_DIR}")
-set(INI_PATH "${CMAKE_SOURCE_DIR}/assets/gptool.ini")
-configure_file("${CMAKE_SOURCE_DIR}/config.h.in" "${CMAKE_SOURCE_DIR}/include/renderer/config.h" NEWLINE_STYLE UNIX)
+option(HIGH_DPI "Setup scale for High DPI monitors" OFF)
+if (HIGH_DPI)
+    add_compile_definitions(DPI_FACTOR=2)
+else()
+    add_compile_definitions(DPI_FACTOR=1)
+endif()
 
 
 ###########################################################
-# UTILS
+## VENDOR #################################################
+add_subdirectory("${CMAKE_SOURCE_DIR}/vendor")
+
+
+###########################################################
+## UTILS ##################################################
 
 add_library(GOPTIMIZE
     STATIC
@@ -66,11 +57,11 @@ target_link_libraries(MAILBOX
 )
 
 ###########################################################
-# METHODS
+## METHODS ################################################
 
 
 add_library(MOVIE
-    STATIC
+    SHARED
         "${CMAKE_SOURCE_DIR}/src/methods/movie.cpp"
         "${CMAKE_SOURCE_DIR}/src/methods/metadata.cpp"
         "${CMAKE_SOURCE_DIR}/src/utils/gtiffer.cpp"
@@ -93,7 +84,7 @@ target_link_libraries(MOVIE
 #############################
 
 add_library(ALIGN
-    STATIC
+    SHARED
         "${CMAKE_SOURCE_DIR}/src/methods/align.cpp"
 )
 
@@ -114,7 +105,7 @@ target_link_libraries(ALIGN
 #############################
 
 add_library(TRAJECTORY
-    STATIC
+    SHARED
         "${CMAKE_SOURCE_DIR}/src/methods/spot.cpp"
         "${CMAKE_SOURCE_DIR}/src/methods/trajectory.cpp"
 
@@ -134,8 +125,27 @@ target_link_libraries(TRAJECTORY
 )
 
 
+#############################
+
+add_library(GP_FBM
+    SHARED
+        "${CMAKE_SOURCE_DIR}/src/methods/gp_fbm.cpp"    
+)
+
+target_include_directories(GP_FBM
+    PUBLIC
+        "${CMAKE_SOURCE_DIR}/include"
+        "${CMAKE_SOURCE_DIR}/include/methods"
+)
+
+target_link_libraries(GP_FBM
+    PUBLIC
+        GOPTIMIZE
+        MAILBOX
+)
+
 ###########################################################
-# RENDERER FOR GUI
+## RENDERER ###############################################
 
 add_library(RENDERER 
     STATIC
@@ -167,9 +177,9 @@ target_link_libraries(RENDERER
 )
 
 ###########################################################
-# PLUGIN MANAGER AND MAIN EXECUTABLE
+## EXECUTABLE #############################################
 
-add_executable(GPTOOL
+add_executable(GPTool
     "${CMAKE_SOURCE_DIR}/src/main.cpp"
     "${CMAKE_SOURCE_DIR}/src/gptool.cpp"
     "${CMAKE_SOURCE_DIR}/src/plugins/manager.cpp"
@@ -178,13 +188,13 @@ add_executable(GPTOOL
     "${CMAKE_SOURCE_DIR}/src/plugins/trajPlugin.cpp"
 )
 
-target_include_directories(GPTOOL
+target_include_directories(GPTool
     PUBLIC
         "${CMAKE_SOURCE_DIR}/include"
         "${CMAKE_SOURCE_DIR}/include/plugins"
 )
 
-target_link_libraries(GPTOOL
+target_link_libraries(GPTool
     PUBLIC
         RENDERER
         MOVIE
@@ -194,14 +204,35 @@ target_link_libraries(GPTOOL
         implot
 )
 
-
 ###########################################################
-# INSTALLATION SETUP
+## INSTALLATION SETUP #####################################
 
-# install(TARGETS GPTool DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
-# install(DIRECTORY "${CMAKE_SOURCE_DIR}/gui/assets" DESTINATION "${CMAKE_INSTALL_PREFIX}")
-# install(FILES "${CMAKE_SOURCE_DIR}/gui/gptool.ini" DESTINATION "${CMAKE_INSTALL_PREFIX}")
-# install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/GPTool.sh" DESTINATION "${CMAKE_INSTALL_PREFIX}")
 
+# install(
+#     TARGETS 
+#         MOVIE
+#         ALIGN
+#         TRAJECTORY
+
+#     DESTINATION lib
+# )
+
+# install(
+#     DIRECTORY ${CMAKE_SOURCE_DIR}/include/
+#     DESTINATION include
+#     FILES_MATCHING PATTERN "*.h*"
+# )
+
+# install(
+#     DIRECTORY ${CMAKE_SOURCE_DIR}/assets/
+#     DESTINATION assets
+#     FILES_MATCHING PATTERN "*"
+# )
+
+
+# install(
+#     TARGETS GPTool
+#     DESTINATION bin
+# )
 
 

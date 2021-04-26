@@ -7,16 +7,16 @@ class Movie
 {
 
 public:
-    Movie(const std::string &movie_path, Mailbox *mail = nullptr);
-    Movie(void) = default;
-    ~Movie(void) = default;
+    API Movie(const std::string &movie_path, Mailbox *mail = nullptr);
+    API Movie(void) = default;
+    API ~Movie(void) = default;
 
-    bool successful(void) const { return success; }
+    API bool successful(void) const { return success; }
 
-    const Metadata &getMetadata(void) const { return meta; }
-    Metadata &getMetadata(void) { return meta; }
+    API const Metadata &getMetadata(void) const { return meta; }
+    API Metadata &getMetadata(void) { return meta; }
 
-    const MatXd &getImage(uint32_t channel, uint32_t frame) const;
+    API const MatXd &getImage(uint32_t channel, uint32_t frame) const;
 
 private:
     Mailbox *mbox = nullptr;

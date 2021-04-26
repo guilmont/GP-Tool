@@ -15,7 +15,6 @@
 #include <implot.h>
 
 // local
-#include "config.h"
 #include "quad.h"
 #include "shader.h"
 #include "framebuffer.h"

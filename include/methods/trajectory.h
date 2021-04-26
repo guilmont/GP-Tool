@@ -30,18 +30,18 @@ class Trajectory
 {
 
 public:
-    Trajectory(const Movie *mov, Mailbox *mail = nullptr);
-    ~Trajectory(void);
+    API Trajectory(const Movie *mov, Mailbox *mail = nullptr);
+    API ~Trajectory(void);
 
     uint32_t spotSize = 3;
-    bool useICY(const std::string &xmlTrack, uint32_t ch = 0);
-    bool useCSV(const std::string &csvTrack, uint32_t ch = 0);
-    void enhanceTracks(void);
+    API bool useICY(const std::string &xmlTrack, uint32_t ch = 0);
+    API bool useCSV(const std::string &csvTrack, uint32_t ch = 0);
+    API void enhanceTracks(void);
 
-    uint32_t getNumTracks(void) const { return uint32_t(m_vTrack.size()); }
+    API uint32_t getNumTracks(void) const { return uint32_t(m_vTrack.size()); }
 
-    Track &getTrack(const uint32_t ch = 0) { return m_vTrack[ch]; }
-    const Track &getTrack(const uint32_t ch = 0) const { return m_vTrack.at(ch); }
+    API Track &getTrack(const uint32_t ch = 0) { return m_vTrack[ch]; }
+    API const Track &getTrack(const uint32_t ch = 0) const { return m_vTrack.at(ch); }
 
 private:
     void enhancePoint(uint32_t trackID, uint32_t trajID, uint32_t tid);

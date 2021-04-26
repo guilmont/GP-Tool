@@ -42,11 +42,11 @@ public:
     std::string metaString;
     std::vector<std::string> nameCH;
 
-    Metadata(Tiffer::Read *tif, Mailbox *mail = nullptr);
-    Metadata(void) = default;
+    API Metadata(Tiffer::Read *tif, Mailbox *mail = nullptr);
+    API Metadata(void) = default;
 
-    bool hasPlanes(void) const { return (vPlanes.size() > 0); }
-    const Plane &getPlane(uint32_t c, uint32_t z, uint32_t t) const;
+    API bool hasPlanes(void) const { return (vPlanes.size() > 0); }
+    API const Plane &getPlane(uint32_t c, uint32_t z, uint32_t t) const;
 
 private:
     Mailbox *mbox = nullptr;

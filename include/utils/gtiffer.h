@@ -2,6 +2,8 @@
 
 #include "methods/header.h"
 
+#include <unordered_map>
+
 namespace Tiffer
 {
     // Basic sizes in bytes

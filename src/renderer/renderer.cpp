@@ -123,13 +123,13 @@ void Renderer::initialize(const String &name, uint32_t width, uint32_t height)
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
-    io.IniFilename = INI_PATH;
+    io.IniFilename = "../assets/gptool.ini";
 
     ImGui_ImplGlfw_InitForOpenGL(window.ptr, true);
     ImGui_ImplOpenGL3_Init("#version 410 core"); // Mac supports only up to 410
 
     // Setup fonts
-    const String fonts_path = String(PROJECT_DIR) + "/assets/Open_Sans/";
+    const String fonts_path = "../assets/Open_Sans/";
     fonts.loadFont("regular", fonts_path + "OpenSans-Regular.ttf", 18.0 * DPI_FACTOR);
     fonts.loadFont("bold", fonts_path + "OpenSans-Bold.ttf", 18.0 * DPI_FACTOR);
     fonts.setDefault("regular");

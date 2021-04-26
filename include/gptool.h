@@ -1,6 +1,5 @@
 #pragma once
 
-#include "renderer/config.h"
 #include "renderer/renderer.h"
 
 class PluginManager;

@@ -1,28 +1,25 @@
 #pragma once
 
-#include <filesystem>
-#include <thread>
-#include <mutex>
+#include <string>
 #include <list>
 
 #include <imgui.h>
 
-#include "config.h"
-
 class GDialog
 {
 public:
-    GDialog(void) = default;
-    ~GDialog(void) = default;
+    GDialog(void);
+    ~GDialog(void);
 
-    void createDialog(uint32_t type, const String &title, const std::list<String> &ext,
+    void createDialog(uint32_t type, const std::string &title,
+                      const std::list<std::string> &ext,
                       void *data = nullptr, void (*callback)(void *) = nullptr);
     void showDialog(void);
 
     // RETRIEVE DATA
-    const String &getFilename(void) const { return filename; }
-    const String &getFolder(void) const { return main_path; }
-    const String &getPath(void) const { return filepath; }
+    const std::string &getFilename(void) const { return filename; }
+    const std::string &getFolder(void) const { return main_path; }
+    const std::string &getPath(void) const { return filepath; }
 
     enum : uint32_t
     {
@@ -33,11 +30,11 @@ public:
 private:
     bool active = false;
 
-    String filename, filepath, main_path = HOME_DIR;
-    std::list<String> lFolders, lFiles;
+    std::string filename, filepath, main_path;
+    std::list<std::string> lFolders, lFiles;
 
-    String title, currentExt, selected;
-    std::list<String> lExtension;
+    std::string title, currentExt, selected;
+    std::list<std::string> lExtension;
 
     bool (GDialog::*dialog_function)(void);
 
@@ -49,7 +46,7 @@ private:
     bool openDialog(void);
     bool saveDialog(void);
 
-    bool systemDisplay(const String &url);
+    bool systemDisplay(const std::string &url);
     void systemLoop(void);
 
     bool existPopup = false;

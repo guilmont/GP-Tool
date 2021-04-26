@@ -172,7 +172,7 @@ void TrajPlugin::update(float deltaTime)
                           rx = float(mat(k, Track::SIZEX)) / size.x,
                           ry = float(mat(k, Track::SIZEY)) / size.y;
 
-                    float r = 0.5f * std::sqrtf(rx * rx + ry * ry);
+                    float r = 0.5f * std::sqrt(rx * rx + ry * ry);
 
                     float nx = trf[0][0] * x + trf[0][1] * y + trf[0][2],
                           ny = trf[1][0] * x + trf[1][1] * y + trf[1][2];
@@ -473,7 +473,6 @@ void TrajPlugin::winPlots(void)
                      ymax = 1.2 * std::max(szx.maxCoeff(), szy.maxCoeff());
 
         ImPlot::SetNextPlotLimits(xmin, xmax, ymin, ymax);
-
         if (ImPlot::BeginPlot("Spot size", "Frame", "Size", size))
         {
             ImPlot::PlotLine("X-Axis", frame.data(), szx.data(), nPts);
@@ -491,7 +490,6 @@ void TrajPlugin::winPlots(void)
                      ymax = 1.2 * std::max(bg.maxCoeff(), sig.maxCoeff());
 
         ImPlot::SetNextPlotLimits(xmin, xmax, ymin, ymax);
-
         if (ImPlot::BeginPlot("Signal", "Frame", "Signal", size))
         {
             ImPlot::PlotLine("Spot", mat.col(0).data(), sig.data(), nPts);
