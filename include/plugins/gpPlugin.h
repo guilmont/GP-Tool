@@ -16,6 +16,24 @@ public:
     void update(float deltaTime) override;
 
 private: // Windows
+    struct
+    {
+        bool show = false;
+        uint32_t gpID, trajID;
+
+    } avgView;
+
+    struct
+    {
+        bool show = false;
+        uint32_t gpID;
+    } subPlotView, subView, distribView;
+
+    void winAvgView(void);
+    void winSubstrate(void);
+    void winPlotSubstrate(void);
+    void winDistributions(void);
+
 private:
     GPTool *tool = nullptr;
 

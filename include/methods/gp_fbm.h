@@ -36,11 +36,12 @@ public:
     API DA *singleModel(uint32_t id = 0);
     API CDA *coupledModel(void);
 
-    API const MatXd &distrib_singleModel(uint32_t sample_size, uint32_t id = 0);
-    API const MatXd &distrib_coupledModel(uint32_t sample_size);
+    API const MatXd &distrib_singleModel(uint32_t sample_size = 10000, uint32_t id = 0);
+    API const MatXd &distrib_coupledModel(uint32_t sample_size = 10000);
 
-    API MatXd calcAvgTrajectory(const VecXd &vTime, uint32_t id = 0);
-    API MatXd estimateSubstrateMovement(void);
+    API const MatXd &calcAvgTrajectory(const VecXd &vTime, uint32_t id = 0,
+                                       bool redo = false);
+    API const MatXd &estimateSubstrateMovement(bool redo = false);
 
     API uint32_t getNumParticles(void) const { return nParticles; }
 
@@ -77,6 +78,9 @@ private:
     MatXd cRoute;             // concatenates all routes in one
 
     // We save these results first time functions are called, after we just return these
+    std::unique_ptr<MatXd> substrate = nullptr;
+    std::vector<std::unique_ptr<MatXd>> average;
+
     std::unique_ptr<MatXd> distribCoupled = nullptr;
     std::vector<std::unique_ptr<MatXd>> distribSingle;
 

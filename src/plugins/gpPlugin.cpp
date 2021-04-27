@@ -2,13 +2,67 @@
 
 #include <thread>
 
+static constexpr uint32_t sample_size = 10000;
+
+static void binOption(int &bins)
+{
+    if (ImGui::RadioButton("Sqrt", bins == ImPlotBin_Sqrt))
+        bins = ImPlotBin_Sqrt;
+
+    ImGui::SameLine();
+    if (ImGui::RadioButton("Sturges", bins == ImPlotBin_Sturges))
+        bins = ImPlotBin_Sturges;
+
+    ImGui::SameLine();
+    if (ImGui::RadioButton("Rice", bins == ImPlotBin_Rice))
+        bins = ImPlotBin_Rice;
+
+    ImGui::SameLine();
+    if (ImGui::RadioButton("Scott", bins == ImPlotBin_Scott))
+        bins = ImPlotBin_Scott;
+
+    ImGui::SameLine();
+    if (ImGui::RadioButton("N Bins", bins >= 0))
+        bins = 50;
+
+    if (bins >= 0)
+    {
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(200);
+        ImGui::SliderInt("##Bins", &bins, 1, 100);
+    }
+
+    ImGui::Spacing();
+    ImGui::Spacing();
+} // binOption
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
 GPPlugin::GPPlugin(GPTool *ptr) : tool(ptr) {}
 GPPlugin::~GPPlugin(void) {}
 
-void GPPlugin::showWindows(void) {}
+void GPPlugin::showWindows(void)
+{
+    if (avgView.show)
+        winAvgView();
+
+    if (subView.show)
+        winSubstrate();
+
+    if (subPlotView.show)
+        winPlotSubstrate();
+
+    if (distribView.show)
+        winDistributions();
+}
 
 void GPPlugin::showProperties(void)
 {
+    TrajPlugin *pgl = (TrajPlugin *)tool->manager->getPlugin("TRAJECTORY");
+    const Trajectory *vTrack = pgl->getTrajectory(); //
+    UITraj *ui = pgl->getUITrajectory();             // tells which are active
+
     ImGui::Begin("Properties");
 
     ImGui::Text("- Infer parameters\n"
@@ -18,41 +72,8 @@ void GPPlugin::showProperties(void)
 
     ImGui::Spacing();
 
-    //     auto addRow = [](uint32_t id, double D, double A, const GP_FBM *gp,
-    //                      winPlotTrajectory *win) -> void {
-    //         ImGui::Text("%d", id);
-    //         ImGui::NextColumn();
-
-    //         ImGui::Text("%.3e", D);
-    //         ImGui::NextColumn();
-
-    //         ImGui::Text("%.3f", A);
-    //         ImGui::NextColumn();
-
-    //         char txt[32];
-    //         sprintf(txt, "Particle %d", id);
-    //         ImGui::PushID(txt);
-
-    //         float width = ImGui::GetContentRegionAvailWidth();
-    //         if (ImGui::Button("View", {width, 0}))
-    //         {
-    //             win->setInfo(&gp->getAvgTrajectory(id), "Movement");
-    //             win->show();
-    //         }
-
-    //         ImGui::PopID();
-    //         ImGui::NextColumn();
-
-    //         ImGui::Spacing();
-    //     };
-
     if (ImGui::Button("Add cell"))
     {
-
-        TrajPlugin *pgl = (TrajPlugin *)tool->manager->getPlugin("TRAJECTORY");
-        const UITraj *ui = pgl->getUITrajectory();       // tells which are active
-        const Trajectory *vTrack = pgl->getTrajectory(); //
-
         // Checking which trajectories are selected
         std::vector<MatXd> vTraj;
         std::vector<GP_FBM::ParticleID> partID;
@@ -131,16 +152,6 @@ void GPPlugin::showProperties(void)
     ///////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////
 
-    const Movie *movie = ((MoviePlugin *)tool->manager->getPlugin("MOVIE"))->getMovie();
-
-    const float
-        pix2mu = movie->getMetadata().PhysicalSizeXY,
-        DCalib = pix2mu * pix2mu;
-
-    const char
-        *spaceUnit = movie->getMetadata().PhysicalSizeXYUnit.c_str(),
-        *timeUnit = movie->getMetadata().TimeIncrementUnit.c_str();
-
     ImGuiTreeNodeFlags nodeFlags = ImGuiTreeNodeFlags_None;
     nodeFlags |= ImGuiTreeNodeFlags_DefaultOpen;
     nodeFlags |= ImGuiTreeNodeFlags_Framed;
@@ -148,99 +159,139 @@ void GPPlugin::showProperties(void)
     nodeFlags |= ImGuiTreeNodeFlags_SpanAvailWidth;
     nodeFlags |= ImGuiTreeNodeFlags_AllowItemOverlap;
 
-    int32_t gpID = -1;
+    int32_t gpID = -1,
+            toRemove = -1; // If we want to remove any cell
+
     for (auto &gp : vecGP)
     {
+        const Movie
+            *movie = ((MoviePlugin *)tool->manager->getPlugin("MOVIE"))->getMovie();
+
+        const float
+            pix2mu = movie->getMetadata().PhysicalSizeXY,
+            DCalib = pix2mu * pix2mu;
+
+        const std::string
+            &spaceUnit = movie->getMetadata().PhysicalSizeXYUnit,
+            &timeUnit = movie->getMetadata().TimeIncrementUnit;
+
+        std::array<std::string, 5> header = {"Channel", "TrajID",
+                                             "D", "Alpha", "Avg traj"};
+
+        header[2] += " (" + spaceUnit + "^2/" + timeUnit + "^A)";
+
         gpID++;
 
+        //////////////
         String txt = "Cell " + std::to_string(gpID);
         bool openTree = ImGui::TreeNodeEx(txt.c_str(), nodeFlags);
+        ImGui::PushID(txt.c_str());
 
         float fSize = ImGui::GetContentRegionAvailWidth() - 6 * ImGui::GetFontSize();
         ImGui::SameLine(fSize);
 
         if (ImGui::Button("Select"))
         {
-            // // Setting everything to false
-            // for (uint32_t ch = 0; ch < data.track->getNumTracks(); ch++)
-            //     for (auto &view : data.track->getTrack(ch).view)
-            //         view.first = false;
+            // Setting everything to false
+            const uint32_t nTracks = uint32_t(vTrack->getNumTracks());
+            for (uint32_t ch = 0; ch < nTracks; ch++)
+                for (auto &[show, color] : ui[ch])
+                    show = false;
 
-            // // Activating only important ones
-            // for (auto [ch, pt] : gp->partID)
-            //     data.track->getTrack(ch).view[pt].first = true;
+            // Activating only important ones
+            for (auto [ch, pt] : gp->partID)
+                ui[ch][pt].first = true;
         }
 
         ImGui::SameLine();
         if (ImGui::Button("Remove"))
         {
-            // ui.mWindows["substrate"]->hide();
-            // ui.mWindows["plotDistrib"]->hide();
+            toRemove = gpID;
 
-            // openTree = false;
-            // vecGP.erase(data.vecGP.begin() + id);
+            if (avgView.gpID == gpID)
+                avgView.show = false;
+
+            if (subView.gpID == gpID)
+                subView.show = false;
+
+            if (subPlotView.gpID == gpID)
+                subPlotView.show = false;
         }
 
         if (openTree)
         {
             const uint32_t nParticles = gp->getNumParticles();
 
-            // Creating fancy table
-            ImGui::Separator();
+            // Creating table
 
-            ImGui::Columns(4);
-            ImGui::Text("ID");
-            ImGui::NextColumn();
-            ImGui::Text("D (%s^2/%s^A)", spaceUnit, timeUnit);
-            ImGui::NextColumn();
-            ImGui::Text("Alpha");
-            ImGui::NextColumn();
-            ImGui::Text("Avg Traj");
-            ImGui::NextColumn();
+            ImGuiTableFlags flags = ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_BordersV;
 
-            ImGui::Separator();
+            if (ImGui::BeginTable("table1", 5, flags))
+            {
+                // Header
+                for (uint32_t k = 0; k < 5; k++)
+                    ImGui::TableSetupColumn(header[k].c_str());
+                ImGui::TableHeadersRow();
 
-            // Table to display results
+                // Mainbody
+                for (uint32_t k = 0; k < nParticles; k++)
+                {
+                    std::string txt = "part" + std::to_string(k);
+                    ImGui::PushID(txt.c_str());
+                    ImGui::TableNextRow();
 
-            // winPlotTrajectory *winPlot = (winPlotTrajectory *)ui.mWindows["plotTraj"].get();
-            // if (nParticles == 1 && gp.hasSingle())
-            // {
-            //     const ParamDA &da = gp.getSingleParameters()[0];
-            //     addRow(0, DCalib * da.D, da.A, &gp, winPlot);
-            // } // if-single-particle
+                    //Frame column presents integer values
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::Text("%d", gp->partID[k].trackID);
+                    ImGui::TableSetColumnIndex(1);
+                    ImGui::Text("%d", gp->partID[k].trajID);
 
-            // if (nParticles > 1 && gp.hasCoupled())
-            // {
-            //     const ParamCDA &cda = gp.getCoupledParameters();
-            //     for (uint32_t pt = 0; pt < nParticles; pt++)
-            //         addRow(pt, DCalib * cda.particle[pt].D, cda.particle[pt].A, &gp, winPlot);
+                    float D, A;
+                    if (nParticles == 1)
+                    {
+                        D = float(gp->singleModel(k)->D);
+                        A = float(gp->singleModel(k)->A);
+                    }
+                    else
+                    {
+                        D = float(gp->coupledModel()->da[k].D);
+                        A = float(gp->coupledModel()->da[k].A);
+                    }
 
-            // } // if-multiple particles
+                    ImGui::TableSetColumnIndex(2);
+                    ImGui::Text("%.2e", pix2mu * D);
+                    ImGui::TableSetColumnIndex(3);
+                    ImGui::Text("%.3f", A);
 
-            ImGui::Columns(1);
-            ImGui::Separator();
+                    ImGui::TableSetColumnIndex(4);
+
+                    if (ImGui::Button("View", {ImGui::GetContentRegionAvailWidth(), 0}))
+                        avgView = {true, uint32_t(gpID), k};
+
+                    ImGui::PopID();
+
+                } // loop-particles
+
+                ImGui::EndTable();
+            }
 
             // float width = ImGui::GetContentRegionAvailWidth();
             if (ImGui::Button("View distribution"))
             {
-                // winPlotDistribution *win = (winPlotDistribution *)ui.mWindows["plotDistrib"].get();
-                // win->setCellID(id);
-                // win->show();
+                distribView.gpID = uint32_t(gpID);
 
-                // GP_FBM *gp = &data.vecGP[id];
-                // Mailbox *box = &ui.mail;
+                std::thread([](GP_FBM *gp, Mailbox *mbox, bool *show) -> void {
+                    mbox->create<Message::Info>("Calculating distributions ...");
 
-                // if (nParticles == 1 && !data.vecGP[id].hasDistribSingle())
-                // {
-                //     std::thread(runSingleDistrib, gp, box).detach();
-                //     ui.mWindows["inbox"]->show();
-                // }
+                    if (gp->getNumParticles() == 1)
+                        gp->distrib_singleModel(sample_size);
+                    else
+                        gp->distrib_coupledModel(sample_size);
 
-                // if (nParticles > 1 && !data.vecGP[id].hasDistribCoupled())
-                // {
-                //     std::thread(runCoupledDistrib, gp, box).detach();
-                //     ui.mWindows["inbox"]->show();
-                // }
+                    *show = true;
+                },
+                            vecGP[gpID].get(), &(tool->mbox), &(distribView.show))
+                    .detach();
 
             } // button-distribution
 
@@ -249,14 +300,19 @@ void GPPlugin::showProperties(void)
                 ImGui::SameLine();
                 if (ImGui::Button("Substrate"))
                 {
-                    // winSubstrate *win = (winSubstrate *)ui.mWindows["substrate"].get();
-                    // win->setCellID(id);
-                    // win->show();
+                    subView.gpID = uint32_t(gpID);
 
-                    // if (!gp.hasSubstrate())
-                    //     data.vecGP[id].estimateSubstrateMovement();
+                    std::thread(
+                        [](GP_FBM *gp, Mailbox *mbox, bool *show) -> void {
+                            mbox->create<Message::Info>("Calculating substrate data...");
 
-                } // button-substrate
+                            gp->estimateSubstrateMovement();
+                            gp->distrib_coupledModel(sample_size);
+                            *show = true;
+                        },
+                        vecGP[gpID].get(), &(tool->mbox), &(subView.show))
+                        .detach();
+                }
             }
 
             ImGui::Spacing();
@@ -266,10 +322,321 @@ void GPPlugin::showProperties(void)
             ImGui::TreePop();
         } // if-treenode
 
+        ImGui::PopID();
     } // loop-cells
+
+    // Removing cell if needed
+    if (toRemove >= 0)
+        vecGP.erase(vecGP.begin() + toRemove);
 
     ImGui::End();
 
 } // showProperties
 
 void GPPlugin::update(float deltaTime) {}
+
+void GPPlugin::winAvgView(void)
+{
+    // Getting data from specific particle
+    const GP_FBM::ParticleID pid = vecGP[avgView.gpID]->partID[avgView.trajID];
+    TrajPlugin *plg = (TrajPlugin *)tool->manager->getPlugin("TRAJECTORY");
+    const Trajectory *traj = plg->getTrajectory();
+
+    // Getting its original trajectory
+    const MatXd &orig = traj->getTrack(pid.trackID).traj[pid.trajID];
+    const uint32_t nRows = uint32_t(orig.rows());
+
+    // Preparing data for scatter plot
+    VecXd OT = orig.col(Track::TIME),
+          OX = orig.col(Track::POSX).array() - orig(0, Track::POSX),
+          OY = orig.col(Track::POSY).array() - orig(0, Track::POSY);
+
+    // Calculating most probable trajectory with error
+    const uint32_t nPts = uint32_t(
+        float(orig(nRows - 1, Track::TIME) - orig(0, Track::TIME)) / 0.05f);
+
+    VecXd vt(nPts);
+    for (uint32_t k = 0; k < nPts; k++)
+        vt(k) = orig(0, Track::TIME) + 0.05f * k;
+
+    const MatXd &mat = vecGP[avgView.gpID]->calcAvgTrajectory(vt, avgView.trajID);
+
+    // Preparing data for shaded plot
+    VecXd X = mat.col(Track::POSX - 1).array() - mat(0, Track::POSX - 1),
+          Y = mat.col(Track::POSY - 1).array() - mat(0, Track::POSY - 1);
+
+    VecXd errx = 1.96 * mat.col(Track::ERRX - 1),
+          erry = 1.96 * mat.col(Track::ERRY - 1);
+
+    VecXd lowX = X - errx, highX = X + errx;
+    VecXd lowY = Y - erry, highY = Y + erry;
+
+    const double ymin = std::min(lowX.minCoeff(), lowY.minCoeff()),
+                 ymax = std::max(highX.maxCoeff(), highY.maxCoeff());
+
+    // Setup title for the plot
+    char buf[512] = {0};
+    sprintf(buf, "Cell: %d -- Channel: %d -- ID: %d",
+            avgView.gpID, pid.trackID, pid.trajID);
+
+    ///////////////////////////////////////////////////////
+    // Creating ImGui windows
+    ImGui::Begin("Avg trajectory", &(avgView.show));
+
+    const float avail = ImGui::GetContentRegionAvailWidth();
+    const ImVec2 size = {0.99f * avail, 0.6f * avail};
+
+    ImPlot::SetNextPlotLimits(vt(0), vt(nPts - 1), ymin, ymax);
+
+    if (ImPlot::BeginPlot(buf, "Time", "Position", size))
+    {
+        ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.5f);
+        ImPlot::PlotShaded("Average X", vt.data(), lowX.data(), highX.data(), nPts);
+        ImPlot::PlotLine("Average X", vt.data(), X.data(), nPts);
+
+        ImPlot::PlotScatter("Measured X", OT.data(), OX.data(), uint32_t(OT.size()));
+
+        ImPlot::PlotShaded("Average Y", vt.data(), lowY.data(), highY.data(), nPts);
+        ImPlot::PlotLine("Average Y", vt.data(), Y.data(), nPts);
+        ImPlot::PlotScatter(" Measured Y", OT.data(), OY.data(), uint32_t(OT.size()));
+
+        ImPlot::PopStyleVar();
+
+        ImPlot::EndPlot();
+    }
+
+    ImGui::End();
+} // winAvgView
+
+void GPPlugin::winSubstrate(void)
+{
+    // Gathering some information
+    const Movie
+        *movie = ((MoviePlugin *)tool->manager->getPlugin("MOVIE"))->getMovie();
+
+    const float
+        pix2mu = movie->getMetadata().PhysicalSizeXY,
+        DCalib = pix2mu * pix2mu;
+
+    const char
+        *spaceUnit = movie->getMetadata().PhysicalSizeXYUnit.c_str(),
+        *timeUnit = movie->getMetadata().TimeIncrementUnit.c_str();
+
+    GP_FBM *gp = vecGP[subView.gpID].get();
+    const MatXd &mat = gp->estimateSubstrateMovement();
+    const MatXd &distrib = gp->distrib_coupledModel();
+
+    const uint32_t nRows = uint32_t(mat.rows()),
+                   nParticles = gp->getNumParticles();
+
+    // Proceeding to the window
+    ImGui::Begin("Substrate", &(subView.show));
+
+    tool->fonts.text("Cell " + std::to_string(subView.gpID) + ":", "bold");
+    char buf[512] = {0};
+
+    ImGui::Indent();
+    sprintf(buf, "DR = %.3e %s^2/%s^A", DCalib * gp->coupledModel()->DR,
+            spaceUnit, timeUnit);
+    ImGui::Text(buf);
+
+    memset(buf, 0, 512);
+    sprintf(buf, "AR = %.3f", gp->coupledModel()->AR);
+    ImGui::Text(buf);
+    ImGui::Unindent();
+
+    ImGui::Separator();
+    ImGui::Spacing();
+
+    ImGui::Text("PARAMETER DISTRIBUTIONS");
+    ImGui::Spacing();
+
+    ImGui::SetNextItemWidth(200);
+
+    static int bins = 50;
+    binOption(bins);
+
+    ImGui::Columns(2);
+    if (ImPlot::BeginPlot("##Histogram_diffusion"))
+    {
+        memset(buf, 0, 512);
+        sprintf(buf, "D / %.4f %s^2", DCalib, spaceUnit);
+
+        ImPlot::SetNextFillStyle(IMPLOT_AUTO_COL, 0.5f);
+        ImPlot::PlotHistogram(buf, distrib.col(2 * nParticles).data(),
+                              10000, bins, false, true);
+        ImPlot::EndPlot();
+    }
+
+    ImGui::NextColumn();
+
+    if (ImPlot::BeginPlot("##Histogram_alpha"))
+    {
+        ImPlot::SetNextFillStyle({0.85f, 0.25f, 0.18f, 0.8f}, 0.5f);
+        ImPlot::PlotHistogram("Alpha", distrib.col(2 * nParticles + 1).data(),
+                              10000, bins, false, true);
+        ImPlot::EndPlot();
+    }
+
+    ImGui::Columns(1);
+    ImGui::Spacing();
+
+    ImGui::Separator();
+
+    ImGui::Text("SUBSTRATE MOVEMENT");
+    ImGui::SameLine();
+
+    if (ImGui::Button("View plot"))
+        subPlotView = {true, subView.gpID};
+
+    ImGui::SameLine();
+    if (ImGui::Button("Export"))
+    {
+    }
+
+    ///////////////////////////////////////////////////////
+    // Creating table
+    const char *names[] = {"Frame", "Time",
+                           "Position X", "Position Y",
+                           "Error X", "Error Y"};
+
+    ImGuiTableFlags flags = ImGuiTableFlags_ScrollY;
+    flags |= ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_BordersV;
+
+    if (ImGui::BeginTable("table1", 6, flags))
+    {
+        // Header
+        for (uint32_t k = 0; k < 6; k++)
+            ImGui::TableSetupColumn(names[k]);
+        ImGui::TableHeadersRow();
+
+        // Mainbody
+        for (uint32_t row = 0; row < nRows; row++)
+        {
+            ImGui::TableNextRow();
+
+            //Frame column presents integer values
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("%.0f", mat(row, 0));
+
+            // remains columns
+            for (uint32_t column = 1; column < 6; column++)
+            {
+                ImGui::TableSetColumnIndex(column);
+                ImGui::Text("%.3f", mat(row, column));
+            }
+        }
+        ImGui::EndTable();
+    }
+
+    ImGui::End();
+
+} // winSubstrate
+
+void GPPlugin::winPlotSubstrate(void)
+{
+    // Getting its original trajectory
+    const MatXd &mat = vecGP[subPlotView.gpID]->estimateSubstrateMovement();
+    const uint32_t nPts = uint32_t(mat.rows());
+
+    // Preparing data for shaded plot
+    VecXd T = mat.col(Track::TIME),
+          X = mat.col(Track::POSX).array() - mat(0, Track::POSX),
+          Y = mat.col(Track::POSY).array() - mat(0, Track::POSY);
+
+    VecXd errx = 1.96 * mat.col(Track::ERRX),
+          erry = 1.96 * mat.col(Track::ERRY);
+
+    VecXd lowX = X - errx, highX = X + errx;
+    VecXd lowY = Y - erry, highY = Y + erry;
+
+    const double ymin = std::min(lowX.minCoeff(), lowY.minCoeff()),
+                 ymax = std::max(highX.maxCoeff(), highY.maxCoeff());
+
+    // Setup title for the plot
+    char buf[128] = {0};
+    sprintf(buf, "Cell: %d", subPlotView.gpID);
+
+    ///////////////////////////////////////////////////////
+    // Creating ImGui windows
+    ImGui::Begin("Substrate movement", &(subPlotView.show));
+
+    const float avail = ImGui::GetContentRegionAvailWidth();
+    const ImVec2 size = {0.99f * avail, 0.6f * avail};
+
+    ImPlot::SetNextPlotLimits(T(0), T(nPts - 1), ymin, ymax);
+
+    if (ImPlot::BeginPlot(buf, "Time", "Position", size))
+    {
+        ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.5f);
+        ImPlot::PlotShaded("X", T.data(), lowX.data(), highX.data(), nPts);
+        ImPlot::PlotLine("X", T.data(), X.data(), nPts);
+
+        ImPlot::PlotShaded("Y", T.data(), lowY.data(), highY.data(), nPts);
+        ImPlot::PlotLine("Y", T.data(), Y.data(), nPts);
+        ImPlot::PopStyleVar();
+
+        ImPlot::EndPlot();
+    }
+
+    ImGui::End();
+} // winSubstrate
+
+void GPPlugin::winDistributions(void)
+{
+    ImGui::Begin("Distributions", &(distribView.show));
+
+    static int bins = 50;
+    binOption(bins); // helper function
+
+    // Gathering the data we need
+    GP_FBM *gp = vecGP[distribView.gpID].get();
+    const uint32_t nParticles = gp->getNumParticles();
+
+    const Metadata &meta =
+        ((MoviePlugin *)tool->manager->getPlugin("MOVIE"))->getMovie()->getMetadata();
+
+    float Dcalib = meta.PhysicalSizeXY * meta.PhysicalSizeXY;
+
+    const MatXd *mat = nullptr;
+    if (nParticles > 1)
+        mat = &(gp->distrib_coupledModel());
+    else
+        mat = &(gp->distrib_singleModel());
+
+    for (uint32_t k = 0; k < nParticles; k++)
+    {
+        ImGui::Separator();
+
+        char buf[512] = {0};
+        sprintf(buf, "Channel %d :: ID %d ", gp->partID[k].trackID, gp->partID[k].trajID);
+
+        ImGui::PushID(buf);
+        ImGui::Text(buf);
+
+        ImGui::Columns(2);
+        if (ImPlot::BeginPlot("##Histogram_diffusion"))
+        {
+            memset(buf, 0, 512);
+            sprintf(buf, "D / %.4f %s^2", Dcalib, meta.PhysicalSizeXYUnit.c_str());
+
+            ImPlot::SetNextFillStyle(IMPLOT_AUTO_COL, 0.5f);
+            ImPlot::PlotHistogram(buf, mat->col(2 * k).data(), 10000, bins, false, true);
+            ImPlot::EndPlot();
+        }
+
+        ImGui::NextColumn();
+
+        if (ImPlot::BeginPlot("##Histogram_alpha"))
+        {
+            ImPlot::SetNextFillStyle({0.85f, 0.25f, 0.18f, 0.8f}, 0.5f);
+            ImPlot::PlotHistogram("Alpha", mat->col(2 * k + 1).data(), 10000, bins, false, true);
+            ImPlot::EndPlot();
+        }
+        ImGui::Columns(1);
+        ImGui::Spacing();
+        ImGui::PopID();
+    }
+    ImGui::End();
+
+} // winDistributions

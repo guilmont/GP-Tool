@@ -251,21 +251,10 @@ GP_FBM::CDA *GP_FBM::coupledModel(void)
 ///////////////////////////////////////////////////////////////////////////////
 // AVERAGE TRAJECTORIES ///////////////////////////////////////////////////////
 
-MatXd GP_FBM::calcAvgTrajectory(const VecXd &vTime, uint32_t id)
+const MatXd &GP_FBM::calcAvgTrajectory(const VecXd &vTime, uint32_t id, bool redo)
 {
-
-    if (id >= route.size())
-    {
-        std::string txt = "(GP_FBM::calcAvgTrajectory) id doesn't exist!!";
-
-#ifdef STATIC_API
-        mbox->create<Message::Error>(txt);
-#else
-        std::cerr << "ERROR " << txt << std::endl;
-#endif
-
-        return MatXd(0, 0);
-    }
+    if (average[id] && !redo)
+        return *(average[id].get());
 
     // Create output matrix
     const uint32_t
@@ -311,12 +300,18 @@ MatXd GP_FBM::calcAvgTrajectory(const VecXd &vTime, uint32_t id)
         traj(0, Track::ERRX + k) = sqrt(route[id](0, Track::ERRX + k));
     }
 
-    return traj.block(0, 1, nRows, nCols - 1);
+    average[id] = std::make_unique<MatXd>(traj.block(0, 1, nRows, nCols - 1));
+
+    return *(average[id].get());
 
 } // dataTreatment
 
-MatXd GP_FBM::estimateSubstrateMovement(void)
+const MatXd &GP_FBM::estimateSubstrateMovement(bool redo)
 {
+
+    if (substrate && !redo)
+        return *(substrate.get());
+
     // Let's determine time points which we need to calculate substrate movement
     // Determine maximum number of frames
     uint32_t maxFR = 0;
@@ -381,9 +376,9 @@ MatXd GP_FBM::estimateSubstrateMovement(void)
     const uint32_t nRows = uint32_t(vTime.size()),
                    nCols = Track::NCOLS;
 
-    MatXd substrate = MatXd(nRows, nCols);
-    substrate.col(Track::FRAME) = vFrame;
-    substrate.col(Track::TIME) = vTime;
+    substrate = std::make_unique<MatXd>(nRows, nCols);
+    substrate->col(Track::FRAME) = vFrame;
+    substrate->col(Track::TIME) = vTime;
 
     for (uint8_t ch = 0; ch < 2; ch++)
     {
@@ -402,11 +397,11 @@ MatXd GP_FBM::estimateSubstrateMovement(void)
         } // loop-particles
 
         A = A.inverse();
-        substrate.col(Track::POSX + ch) = A * vec;
-        substrate.col(Track::ERRX + ch) = A.diagonal().array().sqrt();
+        substrate->col(Track::POSX + ch) = A * vec;
+        substrate->col(Track::ERRX + ch) = A.diagonal().array().sqrt();
     } // loop-dims
 
-    return substrate;
+    return *(substrate.get());
 
 } // estimateSubstrateMovement
 
@@ -498,6 +493,7 @@ const MatXd &GP_FBM::distrib_coupledModel(uint32_t sample_size)
 void GP_FBM::initialize(void)
 {
     distribSingle.resize(nParticles);
+    average.resize(nParticles);
     v_da.resize(nParticles);
 
     // Calculating the smallest timepoint accross all trajectories
