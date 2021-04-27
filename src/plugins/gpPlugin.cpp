@@ -1,8 +1,31 @@
 #include "gpPlugin.h"
 
 #include <thread>
+#include <fstream>
 
 static constexpr uint32_t sample_size = 10000;
+
+static void saveCSV(const std::string &path, const std::string *header,
+                    const MatXd &mat)
+{
+
+    const uint32_t nCols = uint32_t(mat.cols()),
+                   nRows = uint32_t(mat.rows());
+
+    std::ofstream arq(path);
+
+    // Header
+    for (uint32_t l = 0; l < nCols; l++)
+        arq << header[l] << (l == nCols - 1 ? "\n" : ", ");
+
+    // Body
+    for (uint32_t k = 0; k < nRows; k++)
+        for (uint32_t l = 0; l < nCols; l++)
+            arq << mat(k, l) << (l == nCols - 1 ? "\n" : ", ");
+
+    arq.close();
+
+} // saveCSV
 
 static void binOption(int &bins)
 {
@@ -492,6 +515,16 @@ void GPPlugin::winSubstrate(void)
     ImGui::SameLine();
     if (ImGui::Button("Export"))
     {
+        tool->dialog.createDialog(
+            GDialog::SAVE, "Export CSV", {".csv"}, (void *)&mat,
+            [](const std::string &path, void *ptr) -> void {
+                const MatXd &mat = *reinterpret_cast<MatXd *>(ptr);
+
+                std::array<std::string, 6> header = {"Frame", "Time",
+                                                     "Position X", "Position Y",
+                                                     "Error X", "Error Y"};
+                saveCSV(path, header.data(), mat);
+            });
     }
 
     ///////////////////////////////////////////////////////

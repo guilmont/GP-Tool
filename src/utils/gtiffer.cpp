@@ -1,5 +1,7 @@
 #include "utils/gtiffer.h"
 
+#include <fstream>
+
 namespace Tiffer
 {
     static Buffer lzw_decoder(const uint8_t *vInput, const size_t SZ)

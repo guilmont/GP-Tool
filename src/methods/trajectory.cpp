@@ -1,5 +1,7 @@
 #include "methods/trajectory.h"
 
+#include <fstream>
+
 static void removeRow(MatXd &matrix, uint32_t rowToRemove)
 {
     uint32_t numRows = uint32_t(matrix.rows()) - 1;

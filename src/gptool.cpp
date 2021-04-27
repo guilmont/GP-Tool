@@ -22,9 +22,9 @@ void GPTool::onUserUpdate(float deltaTime)
     check |= keyboard[Key::RIGHT_CONTROL] == Event::PRESS;
     check &= keyboard['O'] == Event::RELEASE;
     if (check)
-        dialog.createDialog(GDialog::OPEN, "Choose TIF file...", {".tif", ".ome.tif"}, this, [](void *ptr) -> void {
+        dialog.createDialog(GDialog::OPEN, "Choose TIF file...", {".tif", ".ome.tif"}, this, [](const std::string &path, void *ptr) -> void {
             GPTool *tool = (GPTool *)ptr;
-            tool->openMovie(tool->dialog.getPath());
+            tool->openMovie(path);
         });
 
     if (viewport_hover)
@@ -107,18 +107,23 @@ void GPTool::ImGuiMenuLayer(void)
     if (ImGui::BeginMenu("File"))
     {
         if (ImGui::MenuItem("Open movie..."))
-            dialog.createDialog(GDialog::OPEN, "Choose TIF file...", {".tif", ".ome.tif"}, this, [](void *ptr) -> void {
-                GPTool *tool = (GPTool *)ptr;
-                tool->openMovie(tool->dialog.getPath());
-            });
+            dialog.createDialog(GDialog::OPEN, "Choose TIF file...",
+                                {".tif", ".ome.tif"}, this,
+                                [](const std::string &path, void *ptr) -> void {
+                                    GPTool *tool = (GPTool *)ptr;
+                                    tool->openMovie(path);
+                                });
 
         TrajPlugin *traj = (TrajPlugin *)manager->getPlugin("TRAJECTORY");
         if (ImGui::MenuItem("Load trajectories...", NULL, nullptr, traj != nullptr))
             traj->loadTracks();
 
-        // if (ImGui::MenuItem("Save as ...", NULL, nullptr, enable))
-        // {
-        // }
+        if (ImGui::MenuItem("Save as ...", NULL, nullptr))
+            dialog.createDialog(GDialog::SAVE, "Choose TIF file...",
+                                {".tif", ".ome.tif"}, nullptr,
+                                [](const std::string &path, void *ptr) -> void {
+                                    std::cout << path << std::endl;
+                                });
 
         if (ImGui::MenuItem("Exit"))
             closeApp();
@@ -159,39 +164,41 @@ void GPTool::ImGuiMenuLayer(void)
 void GPTool::openMovie(const String &path)
 {
 
-    std::thread([&](void) -> void {
-        MoviePlugin *movpl = new MoviePlugin(path, this);
+    std::thread([](GPTool *tool, const String &path) -> void {
+        MoviePlugin *movpl = new MoviePlugin(path, tool);
         if (movpl->successful())
         {
-            camera.reset();
+            tool->camera.reset();
 
             // Setup plugin manager
             // pluygin pointers will be owned and destroyed by manager
-            manager = std::make_unique<PluginManager>(&fonts);
+            tool->manager = std::make_unique<PluginManager>(&(tool->fonts));
 
             // Including movie plugin into the manager
-            manager->addPlugin("MOVIE", movpl);
-            manager->setActive("MOVIE");
+            tool->manager->addPlugin("MOVIE", movpl);
+            tool->manager->setActive("MOVIE");
 
             // Determine if we need the alignment plugin
             const Movie *movie = movpl->getMovie();
             if (movie->getMetadata().SizeC > 1)
             {
-                AlignPlugin *alg = new AlignPlugin(movie, this);
-                manager->addPlugin("ALIGNMENT", alg);
+                AlignPlugin *alg = new AlignPlugin(movie, tool);
+                tool->manager->addPlugin("ALIGNMENT", alg);
             }
 
             // Let's also activate:
 
             // trajectory plugin
-            TrajPlugin *traj = new TrajPlugin(movie, this);
-            manager->addPlugin("TRAJECTORY", traj);
+            TrajPlugin *traj = new TrajPlugin(movie, tool);
+            tool->manager->addPlugin("TRAJECTORY", traj);
 
             // Gaussian process plugin
-            GPPlugin *gp = new GPPlugin(this);
-            manager->addPlugin("GPROCESS", gp);
+            GPPlugin *gp = new GPPlugin(tool);
+            tool->manager->addPlugin("GPROCESS", gp);
         }
         else
             delete movpl;
-    }).detach();
+    },
+                this, path)
+        .detach();
 }

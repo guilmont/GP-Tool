@@ -1,6 +1,29 @@
 #include "trajPlugin.h"
 
 #include <random>
+#include <fstream>
+
+static void saveCSV(const std::string &path, const std::string *header,
+                    const MatXd &mat)
+{
+
+    const uint32_t nCols = uint32_t(mat.cols()),
+                   nRows = uint32_t(mat.rows());
+
+    std::ofstream arq(path);
+
+    // Header
+    for (uint32_t l = 0; l < nCols; l++)
+        arq << header[l] << (l == nCols - 1 ? "\n" : ", ");
+
+    // Body
+    for (uint32_t k = 0; k < nRows; k++)
+        for (uint32_t l = 0; l < nCols; l++)
+            arq << mat(k, l) << (l == nCols - 1 ? "\n" : ", ");
+
+    arq.close();
+
+} // saveCSV
 
 TrajPlugin::TrajPlugin(const Movie *mov, GPTool *ptr) : movie(mov), tool(ptr)
 {
@@ -285,11 +308,10 @@ void TrajPlugin::winLoadTracks(void)
             trackInfo.openCH = ch;
             tool->dialog.createDialog(
                 GDialog::OPEN, "Choose track...", {".xml", ".csv"}, this,
-                [](void *ptr) -> void {
+                [](const std::string &path, void *ptr) -> void {
                     TrajPlugin *traj = (TrajPlugin *)ptr;
 
                     uint32_t ch = traj->trackInfo.openCH;
-                    const std::string &path = traj->tool->dialog.getPath();
                     traj->trackInfo.path[ch] = path;
                 });
         }
@@ -350,6 +372,20 @@ void TrajPlugin::winDetail(void)
 
     if (ImGui::Button("Export"))
     {
+        const MatXd *mat = &(m_traj->getTrack(detail.trackID).traj[detail.trajID]);
+
+        tool->dialog.createDialog(
+            GDialog::SAVE, "Export CSV", {".csv", ".csv"}, (void *)mat,
+            [](const std::string &path, void *ptr) -> void {
+                std::array<std::string, Track::NCOLS> header = {
+                    "Frame", "Time", "Position X", "Position Y",
+                    "Error X", "Error Y", "Size X", "Size Y",
+                    "Background", "Signal"};
+
+                MatXd &mat = *reinterpret_cast<MatXd *>(ptr);
+
+                saveCSV(path, header.data(), mat);
+            });
     }
 
     ImGui::SameLine();

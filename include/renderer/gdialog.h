@@ -5,6 +5,9 @@
 
 #include <imgui.h>
 
+#include <filesystem>
+namespace fs = std::filesystem;
+
 class GDialog
 {
 public:
@@ -13,13 +16,14 @@ public:
 
     void createDialog(uint32_t type, const std::string &title,
                       const std::list<std::string> &ext,
-                      void *data = nullptr, void (*callback)(void *) = nullptr);
+                      void *data = nullptr,
+                      void (*callback)(const std::string &, void *) = nullptr);
     void showDialog(void);
 
     // RETRIEVE DATA
-    const std::string &getFilename(void) const { return filename; }
-    const std::string &getFolder(void) const { return main_path; }
-    const std::string &getPath(void) const { return filepath; }
+    // const std::string &getFilename(void) const { return filename; }
+    // const std::string &getFolder(void) const { return main_path; }
+    const std::string &getPath(void) const { return main_path.string(); }
 
     enum : uint32_t
     {
@@ -29,25 +33,24 @@ public:
 
 private:
     bool active = false;
+    std::string title;
 
-    std::string filename, filepath, main_path;
-    std::list<std::string> lFolders, lFiles;
+    fs::path main_path;
 
-    std::string title, currentExt, selected;
+    std::string currentExt, selected, probable, filename;
     std::list<std::string> lExtension;
 
     bool (GDialog::*dialog_function)(void);
 
     // callback
     void *callback_data = nullptr;
-    void (*callback)(void *) = nullptr;
+    void (*callback)(const std::string &, void *) = nullptr;
 
     // DISPLAY DIALOGS
     bool openDialog(void);
     bool saveDialog(void);
 
     bool systemDisplay(const std::string &url);
-    void systemLoop(void);
 
     bool existPopup = false;
     bool fileExistsPopup(void);

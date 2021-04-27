@@ -10,7 +10,11 @@ PluginManager::PluginManager(Fonts *fonts) : fonts(fonts)
     plugins["TRAJECTORY"] = nullptr;
 }
 
-PluginManager::~PluginManager(void) {}
+PluginManager::~PluginManager(void)
+{
+    for (auto &[name, pgl] : plugins)
+        pgl.release();
+}
 
 void PluginManager::showHeader(void)
 {
