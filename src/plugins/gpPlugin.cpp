@@ -59,6 +59,14 @@ static void binOption(int &bins)
     ImGui::Spacing();
 } // binOption
 
+static Json::Value jsonEigen(const MatXd &mat)
+{
+    Json::Value array(Json::arrayValue);
+    for (uint32_t k = 0; k < uint32_t(mat.cols()); k++)
+        array.append(std::move(jsonArray(mat.col(k).data(), mat.rows())));
+
+    return array;
+}
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -357,6 +365,79 @@ void GPPlugin::showProperties(void)
 } // showProperties
 
 void GPPlugin::update(float deltaTime) {}
+
+void GPPlugin::saveJSON(Json::Value &json)
+{
+    const uint32_t nCells = uint32_t(vecGP.size());
+
+    MoviePlugin *pgl = (MoviePlugin *)tool->manager->getPlugin("MOVIE");
+    const Metadata &meta = pgl->getMovie()->getMetadata();
+    const double Dcalib = meta.PhysicalSizeXY * meta.PhysicalSizeXY;
+
+    json["D_units"] = meta.PhysicalSizeXYUnit + "^2/" + meta.TimeIncrementUnit + "^A";
+
+    for (uint32_t id = 0; id < nCells; id++)
+    {
+        Json::Value cell;
+        GP_FBM *gp = vecGP[id].get();
+
+        const uint32_t nParticles = gp->getNumParticles();
+
+        // SINGLE MODEL
+        Json::Value &single = cell["single"];
+        single["columns"] = "channel, particle_id, D, A, mu_x, mu_y";
+
+        single["dynamics"] = Json::arrayValue;
+        for (uint32_t pt = 0; pt < nParticles; pt++)
+        {
+            GP_FBM::DA *da = gp->singleModel(pt);
+
+            Json::Value row(Json::arrayValue);
+            row.append(gp->partID[pt].trackID);
+            row.append(gp->partID[pt].trajID);
+            row.append(Dcalib * da->D);
+            row.append(da->A);
+            row.append(da->mu.x);
+            row.append(da->mu.y);
+            single["dynamics"].append(std::move(row));
+        }
+
+        if (nParticles > 1)
+        {
+
+            Json::Value &coupled = cell["coupled"];
+            coupled["columns"] = "channel, particle_id, D, A";
+
+            coupled["dynamics"] = Json::arrayValue;
+            GP_FBM::CDA *cda = gp->coupledModel();
+            for (uint32_t pt = 0; pt < nParticles; pt++)
+            {
+                Json::Value row(Json::arrayValue);
+                row.append(gp->partID[pt].trackID);
+                row.append(gp->partID[pt].trajID);
+                row.append(Dcalib * cda->da[pt].D);
+                row.append(cda->da[pt].A);
+                coupled["dynamics"].append(std::move(row));
+            }
+
+            // Substrate
+            coupled["substrate"]["D"] = Dcalib * cda->DR;
+            coupled["substrate"]["A"] = cda->AR;
+
+            const MatXd &mat = gp->estimateSubstrateMovement();
+
+            coupled["substrate"]["trajectory"] = jsonEigen(mat);
+            coupled["substrate"]["rows"] = "frame, time, pos_x, pos_y, error_x, error_y";
+        }
+
+        json["Cells"].append(std::move(cell));
+
+    } // loop-cells
+
+} // saveJSON
+
+///////////////////////////////////////////////////////////////////////////////
+// WINDOWS ////////////////////////////////////////////////////////////////////
 
 void GPPlugin::winAvgView(void)
 {

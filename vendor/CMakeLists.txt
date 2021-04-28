@@ -17,6 +17,20 @@ add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/glfw" glfw)
 
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/glm" glm)
 
+###########################################################
+## JSONCPP ################################################
+
+add_library(jsoncpp
+    STATIC
+        "${CMAKE_CURRENT_SOURCE_DIR}/jsoncpp/src/lib_json/json_reader.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/jsoncpp/src/lib_json/json_writer.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/jsoncpp/src/lib_json/json_value.cpp"
+)
+
+target_include_directories(jsoncpp
+    PUBLIC
+        "${CMAKE_CURRENT_SOURCE_DIR}/jsoncpp/include"
+)
 
 ###########################################################
 ## GLAD ###################################################

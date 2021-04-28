@@ -192,7 +192,9 @@ target_link_libraries(GPTool
         align_static
         trajectory_static
         gpfbm_static
+        jsoncpp
 )
+
 
 # ###########################################################
 # ## INSTALLATION SETUP #####################################

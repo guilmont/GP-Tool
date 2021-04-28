@@ -1,8 +1,9 @@
 #include "manager.h"
+#include <fstream>
 
 #include <imgui.h>
 
-PluginManager::PluginManager(Fonts *fonts) : fonts(fonts)
+PluginManager::PluginManager(GPTool *ptr) : tool(ptr)
 {
     plugins["ALIGNMENT"] = nullptr;
     plugins["GPROCESS"] = nullptr;
@@ -28,7 +29,7 @@ void PluginManager::showHeader(void)
         chosenColor{0.1f, 0.6f, 0.1f, 1.0f},
         hoverColor{0.2f, 0.7f, 0.2f, 1.0f};
 
-    fonts->push("bold");
+    tool->fonts.push("bold");
 
     for (auto const &[name, ptr] : plugins)
     {
@@ -54,7 +55,7 @@ void PluginManager::showHeader(void)
             ImGui::PopStyleColor(3);
     }
 
-    fonts->pop();
+    tool->fonts.pop();
 
     ImGui::End();
 
@@ -94,3 +95,32 @@ Plugin *PluginManager::getPlugin(const std::string &name)
     else
         return nullptr;
 } //
+
+void PluginManager::saveJSON(const std::string &path)
+{
+
+    Json::Value output;
+
+    Plugin *pgl = plugins["MOVIE"].get();
+    if (pgl)
+        pgl->saveJSON(output);
+
+    pgl = plugins["ALIGNMENT"].get();
+    if (pgl)
+        pgl->saveJSON(output["Alignment"]);
+
+    pgl = plugins["TRAJECTORY"].get();
+    if (pgl)
+        pgl->saveJSON(output["Trajectory"]);
+
+    pgl = plugins["GPROCESS"].get();
+    if (pgl)
+        pgl->saveJSON(output["GProcess"]);
+
+    std::ofstream arq(path);
+    arq << output;
+    arq.close();
+
+    tool->mbox.create<Message::Info>("File saved to '" + path + "'");
+
+} // saveJSON

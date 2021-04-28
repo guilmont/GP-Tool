@@ -186,3 +186,35 @@ void AlignPlugin::runAlignment(void)
     data[chAlign] = align.getTransformData();
 
 } // runAlignement
+
+void AlignPlugin::saveJSON(Json::Value &json)
+{
+
+    auto jsonGLM = [](const glm::mat3 &mat) -> Json::Value {
+        Json::Value array(Json::arrayValue);
+        for (uint32_t k = 0; k < 3; k++)
+        {
+            Json::Value row(Json::arrayValue);
+            for (uint32_t l = 0; l < 3; l++)
+                row.append(mat[k][l]);
+
+            array.append(std::move(row));
+        }
+        return array;
+    };
+
+    for (size_t ch = 1; ch < data.size(); ch++)
+    {
+        Json::Value align;
+        const TransformData &RT = data[ch];
+
+        align["dimensions"] = jsonArray(glm::value_ptr(RT.size), 2);
+        align["translate"] = jsonArray(glm::value_ptr(RT.translate), 2);
+        align["rotation"]["center"] = jsonArray(glm::value_ptr(RT.rotate), 2);
+        align["rotation"]["angle"] = RT.rotate.z;
+        align["scale"] = jsonArray(glm::value_ptr(RT.scale), 2);
+        align["transform"] = jsonGLM(RT.trf);
+
+        json["channel_" + std::to_string(ch)] = std::move(align);
+    }
+}

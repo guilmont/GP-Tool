@@ -244,7 +244,7 @@ bool GDialog::saveDialog(void)
     ///////////////////////////////////////////////////////
     ImGui::Spacing();
 
-    if (ImGui::Button("Save"))
+    if (ImGui::Button("Save") && filename.size() > 0)
     {
         // NEED to perform some checking
         main_path = fs::path(main_path.string() += slash + filename + currentExt);
@@ -266,12 +266,22 @@ bool GDialog::saveDialog(void)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool GDialog::systemDisplay(const std::string &url)
+bool GDialog::systemDisplay(std::string url)
 {
     std::string diff = "";
     ImGui::PushStyleColor(ImGuiCol_ChildBg, {0.02f, 0.02f, 0.02f, 1.0f});
 
-    if (std::filesystem::is_directory(url))
+#ifdef WIN32
+    uint32_t size = 3; // C:\ or D:\ or ...
+#else
+    uint32_t size = 1; // linux and mac use only /
+#endif
+
+    if (url.size() < size)
+    {
+    }
+
+    else if (std::filesystem::is_directory(url))
         main_path = fs::path(url);
 
     else if (std::filesystem::is_regular_file(url))
@@ -302,18 +312,25 @@ bool GDialog::systemDisplay(const std::string &url)
     ImGui::BeginChild("child_2", {width, 256 * DPI_FACTOR}, true);
 
     probable = "";
-    for (const auto &entry : std::filesystem::directory_iterator(main_path))
+    for (const auto &entry : fs::directory_iterator(main_path))
     {
+
         const fs::path &loc = entry.path();
 
         if (loc.string().find(diff) == std::string::npos)
             continue;
 
-        if (fs::is_other(loc))
+        bool isDir = false, isFile = false;
+        try
+        {
+            isDir = fs::is_directory(loc);
+            isFile = fs::is_regular_file(loc);
+        }
+        catch (...)
         {
         }
 
-        else if (fs::is_directory(loc))
+        if (isDir)
         {
             const std::string &folder = loc.filename().string();
             if (folder[0] == '.') // hidden folder
@@ -345,7 +362,7 @@ bool GDialog::systemDisplay(const std::string &url)
             ImGui::Spacing();
         }
 
-        else if (fs::is_regular_file(loc))
+        else if (isFile)
         {
             const std::string &arq = loc.filename().string();
             if ((arq[0] == '.') || (arq.find(currentExt) == std::string::npos))

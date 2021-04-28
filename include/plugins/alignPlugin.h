@@ -13,6 +13,7 @@ public:
 
     void showProperties(void) override;
     void update(float deltaTime) override;
+    void saveJSON(Json::Value &json) override;
 
     std::vector<TransformData> data;
 

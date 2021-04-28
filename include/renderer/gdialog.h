@@ -23,7 +23,7 @@ public:
     // RETRIEVE DATA
     // const std::string &getFilename(void) const { return filename; }
     // const std::string &getFolder(void) const { return main_path; }
-    const std::string &getPath(void) const { return main_path.string(); }
+    std::string getPath(void) const { return main_path.string(); }
 
     enum : uint32_t
     {
@@ -50,7 +50,7 @@ private:
     bool openDialog(void);
     bool saveDialog(void);
 
-    bool systemDisplay(const std::string &url);
+    bool systemDisplay(std::string url);
 
     bool existPopup = false;
     bool fileExistsPopup(void);

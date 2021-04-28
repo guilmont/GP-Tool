@@ -4,6 +4,8 @@
 #include <implot.h>
 #include <glm/glm.hpp>
 
+#include "json/json.h"
+
 class GPTool;
 
 struct Plugin
@@ -14,4 +16,18 @@ struct Plugin
     virtual void update(float deltaTime) = 0;
     virtual void showProperties(void) = 0;
     virtual void showWindows(void) {}
+
+    virtual void saveJSON(Json::Value &json){};
 };
+
+///////////////////////////////////////////////////////////
+// Some helper functions for JSON
+template <typename T>
+Json::Value jsonArray(T *vec, size_t N)
+{
+    Json::Value val(Json::arrayValue);
+    for (size_t k = 0; k < N; k++)
+        val.append(vec[k]);
+
+    return val;
+}

@@ -25,6 +25,17 @@ static void saveCSV(const std::string &path, const std::string *header,
 
 } // saveCSV
 
+static Json::Value jsonEigen(const MatXd &mat)
+{
+    Json::Value array(Json::arrayValue);
+    for (size_t k = 0; k < mat.cols(); k++)
+        array.append(std::move(jsonArray(mat.col(k).data(), mat.rows())));
+
+    return array;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 TrajPlugin::TrajPlugin(const Movie *mov, GPTool *ptr) : movie(mov), tool(ptr)
 {
     const uint32_t SC = mov->getMetadata().SizeC;
@@ -220,6 +231,28 @@ excess:
     tool->shader->setVec3fArray("u_ptColor", &vCor[0][0], nPts);
 
 } // update
+
+void TrajPlugin::saveJSON(Json::Value &json)
+{
+    const Metadata &meta = movie->getMetadata();
+
+    json["PhysicalSizeXY"] = meta.PhysicalSizeXY;
+    json["PhysicalSizeXYUnit"] = meta.PhysicalSizeXYUnit;
+    json["TimeIncrementUnit"] = meta.TimeIncrementUnit;
+    json["rows"] = "{frame, time, pos_x, error_x, pos_y, error_y,"
+                   "size_x, size_y, background, signal}";
+
+    for (uint32_t ch = 0; ch < meta.SizeC; ch++)
+    {
+        const String ch_name = "channel_" + std::to_string(ch);
+        const std::vector<MatXd> &vTraj = m_traj->getTrack(ch).traj;
+
+        for (size_t k = 0; k < vTraj.size(); k++)
+            json[ch_name]["traj_" + std::to_string(k)] = std::move(jsonEigen(vTraj[k]));
+
+    } // loop-channels
+
+} //saveJSON
 
 ////////////////////////////////////////////////////////////////////////.//////
 // PRIVATE FUNCTIONS

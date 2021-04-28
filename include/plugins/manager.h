@@ -9,14 +9,15 @@
 #include "trajPlugin.h"
 #include "gpPlugin.h"
 
-#include "renderer/fonts.h"
+#include "gptool.h"
+#include "json/json.h"
 
 /////////////////////////////
 
 class PluginManager
 {
 public:
-    PluginManager(Fonts *fonts);
+    PluginManager(GPTool *ptr);
     ~PluginManager(void);
 
     void showHeader(void);
@@ -29,8 +30,10 @@ public:
 
     Plugin *getPlugin(const std::string &name);
 
+    void saveJSON(const std::string &path);
+
 private:
-    Fonts *fonts = nullptr;
+    GPTool *tool = nullptr;
     Plugin *pActive = nullptr;
     std::map<std::string, std::unique_ptr<Plugin>> plugins;
 };

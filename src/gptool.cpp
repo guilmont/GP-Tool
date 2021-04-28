@@ -10,7 +10,7 @@ GPTool::GPTool(void)
 
     uint32_t cor = 0x999999ff;
 
-    manager = std::make_unique<PluginManager>(&fonts);
+    manager = std::make_unique<PluginManager>(this);
     viewBuf = std::make_unique<Framebuffer>(1, 1);
 
 } // function
@@ -119,11 +119,18 @@ void GPTool::ImGuiMenuLayer(void)
             traj->loadTracks();
 
         if (ImGui::MenuItem("Save as ...", NULL, nullptr))
-            dialog.createDialog(GDialog::SAVE, "Choose TIF file...",
-                                {".tif", ".ome.tif"}, nullptr,
-                                [](const std::string &path, void *ptr) -> void {
-                                    std::cout << path << std::endl;
-                                });
+            dialog.createDialog(
+                GDialog::SAVE, "Choose TIF file...", {".json"}, manager.get(),
+                [](const std::string &path, void *ptr) -> void {
+                    PluginManager *manager = (PluginManager *)ptr;
+
+                    std::thread(
+                        [](PluginManager *manager, const std::string &path) -> void {
+                            manager->saveJSON(path);
+                        },
+                        manager, path)
+                        .detach();
+                });
 
         if (ImGui::MenuItem("Exit"))
             closeApp();
@@ -172,7 +179,7 @@ void GPTool::openMovie(const String &path)
 
             // Setup plugin manager
             // pluygin pointers will be owned and destroyed by manager
-            tool->manager = std::make_unique<PluginManager>(&(tool->fonts));
+            tool->manager = std::make_unique<PluginManager>(tool);
 
             // Including movie plugin into the manager
             tool->manager->addPlugin("MOVIE", movpl);

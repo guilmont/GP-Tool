@@ -320,3 +320,14 @@ void MoviePlugin::updateTexture(uint32_t channel)
     texture[channel]->update(img.data());
 
 } // calcHistograms
+
+///////////////////////////////////////////////////////////////////////////////
+void MoviePlugin::saveJSON(Json::Value &json)
+{
+    const Metadata &meta = movie.getMetadata();
+    json["movie_name"] = meta.movie_name;
+    json["numChannels"] = meta.SizeC;
+
+    for (uint32_t k = 0; k < meta.SizeC; k++)
+        json["channels"].append(meta.nameCH[k]);
+}
