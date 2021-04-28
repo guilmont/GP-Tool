@@ -66,21 +66,21 @@ set(SRC "${CMAKE_SOURCE_DIR}/src/methods/movie.cpp"
         "${CMAKE_SOURCE_DIR}/src/utils/gtiffer.cpp")
 
 set(HEAD "${CMAKE_SOURCE_DIR}/include"
-         "${CMAKE_SOURCE_DIR}/vendor"
-         "${glm_INCLUDE_DIRS}")
+         "${CMAKE_SOURCE_DIR}/include/methods"
+         "${CMAKE_SOURCE_DIR}/vendor/glm"
+         "${CMAKE_SOURCE_DIR}/vendor/eigen"
+         "${CMAKE_SOURCE_DIR}/vendor")
 
 
 
 add_library(movie_static STATIC ${SRC})
 target_include_directories(movie_static PUBLIC ${HEAD})
-target_link_libraries(movie_static PUBLIC pugixml glm mailbox)
+target_link_libraries(movie_static PUBLIC pugixml mailbox)
 target_compile_definitions(movie_static PRIVATE STATIC_API)
-
-
 
 add_library(movie SHARED ${SRC})
 target_include_directories(movie PUBLIC ${HEAD})
-target_link_libraries(movie PUBLIC pugixml glm)
+target_link_libraries(movie PUBLIC pugixml)
 
 
 #############################
@@ -88,6 +88,8 @@ target_link_libraries(movie PUBLIC pugixml glm)
 set(SRC "${CMAKE_SOURCE_DIR}/src/methods/align.cpp")
 
 set(HEAD "${CMAKE_SOURCE_DIR}/include"
+         "${CMAKE_SOURCE_DIR}/vendor/glm"
+         "${CMAKE_SOURCE_DIR}/vendor/eigen"
          "${CMAKE_SOURCE_DIR}/include/methods")
 
 add_library(align_static STATIC ${SRC})
@@ -97,7 +99,7 @@ target_compile_definitions(align_static PRIVATE STATIC_API)
 
 add_library(align SHARED ${SRC})
 target_include_directories(align PUBLIC ${HEAD})
-target_link_libraries(align PUBLIC goptimize glm)
+target_link_libraries(align PUBLIC goptimize)
          
 
 #############################
@@ -106,7 +108,8 @@ set(SRC "${CMAKE_SOURCE_DIR}/src/methods/spot.cpp"
         "${CMAKE_SOURCE_DIR}/src/methods/trajectory.cpp")
 
 set(HEAD "${CMAKE_SOURCE_DIR}/include"
-         "${CMAKE_SOURCE_DIR}/vendor"
+         "${CMAKE_SOURCE_DIR}/vendor/glm"
+         "${CMAKE_SOURCE_DIR}/vendor/eigen"
          "${CMAKE_SOURCE_DIR}/include/methods")
 
 
@@ -124,6 +127,8 @@ target_link_libraries(trajectory PUBLIC pugixml goptimize movie)
 set(SRC "${CMAKE_SOURCE_DIR}/src/methods/gp_fbm.cpp")
 
 set(HEAD "${CMAKE_SOURCE_DIR}/include"
+         "${CMAKE_SOURCE_DIR}/vendor/glm"
+         "${CMAKE_SOURCE_DIR}/vendor/eigen"
          "${CMAKE_SOURCE_DIR}/include/methods")
 
 
@@ -154,13 +159,12 @@ add_library(renderer
 target_include_directories(renderer
     PUBLIC  
         "${CMAKE_SOURCE_DIR}/vendor"
+        "${CMAKE_SOURCE_DIR}/vendor/glm"
         "${CMAKE_SOURCE_DIR}/include"
-        "${glm_INCLUDE_DIRS}"
 )
 
 target_link_libraries(renderer
     PUBLIC
-        glm
         implot
         mailbox
 )
@@ -196,36 +200,64 @@ target_link_libraries(GPTool
 )
 
 
-# ###########################################################
-# ## INSTALLATION SETUP #####################################
+###########################################################
+## INSTALLATION SETUP #####################################
 
 
-# # install(
-# #     TARGETS 
-# #         MOVIE
-# #         ALIGN
-# #         TRAJECTORY
-# #         GP_FBM
 
-# #     DESTINATION lib
-# # )
+install(
+    TARGETS 
+        movie
+        align
+        trajectory
+        gpfbm
 
-# # install(
-# #     DIRECTORY ${CMAKE_SOURCE_DIR}/include/
-# #     DESTINATION include
-# #     FILES_MATCHING PATTERN "*.h*"
-# # )
+    DESTINATION lib
+)
 
-# # install(
-# #     DIRECTORY ${CMAKE_SOURCE_DIR}/assets/
-# #     DESTINATION assets
-# #     FILES_MATCHING PATTERN "*"
-# # )
+install(
+    DIRECTORY "${CMAKE_SOURCE_DIR}/include/methods/"
+    DESTINATION include
+    FILES_MATCHING PATTERN "*.h*"
+)
+
+install(
+    FILES 
+        "${CMAKE_SOURCE_DIR}/include/utils/gtiffer.h"
+        "${CMAKE_SOURCE_DIR}/include/utils/goptimize.h"
+    DESTINATION 
+        include/utils
+)
+
+install(
+    DIRECTORY "${CMAKE_SOURCE_DIR}/vendor/glm/glm"
+    DESTINATION include
+    FILES_MATCHING 
+        PATTERN "*.h*"
+        PATTERN "*.inl"
+)
+
+install(
+    DIRECTORY "${CMAKE_SOURCE_DIR}/vendor/eigen/Eigen"
+    DESTINATION include
+)
+
+install(
+    DIRECTORY "${CMAKE_SOURCE_DIR}/vendor/pugixml"
+    DESTINATION include
+     FILES_MATCHING PATTERN "*.h*"
+)
+
+install(
+    DIRECTORY ${CMAKE_SOURCE_DIR}/assets/
+    DESTINATION assets
+    FILES_MATCHING PATTERN "*"
+)
 
 
-# # install(
-# #     TARGETS GPTool
-# #     DESTINATION bin
-# # )
+install(
+    TARGETS GPTool
+    DESTINATION bin
+)
 
 

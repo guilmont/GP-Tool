@@ -28,7 +28,7 @@ static void saveCSV(const std::string &path, const std::string *header,
 static Json::Value jsonEigen(const MatXd &mat)
 {
     Json::Value array(Json::arrayValue);
-    for (size_t k = 0; k < mat.cols(); k++)
+    for (uint32_t k = 0; k < uint32_t(mat.cols()); k++)
         array.append(std::move(jsonArray(mat.col(k).data(), mat.rows())));
 
     return array;
@@ -495,7 +495,7 @@ void TrajPlugin::winPlots(void)
 
     // Plot size
     const float avail = ImGui::GetContentRegionAvailWidth();
-    const ImVec2 size = {avail, 0.6f * avail};
+    const ImVec2 size = {0.99f * avail, 0.6f * avail};
 
     // Data to plot
     const MatXd &mat = m_traj->getTrack(plot.trackID).traj[plot.trajID];

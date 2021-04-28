@@ -12,10 +12,6 @@ set(GLFW_BUILD_DOCS OFF)
 set(GLFW_INSTALL OFF)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/glfw" glfw)
 
-###########################################################
-## GLM ####################################################
-
-add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/glm" glm)
 
 ###########################################################
 ## JSONCPP ################################################
@@ -56,12 +52,12 @@ target_include_directories(glad
 
 add_library(pugixml
     STATIC 
-        "${CMAKE_CURRENT_SOURCE_DIR}/pugixml/src/pugixml.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/pugixml/pugixml.cpp"
 )
 
 target_include_directories(pugixml
     PUBLIC
-        "${CMAKE_CURRENT_SOURCE_DIR}/pugixml/src"
+        "${CMAKE_CURRENT_SOURCE_DIR}/pugixml"
 )
 
 set_property(TARGET pugixml PROPERTY POSITION_INDEPENDENT_CODE ON)

@@ -1,4 +1,4 @@
-#include "methods/movie.h"
+#include "movie.h"
 
 #include "utils/gtiffer.h"
 

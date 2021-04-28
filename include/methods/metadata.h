@@ -1,6 +1,6 @@
 #pragma once
 #include "utils/gtiffer.h"
-#include "pugixml/src/pugixml.hpp"
+#include "pugixml/pugixml.hpp"
 
 struct Plane
 {

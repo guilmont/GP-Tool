@@ -9,8 +9,8 @@
 class Mailbox;
 #endif
 // vendor
-#include "glm/glm/glm.hpp"
-#include "eigen/Eigen/Core"
+#include "glm/glm.hpp"
+#include "Eigen/Core"
 
 using MatXf = Eigen::Matrix<float, -1, -1, Eigen::RowMajor>; // Used for rendering
 using MatXd = Eigen::MatrixXd;
