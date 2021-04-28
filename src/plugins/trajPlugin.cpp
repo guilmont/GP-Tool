@@ -266,7 +266,10 @@ void TrajPlugin::enhanceTracks(void)
 
     for (uint32_t ch = 0; ch < nChannels; ch++)
     {
-        std::string &path = trackInfo.path[ch];
+        const std::string &path = trackInfo.path[ch];
+        if (path.size() == 0)
+            continue;
+
         size_t pos = path.find_last_of('.');
         std::string ext = path.substr(pos + 1);
 

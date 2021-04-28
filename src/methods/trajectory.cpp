@@ -438,6 +438,8 @@ bool Trajectory::useCSV(const std::string &csvTrack, uint32_t ch)
             row = k;
         }
 
+    m_vTrack[ch] = std::move(track);
+
     return true;
 
 } // useCSV
@@ -445,11 +447,13 @@ bool Trajectory::useCSV(const std::string &csvTrack, uint32_t ch)
 void Trajectory::enhanceTracks(void)
 {
 
-    std::vector<uint32_t> empty;
     for (uint32_t ch = 0; ch < m_vTrack.size(); ch++)
     {
         Track &track = m_vTrack[ch];
         const uint32_t N = uint32_t(track.traj.size());
+
+        if (N == 0)
+            continue;
 
 #ifdef STATIC_API
 
@@ -486,13 +490,6 @@ void Trajectory::enhanceTracks(void)
         for (uint32_t k : toRemove)
             track.traj.erase(track.traj.begin() + k);
 
-        if (track.traj.size() == 0)
-            empty.push_back(ch);
-
     } // loop-trajectories
-
-    // Removing empty tracks
-    for (uint32_t ch : empty)
-        m_vTrack.erase(m_vTrack.begin() + ch);
 
 } // enhanceTracks
