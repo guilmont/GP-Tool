@@ -1,113 +1,115 @@
 cmake_minimum_required(VERSION 3.10)
 
-# find_package(PkgConfig REQUIRED)
-# find_package(HDF5 COMPONENTS CXX REQUIRED) 
-# pkg_check_modules(jsoncpp REQUIRED IMPORTED_TARGET jsoncpp)
+if (COMPILE_GUI)
+    ###########################################################
+    ## GLFW ###################################################
+
+    set(GLFW_BUILD_DOCS OFF)
+    set(GLFW_INSTALL OFF)
+    add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/glfw" glfw)
 
 
+    ###########################################################
+    ## JSONCPP ################################################
 
-###########################################################
-## GLFW ###################################################
-set(GLFW_BUILD_DOCS OFF)
-set(GLFW_INSTALL OFF)
-add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/glfw" glfw)
+    add_library(jsoncpp
+        STATIC
+            "${CMAKE_CURRENT_SOURCE_DIR}/jsoncpp/src/lib_json/json_reader.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/jsoncpp/src/lib_json/json_writer.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/jsoncpp/src/lib_json/json_value.cpp"
+    )
 
+    target_include_directories(jsoncpp
+        PUBLIC
+            "${CMAKE_CURRENT_SOURCE_DIR}/jsoncpp/include"
+    )
 
-###########################################################
-## JSONCPP ################################################
+    ###########################################################
+    ## GLAD ###################################################
 
-add_library(jsoncpp
-    STATIC
-        "${CMAKE_CURRENT_SOURCE_DIR}/jsoncpp/src/lib_json/json_reader.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/jsoncpp/src/lib_json/json_writer.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/jsoncpp/src/lib_json/json_value.cpp"
-)
+    add_library(glad 
+        STATIC
+            "${CMAKE_CURRENT_SOURCE_DIR}/glad/src/glad.c"
+    )   
 
-target_include_directories(jsoncpp
-    PUBLIC
-        "${CMAKE_CURRENT_SOURCE_DIR}/jsoncpp/include"
-)
+    target_link_libraries(glad 
+        PUBLIC 
+            "${CMAKE_DL_LIBS}"
+    )
 
-###########################################################
-## GLAD ###################################################
-
-add_library(glad 
-    STATIC
-        "${CMAKE_CURRENT_SOURCE_DIR}/glad/src/glad.c"
-)   
-
-target_link_libraries(glad 
-    PUBLIC 
-        "${CMAKE_DL_LIBS}"
-)
-
-target_include_directories(glad
-    PUBLIC
-        "${CMAKE_CURRENT_SOURCE_DIR}/glad/include"
-)
+    target_include_directories(glad
+        PUBLIC
+            "${CMAKE_CURRENT_SOURCE_DIR}/glad/include"
+    )
 
 
-###########################################################
-## PUGIXML ################################################
+    ###########################################################
+    ## IMGUI ##################################################
 
-add_library(pugixml
-    STATIC 
-        "${CMAKE_CURRENT_SOURCE_DIR}/pugixml/pugixml.cpp"
-)
+    add_compile_definitions(IMGUI_IMPL_OPENGL_LOADER_GLAD)
 
-target_include_directories(pugixml
-    PUBLIC
-        "${CMAKE_CURRENT_SOURCE_DIR}/pugixml"
-)
+    add_library(imgui 
+        STATIC 
+            "${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui_draw.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui_widgets.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui_tables.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui_demo.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends/imgui_impl_glfw.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends/imgui_impl_opengl3.cpp"
+    )
 
-set_property(TARGET pugixml PROPERTY POSITION_INDEPENDENT_CODE ON)
+    target_link_libraries(imgui 
+        PUBLIC 
+            glad 
+            glfw
+    )
 
-
-###########################################################
-## IMGUI ##################################################
-
-add_compile_definitions(IMGUI_IMPL_OPENGL_LOADER_GLAD)
-
-add_library(imgui 
-    STATIC 
-        "${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui_draw.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui_widgets.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui_tables.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui_demo.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends/imgui_impl_glfw.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends/imgui_impl_opengl3.cpp"
-)
-
-target_link_libraries(imgui 
-    PUBLIC 
-        glad 
-        glfw
-)
-
-target_include_directories(imgui
-    PUBLIC
-        "${CMAKE_CURRENT_SOURCE_DIR}/imgui"
-        "${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends"
-)
+    target_include_directories(imgui
+        PUBLIC
+            "${CMAKE_CURRENT_SOURCE_DIR}/imgui"
+            "${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends"
+    )
 
 
-###########################################################
-## IMPLOT #################################################
+    ###########################################################
+    ## IMPLOT #################################################
 
-add_library(implot 
-    STATIC 
-        "${CMAKE_CURRENT_SOURCE_DIR}/implot/implot.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/implot/implot_demo.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/implot/implot_items.cpp"
-)
+    add_library(implot 
+        STATIC 
+            "${CMAKE_CURRENT_SOURCE_DIR}/implot/implot.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/implot/implot_demo.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/implot/implot_items.cpp"
+    )
 
-target_include_directories(implot
-    PUBLIC
-        "${CMAKE_CURRENT_SOURCE_DIR}/implot"
-)
+    target_include_directories(implot
+        PUBLIC
+            "${CMAKE_CURRENT_SOURCE_DIR}/implot"
+    )
 
-target_link_libraries(implot
-    PUBLIC
-        imgui
-)
+    target_link_libraries(implot
+        PUBLIC
+            imgui
+    )
+
+endif()
+
+
+if (COMPILE_GUI OR COMPILE_LIBRARIES)
+
+    ###########################################################
+    ## PUGIXML ################################################
+    
+    add_library(pugixml
+        STATIC 
+            "${CMAKE_CURRENT_SOURCE_DIR}/pugixml/pugixml.cpp"
+    )
+
+    target_include_directories(pugixml
+        PUBLIC
+            "${CMAKE_CURRENT_SOURCE_DIR}/pugixml"
+    )
+
+    set_property(TARGET pugixml PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+endif()

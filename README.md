@@ -12,23 +12,33 @@
 <details open="open">
   <summary>Table of Contents</summary>
   <ol>
-    <li><a href="#about-the-project">About The Project</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#bioxrv">BioRxv</a></li>
     <li>
       <a href="#getting-started">Getting Started</a>
       <ul>
-        <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#installation">Installation</a></li>
+        <li><a href="#windows-binaries">Windows binaries</a></li>
+        <li><a href="#source-code">Source code</a></li>
       </ul>
     </li>
     <li><a href="#license">License</a></li>
     </ol>
 </details>
 
+## About
+GP-Tool is a set of methods I developed for the analysis of dynamic particles in the living cells. It comprehends of 4 major libraries:
+
+- Movie: Loads tif files with ImageJ or OME metadata. It allows for lzw compressing;
+- Trajectory: Import track produced by Icy Software in the XML format. Differently, CSV files with columns "ParticleID, Frame, Position_X, Position_Y" are also accepted. 
+- Alignment: Corrects for camera mis-alignment for microscopy setups with more than on camera. Corrects for chromatic aberration
+- GP-FBM: Uses Gaussian processes and Fractional Brownian motion to measure effective diffusion coefficient, anomalous coefficients and more. It implicitly corrects for background/substrate movement for sets with 2 or more particles. 
 
 
-<!-- ABOUT THE PROJECT -->
-## About The Project
-This software accompanies the following paper:
+For more information, consider the following journal publication.
+
+<br/>
+
+## BioRxv
 
 <h3> Precise measurements of chromatin diffusion dynamics by modeling using Gaussian processes</h3> 
 
@@ -37,45 +47,36 @@ GM Oliveira <i>et al</i>
 bioRxiv: https://doi.org/10.1101/2021.03.16.435699 
 
 
-<br/>
-
-"GP-Tool contains 4 plugins: movie, alignment, trajectories and g-process. The movie plugin allows the user to open TIFF files, display basic ImageJ and OME metadata, define color maps for each channel and manually correct for contrast. The alignment plugin runs the algorithm described in Methods to digitally correct chromatin aberration and possible camera calibration issues. Alternatively, the user can manually modify each of the parameters. The program can perform the analysis of several cells in the same movie. The trajectories plugin provides the ROI utility which allows the user to select spots of interest and extract trajectories.  Finally,the g-process plugin allows to infer the diffusion and confinement parameters correcting for substrate movement if two or more particles are tracked. It is also possible to use a MCMC sampler to obtain the posterior probability distribution associated with each of these parameters. Once the analysis is complete, the tool provides the possibility to save the results into two file formats: JSON and HDF5."
-
-NOTE: This is an alpha version. The software is being heavily refactored and still misses a few original components.
+<b>Abstract:</b> <i>The spatiotemporal organization of chromatin influences many nuclear processes: from chromo-some segregation to transcriptional regulation. To get a deeper understanding of these processes it is essential to go beyond static viewpoints of chromosome structures, and to accurately characterize chromatin mobility and its diffusion properties. Here, we present GP-FBM: a new computational framework based on Gaussian processes and fractional Brownian motion to analyze and extract diffusion properties from stochastic trajectories of labeled chromatin loci. GP-FBM is able to optimally use the higher-order correlations present in the data and therefore outperforms existing methods. Furthermore, GP-FBM is able to extrapolate trajectories from missing data and account for substrate movement automatically. Using our method we show that diffusive chromatin diffusion properties are surprisingly similar in interphase and mitosis in mouse embryonic stem cells. Moreover, we observe surprising heterogeneity in local chromatin dynamics, which correlates with transcriptional activity. We also present GP-Tool, a user-friendly graphical interface to facilitate the use of GP-FBM by the research community for future studies of nuclear dynamics.</i>
 
 <br/>
 
 <!-- GETTING STARTED -->
 ## Getting Started
 
-GP-Tool uses a mélange of open-source libraries at its core. Some of them are automatically included as vendor libraries, whilst others need to be preinstalled.
+<br/>
 
-### Prerequisites
+### Windows binaries
 
-These libraries need to be preinstalled:
-* HDF5: <a href="https://www.hdfgroup.org/hdf5">https://www.hdfgroup.org/hdf5</a>
-* JsonCpp: <a href="https://github.com/open-source-parsers/jsoncpp">https://github.com/open-source-parsers/jsoncpp</a>
+GP-Tool (GUI + libraries) is pre-compiled for Windows 10 (x64). Just download the binaries zip-file, uncompress it and you are good to go.
 
-Under Linux, these packages can easily be installed via command line:
-* Ubuntu
-```
-apt install libhdf5-dev libjsoncpp-dev
-```
-
-* Manjaro
-```
-pamac install hdf5 jsoncpp
-```
+<br/>
 
 
-### Installation
+### Source code 
 
 1. Clone the repo. As I include several sub-modules as vendors, recursive clone is needed.
    ```
-   git clone --recurse-submodules -j5 https://github.com/guilmont/GP-Tool.git
+   git clone --recurse-submodules -j4 https://github.com/guilmont/GP-Tool.git
    ```
 
-2. Build with CMake and run. Installation facilities are still not implemented.
+2. Building from source code allows these following options:
+  - HIDPI: Scales GUI by a factor of 2, allows for approppriate sizing in hidpi screens (default OFF);
+  - COMPILE_GUI: Compiles graphical user interface (default ON);
+  - COMPILE_LIBRARIES: Compiles and install dynamic libraries for batching with C++ (default ON);
+
+3. Build it with CMake setting CMAKE_BUILD_TYPE (usually Release) and CMAKE_INSTALL_PREFIX. Compile and install.
+
 
 <br/>
 

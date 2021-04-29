@@ -29,6 +29,9 @@ static void saveCSV(const std::string &path, const std::string *header,
 
 static void binOption(int &bins)
 {
+
+    ImGui::SetNextItemWidth(200);
+
     if (ImGui::RadioButton("Sqrt", bins == ImPlotBin_Sqrt))
         bins = ImPlotBin_Sqrt;
 
@@ -312,7 +315,8 @@ void GPPlugin::showProperties(void)
                 distribView.gpID = uint32_t(gpID);
 
                 std::thread([](GP_FBM *gp, Mailbox *mbox, bool *show) -> void {
-                    mbox->create<Message::Info>("Calculating distributions ...");
+                    Message::Timer *msg = nullptr;
+                    msg = mbox->create<Message::Timer>("Calculating distributions ...");
 
                     if (gp->getNumParticles() == 1)
                         gp->distrib_singleModel(sample_size);
@@ -320,6 +324,7 @@ void GPPlugin::showProperties(void)
                         gp->distrib_coupledModel(sample_size);
 
                     *show = true;
+                    msg->stop();
                 },
                             vecGP[gpID].get(), &(tool->mbox), &(distribView.show))
                     .detach();
@@ -335,11 +340,15 @@ void GPPlugin::showProperties(void)
 
                     std::thread(
                         [](GP_FBM *gp, Mailbox *mbox, bool *show) -> void {
-                            mbox->create<Message::Info>("Calculating substrate data...");
+                            Message::Timer *msg = nullptr;
+                            msg = mbox->create<Message::Timer>("Calculating "
+                                                               "substrate data...");
 
                             gp->estimateSubstrateMovement();
                             gp->distrib_coupledModel(sample_size);
                             *show = true;
+
+                            msg->stop();
                         },
                         vecGP[gpID].get(), &(tool->mbox), &(subView.show))
                         .detach();
@@ -552,19 +561,19 @@ void GPPlugin::winSubstrate(void)
     ImGui::Separator();
     ImGui::Spacing();
 
-    ImGui::Text("PARAMETER DISTRIBUTIONS");
+    ImGui::Text("SUBSTRATE DISTRIBUTIONS");
     ImGui::Spacing();
-
-    ImGui::SetNextItemWidth(200);
 
     static int bins = 50;
     binOption(bins);
 
-    ImGui::Columns(2);
-    if (ImPlot::BeginPlot("##Histogram_diffusion"))
+    float width = 0.495f * ImGui::GetContentRegionAvailWidth();
+
+    if (ImPlot::BeginPlot("##Histogram_diffusion", "Diffusion coefficient", "Density",
+                          {width, 0.6f * width}))
     {
         memset(buf, 0, 512);
-        sprintf(buf, "D / %.4f %s^2", DCalib, spaceUnit);
+        sprintf(buf, "DR / %.4f %s^2", DCalib, spaceUnit);
 
         ImPlot::SetNextFillStyle(IMPLOT_AUTO_COL, 0.5f);
         ImPlot::PlotHistogram(buf, distrib.col(2 * nParticles).data(),
@@ -572,9 +581,10 @@ void GPPlugin::winSubstrate(void)
         ImPlot::EndPlot();
     }
 
-    ImGui::NextColumn();
+    ImGui::SameLine();
 
-    if (ImPlot::BeginPlot("##Histogram_alpha"))
+    if (ImPlot::BeginPlot("##Histogram_alpha", "Anomalous coefficient", "Density",
+                          {width, 0.6f * width}))
     {
         ImPlot::SetNextFillStyle({0.85f, 0.25f, 0.18f, 0.8f}, 0.5f);
         ImPlot::PlotHistogram("Alpha", distrib.col(2 * nParticles + 1).data(),
@@ -582,7 +592,6 @@ void GPPlugin::winSubstrate(void)
         ImPlot::EndPlot();
     }
 
-    ImGui::Columns(1);
     ImGui::Spacing();
 
     ImGui::Separator();
@@ -718,6 +727,8 @@ void GPPlugin::winDistributions(void)
     else
         mat = &(gp->distrib_singleModel());
 
+    float width = 0.495f * ImGui::GetContentRegionAvailWidth();
+
     for (uint32_t k = 0; k < nParticles; k++)
     {
         ImGui::Separator();
@@ -728,8 +739,8 @@ void GPPlugin::winDistributions(void)
         ImGui::PushID(buf);
         ImGui::Text(buf);
 
-        ImGui::Columns(2);
-        if (ImPlot::BeginPlot("##Histogram_diffusion"))
+        if (ImPlot::BeginPlot("##Histogram_diffusion", "Diffusion coefficient", "Density",
+                              {width, 0.6f * width}))
         {
             memset(buf, 0, 512);
             sprintf(buf, "D / %.4f %s^2", Dcalib, meta.PhysicalSizeXYUnit.c_str());
@@ -739,15 +750,15 @@ void GPPlugin::winDistributions(void)
             ImPlot::EndPlot();
         }
 
-        ImGui::NextColumn();
+        ImGui::SameLine();
 
-        if (ImPlot::BeginPlot("##Histogram_alpha"))
+        if (ImPlot::BeginPlot("##Histogram_alpha", "Anomalous coefficient", "Density",
+                              {width, 0.6f * width}))
         {
             ImPlot::SetNextFillStyle({0.85f, 0.25f, 0.18f, 0.8f}, 0.5f);
             ImPlot::PlotHistogram("Alpha", mat->col(2 * k + 1).data(), 10000, bins, false, true);
             ImPlot::EndPlot();
         }
-        ImGui::Columns(1);
         ImGui::Spacing();
         ImGui::PopID();
     }
