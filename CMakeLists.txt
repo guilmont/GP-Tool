@@ -62,7 +62,7 @@ if (COMPILE_GUI)
         PUBLIC
             imgui
     )
-    
+
 endif()
 
 ###########################################################
@@ -158,7 +158,7 @@ endif()
 if (COMPILE_LIBRARIES)
     add_library(gpfbm SHARED ${SRC})
     target_include_directories(gpfbm PUBLIC ${HEAD})
-    target_link_libraries(gpfbm PUBLIC goptimize mailbox)
+    target_link_libraries(gpfbm PUBLIC goptimize)
 endif()
 
 

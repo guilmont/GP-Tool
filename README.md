@@ -52,7 +52,7 @@ bioRxiv: https://doi.org/10.1101/2021.03.16.435699
 
 ### Windows binaries
 
-GP-Tool (GUI + libraries) is pre-compiled for Windows 10 (x64). Just download the binaries zip-file, uncompress it and you are good to go.
+GP-Tool (GUI + libraries) is pre-compiled for Windows 10 (x64). Just download the binaries zip-file, extract it and you are good to go.
 
 
 ### Source code 
@@ -63,7 +63,7 @@ GP-Tool (GUI + libraries) is pre-compiled for Windows 10 (x64). Just download th
    ```
 
 2. Building from source code allows these following options:
-  - HIDPI: Scales GUI by a factor of 2, allows for approppriate sizing in hidpi screens (default OFF);
+  - HIDPI: Scales GUI by a factor of 2, allows for appropriate sizing in hidpi screens (default OFF);
   - COMPILE_GUI: Compiles graphical user interface (default ON);
   - COMPILE_LIBRARIES: Compiles and install dynamic libraries for batching with C++ (default ON);
 
