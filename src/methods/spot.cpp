@@ -125,7 +125,7 @@ bool Spot::refinePosition(void)
       log(info.size.x), log(info.size.y), log(info.signal[0]), log(info.signal[1]),
       -log(2.0 / (info.rho + 1.0) - 1.0f);
 
-  uint32_t maxMCS = 5000;
+  uint32_t maxMCS = 10000;
   MatXd stats = GOptimize::sampleParameters(MXY, maxMCS, &Spot::weightFunction, this);
 
   MatXd pos(maxMCS, 2);

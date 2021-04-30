@@ -68,34 +68,34 @@ void AlignPlugin::showProperties(void)
     ImGui::NextColumn();
     ImGui::PushID("Translate");
     float linewidth = ImGui::GetContentRegionAvailWidth();
-    check |= fancyDrag("X", RT.translate.x, 0.0f, 0.01f, linewidth);
+    check |= fancyDrag("X", RT.translate.x, 0.0f, 0.1f, linewidth);
     ImGui::SameLine();
-    check |= fancyDrag("Y", RT.translate.y, 0.0f, 0.01f, linewidth);
+    check |= fancyDrag("Y", RT.translate.y, 0.0f, 0.1f, linewidth);
     ImGui::PopID();
     ImGui::NextColumn();
 
     ImGui::Text("Scale");
     ImGui::NextColumn();
     ImGui::PushID("Scale");
-    check |= fancyDrag("X", RT.scale.x, 1.0f, 0.001f, linewidth);
+    check |= fancyDrag("X", RT.scale.x, 1.0f, 0.01f, linewidth);
     ImGui::SameLine();
-    check |= fancyDrag("Y", RT.scale.y, 1.0f, 0.001f, linewidth);
+    check |= fancyDrag("Y", RT.scale.y, 1.0f, 0.01f, linewidth);
     ImGui::PopID();
     ImGui::NextColumn();
 
     ImGui::Text("Rotate");
     ImGui::NextColumn();
     ImGui::PushID("Rotate");
-    check |= fancyDrag("X", RT.rotate.x, 0.5f, 0.05f, linewidth);
+    check |= fancyDrag("X", RT.rotate.x, 0.5f * RT.size.x, 0.5f, linewidth);
     ImGui::SameLine();
-    check |= fancyDrag("Y", RT.rotate.y, 0.5f, 0.05f, linewidth);
+    check |= fancyDrag("Y", RT.rotate.y, 0.5f * RT.size.y, 0.5f, linewidth);
     ImGui::PopID();
     ImGui::NextColumn();
 
     ImGui::Text("Angle");
     ImGui::NextColumn();
     ImGui::PushID("Angle");
-    check |= fancyDrag("A", RT.rotate.z, 0.0f, 0.001f, linewidth);
+    check |= fancyDrag("A", RT.rotate.z, 0.0f, 0.005f, linewidth);
     ImGui::PopID();
     ImGui::NextColumn();
 
@@ -140,9 +140,6 @@ void AlignPlugin::update(float deltaTime)
     for (uint32_t ch = 0; ch < SC; ch++)
         memcpy(mat.data() + 9 * ch, glm::value_ptr(data[ch].itrf), 9 * sizeof(float));
 
-    float size[2] = {float(data[chAlign].size.x), float(data[chAlign].size.y)};
-
-    tool->shader->setVec2f("u_size", size);
     tool->shader->setMat3Array("u_align", mat.data(), 5);
 
 } // update

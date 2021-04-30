@@ -271,13 +271,7 @@ bool GDialog::systemDisplay(std::string url)
     std::string diff = "";
     ImGui::PushStyleColor(ImGuiCol_ChildBg, {0.02f, 0.02f, 0.02f, 1.0f});
 
-#ifdef WIN32
-    uint32_t size = 3; // C:\ or D:\ or ...
-#else
-    uint32_t size = 1; // linux and mac use only /
-#endif
-
-    if (url.size() < size)
+    if (!fs::exists(url))
     {
     }
 

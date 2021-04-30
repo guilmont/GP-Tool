@@ -60,14 +60,23 @@ MoviePlugin::MoviePlugin(const std::string &movie_path, GPTool *ptr) : tool(ptr)
 
     for (uint32_t ch = 0; ch < meta.SizeC; ch++)
     {
+        float gl_low = 314159265.0f,
+              gl_high = 0.0f;
 
-        const MatXd &mat = movie.getImage(ch, current_frame);
-        float low = static_cast<float>(mat.minCoeff()),
-              high = static_cast<float>(mat.maxCoeff()),
-              minValue = 0.8f * low, maxValue = 1.2f * high;
+        for (uint32_t fr = 0; fr < meta.SizeT; fr++)
+        {
+            const MatXd &mat = movie.getImage(ch, fr);
+            float low = static_cast<float>(mat.minCoeff()),
+                  high = static_cast<float>(mat.maxCoeff());
+
+            gl_low = std::min(gl_low, low);
+            gl_high = std::max(gl_high, high);
+        }
+
+        float minValue = 0.8f * gl_low, maxValue = 1.2f * gl_high;
 
         info[ch].lut_name = lut.names[ch + 1];
-        info[ch].contrast = {low, high};
+        info[ch].contrast = {gl_low, gl_high};
         info[ch].minMaxValue = {minValue, maxValue};
     }
 
@@ -234,6 +243,9 @@ void MoviePlugin::update(float deltaTime)
 
     tool->shader->setMatrix4f("u_transform", glm::value_ptr(trf));
     tool->shader->setInteger("u_nChannels", meta.SizeC);
+
+    float size[2] = {float(meta.SizeX), float(meta.SizeY)};
+    tool->shader->setVec2f("u_size", size);
 
     std::array<float, 15> vColor = {0.0f};
     for (uint32_t ch = 0; ch < meta.SizeC; ch++)

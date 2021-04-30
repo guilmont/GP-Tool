@@ -23,7 +23,7 @@ static glm::dvec2 thresOutliers(VecXd vec)
              TQ = uint32_t(0.75f * vec.size());
 
     double fifty = vec(TQ) - vec(FQ);
-    return {vec(N) - 2.0 * fifty, vec(N) + 2.0 * fifty};
+    return {vec(N) - 3.0 * fifty, vec(N) + 3.0 * fifty};
 } // thresOutliers
 
 static MatXd loadFromTextFile(const std::string &path, char delimiter,
@@ -254,20 +254,7 @@ void Trajectory::enhanceTrajectory(uint32_t trackID, uint32_t trajID)
         if (route(k, 0) < 0)
             removeRow(route, k);
 
-    if (route.rows() < 10) // is going to be removed anyway
-        return;
-
-    // Finally, we check if there are outliers in detection and remove them
-    nRows = uint32_t(route.rows());
-    VecXd dx = route.block(1, Track::POSX, nRows - 1, 1) -
-               route.block(0, Track::POSX, nRows - 1, 1);
-
-    VecXd dy = route.block(1, Track::POSY, nRows - 1, 1) -
-               route.block(0, Track::POSY, nRows - 1, 1);
-
     glm::dvec2
-        thresX = thresOutliers(dx.array().abs()),
-        thresY = thresOutliers(dy.array().abs()),
         thresSX = thresOutliers(route.col(Track::SIZEX)),
         thresSY = thresOutliers(route.col(Track::SIZEY)),
         thresEX = thresOutliers(route.col(Track::ERRX)),
@@ -279,20 +266,6 @@ void Trajectory::enhanceTrajectory(uint32_t trackID, uint32_t trajID)
     for (uint32_t k = 0; k < nRows; k++)
     {
         bool check = true;
-
-        if (k < nRows - 1)
-        {
-            check &= dx(k) > thresX.x;
-            check &= dx(k) < thresX.y;
-
-            check &= dy(k) > thresY.x;
-            check &= dy(k) < thresY.y;
-
-            if (!check)
-                condPush(toRemove, k + 1);
-        }
-
-        check = true;
         check &= route(k, Track::SIZEX) < thresSX.y;
         check &= route(k, Track::SIZEX) > thresSX.x;
 
@@ -463,32 +436,14 @@ void Trajectory::enhanceTracks(void)
                                                    std::to_string(ch));
 #endif
 
-        std::vector<uint32_t> toRemove;
         for (uint32_t k = 0; k < N; k++)
         {
             enhanceTrajectory(ch, k);
-
-            if (track.traj[k].rows() < 10)
-            {
-                std::string txt = "Trajectory smaller than 10 frames removed!!";
-
-#ifdef STATIC_API
-                mbox->create<Message::Warn>(txt);
-#else
-                std::cout << "WARN >> " << txt << std::endl;
-#endif
-
-                toRemove.push_back(k);
-            }
 
 #ifdef STATIC_API
             ptr->progress = float(k + 1) / float(track.traj.size());
 #endif
         } // loop-tracks
-
-        std::reverse(toRemove.begin(), toRemove.end());
-        for (uint32_t k : toRemove)
-            track.traj.erase(track.traj.begin() + k);
 
     } // loop-trajectories
 

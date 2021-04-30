@@ -20,20 +20,21 @@ void TransformData::update(void)
                 0.0f, scale.y, (1.0f - scale.y) * 0.5f * size.y,
                 0.0f, 0.0f, 1.0f);
 
-    glm::mat3 B(1.0, 0.0, translate.x - rotate.x,
-                0.0, 1.0, translate.y - rotate.y,
+    glm::mat3 B(1.0, 0.0, translate.x + rotate.x,
+                0.0, 1.0, translate.y + rotate.y,
                 0.0, 0.0, 1.0);
 
-    glm::mat3 C(cos(rotate.z), sin(rotate.z), 0.0,
-                -sin(rotate.z), cos(rotate.z), 0.0,
+    glm::mat3 C(cos(rotate.z), -sin(rotate.z), 0.0,
+                sin(rotate.z), cos(rotate.z), 0.0,
                 0.0, 0.0, 1.0);
 
-    glm::mat3 D(1.0, 0.0, rotate.x,
-                0.0, 1.0, rotate.y,
+    glm::mat3 D(1.0, 0.0, -rotate.x,
+                0.0, 1.0, -rotate.y,
                 0.0, 0.0, 1.0);
 
     // Complete transformation
-    trf = A * B * C * D;
+    // trf = A * B * C * D;
+    trf = D * C * B * A;      // glm goes backwords
     itrf = glm::inverse(trf); // just a facility
 
 } // updateTransform
@@ -206,7 +207,8 @@ static MatXd treatImage(MatXd img, int medianSize, double clipLimit,
 /*******************************************************************/
 /*******************************************************************/
 
-Align::Align(uint32_t nFrames, const MatXd *im1, const MatXd *im2, Mailbox *mail) : mbox(mail)
+Align::Align(uint32_t nFrames, const MatXd *im1, const MatXd *im2, Mailbox *mail)
+    : mbox(mail)
 {
 
     vIm0.resize(nFrames);
@@ -255,12 +257,12 @@ void Align::calcEnergy(const uint32_t id, const uint32_t nThr)
     for (uint32_t fr = id; fr < vIm0.size(); fr += nThr)
     {
         // Evaluating transformed img2
-        for (uint32_t x = 0; x < width; x++)
-            for (uint32_t y = 0; y < height; y++)
+        for (uint32_t y = 0; y < height; y++)
+            for (uint32_t x = 0; x < width; x++)
             {
-                int i = int(std::round(itrf[0][0] * (x + 0.5f) +
-                                       itrf[0][1] * (y + 0.5f) +
-                                       itrf[0][2]));
+                int i = int(itrf[0][0] * (x + 0.5f) +
+                            itrf[0][1] * (y + 0.5f) +
+                            itrf[0][2]);
 
                 int j = int(std::round(itrf[1][0] * (x + 0.5f) +
                                        itrf[1][1] * (y + 0.5f) +
@@ -283,20 +285,20 @@ double Align::weightTransRot(const VecXd &p)
            cx = p[2], cy = p[3], angle = p[4];
 
     // Transformation matrices
-    glm::mat3 A(1.0f, 0.0f, dx - cx,
-                0.0f, 1.0f, dy - cy,
+    glm::mat3 A(1.0f, 0.0f, dx + cx,
+                0.0f, 1.0f, dy + cy,
                 0.0f, 0.0f, 1.0f);
 
-    glm::mat3 B(cos(angle), sin(angle), 0.0f,
-                -sin(angle), cos(angle), 0.0f,
+    glm::mat3 B(cos(angle), -sin(angle), 0.0f,
+                sin(angle), cos(angle), 0.0f,
                 0.0f, 0.0f, 1.0f);
 
-    glm::mat3 C(1.0f, 0.0f, cx,
-                0.0f, 1.0f, cy,
+    glm::mat3 C(1.0f, 0.0f, -cx,
+                0.0f, 1.0f, -cy,
                 0.0f, 0.0f, 1.0f);
 
     // Complete transformation
-    glm::mat3 trf = A * B * C;
+    glm::mat3 trf = C * B * A;
     itrf = glm::inverse(trf);
 
     // Splitting log-likelihood calculationg to threads
@@ -332,7 +334,7 @@ double Align::weightScale(const VecXd &p)
                 0.0f, 0.0f, 1.0f);
 
     // Inverse of transfomation for mapping
-    glm::mat3 trf = A * glm::mat3(RT.trf);
+    glm::mat3 trf = glm::mat3(RT.trf) * A;
     itrf = glm::inverse(trf);
 
     // Splitting log-likelihood calculationg to threads
