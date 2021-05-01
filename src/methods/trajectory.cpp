@@ -2,16 +2,16 @@
 
 #include <fstream>
 
-static void removeRow(MatXd &matrix, uint32_t rowToRemove)
+static void removeRow(MatXd &mat, int32_t row)
 {
-    uint32_t numRows = uint32_t(matrix.rows()) - 1;
-    uint32_t numCols = uint32_t(matrix.cols());
+    int32_t numRows = int32_t(mat.rows()) - 1;
+    int32_t numCols = int32_t(mat.cols());
 
-    if (rowToRemove < numRows)
-        matrix.block(rowToRemove, 0, numRows - rowToRemove, numCols) =
-            matrix.block(rowToRemove + 1, 0, numRows - rowToRemove, numCols);
+    if (row < numRows)
+        mat.block(row, 0, numRows - row, numCols) =
+            mat.block(row + 1, 0, numRows - row, numCols);
 
-    matrix.conservativeResize(numRows, numCols);
+    mat.conservativeResize(numRows, numCols);
 }
 
 static glm::dvec2 thresOutliers(VecXd vec)
@@ -23,7 +23,7 @@ static glm::dvec2 thresOutliers(VecXd vec)
              TQ = uint32_t(0.75f * vec.size());
 
     double fifty = vec(TQ) - vec(FQ);
-    return {vec(N) - 3.0 * fifty, vec(N) + 3.0 * fifty};
+    return {vec(N) - 2.0 * fifty, vec(N) + 2.0 * fifty};
 } // thresOutliers
 
 static MatXd loadFromTextFile(const std::string &path, char delimiter,
@@ -228,14 +228,6 @@ void Trajectory::enhancePoint(uint32_t trackID, uint32_t trajID, uint32_t tid)
 void Trajectory::enhanceTrajectory(uint32_t trackID, uint32_t trajID)
 {
 
-    auto condPush = [](std::vector<uint32_t> &vec, uint32_t val) -> void {
-        for (uint32_t k : vec)
-            if (val == k)
-                return;
-
-        vec.push_back(val);
-    };
-
     // Updating localization and estimating error
     const uint32_t nThreads = std::thread::hardware_concurrency();
     std::vector<std::thread> vThr(nThreads);
@@ -249,10 +241,14 @@ void Trajectory::enhanceTrajectory(uint32_t trackID, uint32_t trajID)
     // Removing rows that didn't converge during enhancement
     MatXd &route = m_vTrack[trackID].traj[trajID];
 
-    uint32_t nRows = uint32_t(route.rows());
+    int32_t nRows = int32_t(route.rows());
     for (int32_t k = nRows - 1; k >= 0; k--)
         if (route(k, 0) < 0)
             removeRow(route, k);
+
+    nRows = int32_t(route.rows());
+    if (nRows < 10)
+        return;
 
     glm::dvec2
         thresSX = thresOutliers(route.col(Track::SIZEX)),
@@ -262,8 +258,7 @@ void Trajectory::enhanceTrajectory(uint32_t trackID, uint32_t trajID)
         thresSig = thresOutliers(route.col(Track::SIGNAL)),
         thresBG = thresOutliers(route.col(Track::BG));
 
-    std::vector<uint32_t> toRemove;
-    for (uint32_t k = 0; k < nRows; k++)
+    for (int32_t k = nRows - 1; k >= 0; k--)
     {
         bool check = true;
         check &= route(k, Track::SIZEX) < thresSX.y;
@@ -285,13 +280,8 @@ void Trajectory::enhanceTrajectory(uint32_t trackID, uint32_t trajID)
         check &= route(k, Track::SIGNAL) > thresSig.x;
 
         if (!check)
-            condPush(toRemove, k);
+            removeRow(route, k);
     }
-
-    std::sort(toRemove.begin(), toRemove.end());
-    std::reverse(toRemove.begin(), toRemove.end());
-    for (uint32_t k : toRemove)
-        removeRow(route, k);
 
 } // enhanceRoutes
 
