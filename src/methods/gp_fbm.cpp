@@ -524,7 +524,8 @@ double GP_FBM::weightSingle(const VecXd &DA)
         A = 2.0 * eA / (eA + 1.0);
 
     // Building FBM kernel
-    const VecXd &vT = route[runID].col(Track::TIME);
+    const MatXd &lRoute = route[runID];
+    const VecXd &vT = lRoute.col(Track::TIME);
     MatXd kernel = calcKernel(D, A, vT, vT);
     kernel.diagonal().array() += 1e-4;
 
@@ -534,9 +535,9 @@ double GP_FBM::weightSingle(const VecXd &DA)
     double weight = 0;
     for (uint8_t k = 0; k < 2; k++)
     {
-        VecXd vec = route[runID].col(Track::POSX + k).array() - DA(2 + k);
+        VecXd vec = lRoute.col(Track::POSX + k).array() - DA(2 + k);
 
-        kernel.diagonal() = diag + route[runID].col(Track::ERRX + k);
+        kernel.diagonal() = diag + lRoute.col(Track::ERRX + k);
         Eigen::LLT<MatXd> cholesky = kernel.llt();
         VecXd alpha = cholesky.solve(vec);
         MatXd L = cholesky.matrixL();

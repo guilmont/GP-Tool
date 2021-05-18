@@ -136,8 +136,8 @@ bool Spot::refinePosition(void)
     pos(k, 1) = NY * my / (1.0f + my);
   }
 
-  double devx = getMeanDev(pos.col(0)).second;
-  double devy = getMeanDev(pos.col(1)).second;
+  auto [mux, devx] = getMeanDev(pos.col(0));
+  auto [muy, devy] = getMeanDev(pos.col(1));
 
   // Doing some statistics and creating output
   if (std::isnan(devx) || std::isnan(devy))
@@ -146,6 +146,7 @@ bool Spot::refinePosition(void)
   }
   else
   {
+    info.mu = {mux, muy};
     info.error = {devx, devy};
     return true;
   }

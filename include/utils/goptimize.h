@@ -105,8 +105,8 @@ bool GOptimize::NMSimplex::runSimplex(double (CL::*weight)(const VecXd &), CL *p
         }
 
         // Sorting from smallest to biggest vertex-weight
-        sort(simplex.begin(), simplex.end(),
-             [](const Vertex &a, const Vertex &b) { return a.weight < b.weight; });
+        sort(simplex.begin(), simplex.end(), [](const Vertex &a, const Vertex &b)
+             { return a.weight < b.weight; });
 
         // Calculate centroid
         VecXd CM(numParams);
