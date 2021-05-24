@@ -16,7 +16,7 @@ public:
     void showWindows(void) override;
     void showProperties(void) override;
     void update(float deltaTime) override;
-    void saveJSON(Json::Value &json) override;
+    bool saveJSON(Json::Value &json) override;
 
     void loadTracks(void) { trackInfo.show = true; }
 

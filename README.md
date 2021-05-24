@@ -33,7 +33,7 @@ GP-Tool is a set of methods I developed for the analysis of dynamic particles in
 - Alignment: Corrects for camera mis-alignment for microscopy setups with more than on camera. Corrects for chromatic aberration
 - GP-FBM: Uses Gaussian processes and Fractional Brownian motion to measure effective diffusion coefficient, anomalous coefficients and more. It implicitly corrects for background/substrate movement for sets with 2 or more particles. 
 
-For more information, consider the following journal publication.
+For more information, consider the following journal publication and/or "gp_documentation.pdf".
 
 ## BioRxv
 

@@ -104,6 +104,11 @@ void PluginManager::saveJSON(const std::string &path)
     Plugin *pgl = plugins["MOVIE"].get();
     if (pgl)
         pgl->saveJSON(output);
+    else
+    {
+        tool->mbox.create<Message::Info>("Nothing to be save!!");
+        return;
+    }
 
     pgl = plugins["ALIGNMENT"].get();
     if (pgl)
@@ -111,11 +116,19 @@ void PluginManager::saveJSON(const std::string &path)
 
     pgl = plugins["TRAJECTORY"].get();
     if (pgl)
-        pgl->saveJSON(output["Trajectory"]);
+    {
+        Json::Value aux;
+        if (pgl->saveJSON(aux))
+            output["Trajectory"] = std::move(aux);
+    }
 
     pgl = plugins["GPROCESS"].get();
     if (pgl)
-        pgl->saveJSON(output["GProcess"]);
+    {
+        Json::Value aux;
+        if (pgl->saveJSON(aux))
+            output["GProcess"] = std::move(aux);
+    }
 
     std::ofstream arq(path);
     arq << output;

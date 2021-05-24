@@ -17,15 +17,39 @@ GPTool::GPTool(void)
 
 void GPTool::onUserUpdate(float deltaTime)
 {
-    // Control signal hanfling
-    bool check = keyboard[Key::LEFT_CONTROL] == Event::PRESS;
-    check |= keyboard[Key::RIGHT_CONTROL] == Event::PRESS;
+    // key combination for opening movie
+    bool check = keyboard[Key::LEFT_CONTROL] == Event::PRESS || keyboard[Key::RIGHT_CONTROL] == Event::PRESS;
     check &= keyboard['O'] == Event::RELEASE;
     if (check)
-        dialog.createDialog(GDialog::OPEN, "Choose TIF file...", {".tif", ".ome.tif"}, this, [](const std::string &path, void *ptr) -> void {
-            GPTool *tool = (GPTool *)ptr;
-            tool->openMovie(path);
-        });
+        dialog.createDialog(GDialog::OPEN, "Choose TIF file...", {".tif", ".ome.tif"}, this, [](const std::string &path, void *ptr) -> void
+                            {
+                                GPTool *tool = (GPTool *)ptr;
+                                tool->openMovie(path);
+                            });
+
+    ///////////////////////////////////////////////////////
+    // key combination to save data
+    check = keyboard[Key::LEFT_CONTROL] == Event::PRESS || keyboard[Key::RIGHT_CONTROL] == Event::PRESS;
+    check &= keyboard['S'] == Event::RELEASE;
+    if (check)
+        dialog.createDialog(GDialog::SAVE, "Save data...", {".json"}, manager.get(),
+                            [](const std::string &path, void *ptr) -> void
+                            {
+                                std::thread([](PluginManager *manager, const std::string &path) -> void
+                                            { manager->saveJSON(path); },
+                                            (PluginManager *)ptr, path)
+                                    .detach();
+                            });
+
+    ///////////////////////////////////////////////////////
+    // key combination open trajectory
+    check = keyboard[Key::LEFT_CONTROL] == Event::PRESS || keyboard[Key::RIGHT_CONTROL] == Event::PRESS;
+    check &= keyboard['T'] == Event::RELEASE;
+    if (check)
+    {
+        TrajPlugin *traj = (TrajPlugin *)manager->getPlugin("TRAJECTORY");
+        traj->loadTracks();
+    }
 
     if (viewport_hover)
     {
@@ -109,7 +133,8 @@ void GPTool::ImGuiMenuLayer(void)
         if (ImGui::MenuItem("Open movie..."))
             dialog.createDialog(GDialog::OPEN, "Choose TIF file...",
                                 {".tif", ".ome.tif"}, this,
-                                [](const std::string &path, void *ptr) -> void {
+                                [](const std::string &path, void *ptr) -> void
+                                {
                                     GPTool *tool = (GPTool *)ptr;
                                     tool->openMovie(path);
                                 });
@@ -119,18 +144,14 @@ void GPTool::ImGuiMenuLayer(void)
             traj->loadTracks();
 
         if (ImGui::MenuItem("Save as ...", NULL, nullptr))
-            dialog.createDialog(
-                GDialog::SAVE, "Choose TIF file...", {".json"}, manager.get(),
-                [](const std::string &path, void *ptr) -> void {
-                    PluginManager *manager = (PluginManager *)ptr;
-
-                    std::thread(
-                        [](PluginManager *manager, const std::string &path) -> void {
-                            manager->saveJSON(path);
-                        },
-                        manager, path)
-                        .detach();
-                });
+            dialog.createDialog(GDialog::SAVE, "Choose TIF file...", {".json"}, manager.get(),
+                                [](const std::string &path, void *ptr) -> void
+                                {
+                                    std::thread([](PluginManager *manager, const std::string &path) -> void
+                                                { manager->saveJSON(path); },
+                                                (PluginManager *)ptr, path)
+                                        .detach();
+                                });
 
         if (ImGui::MenuItem("Exit"))
             closeApp();
@@ -171,41 +192,42 @@ void GPTool::ImGuiMenuLayer(void)
 void GPTool::openMovie(const String &path)
 {
 
-    std::thread([](GPTool *tool, const String &path) -> void {
-        MoviePlugin *movpl = new MoviePlugin(path, tool);
-        if (movpl->successful())
-        {
-            tool->camera.reset();
+    std::thread([](GPTool *tool, const String &path) -> void
+                {
+                    MoviePlugin *movpl = new MoviePlugin(path, tool);
+                    if (movpl->successful())
+                    {
+                        tool->camera.reset();
 
-            // Setup plugin manager
-            // pluygin pointers will be owned and destroyed by manager
-            tool->manager = std::make_unique<PluginManager>(tool);
+                        // Setup plugin manager
+                        // pluygin pointers will be owned and destroyed by manager
+                        tool->manager = std::make_unique<PluginManager>(tool);
 
-            // Including movie plugin into the manager
-            tool->manager->addPlugin("MOVIE", movpl);
-            tool->manager->setActive("MOVIE");
+                        // Including movie plugin into the manager
+                        tool->manager->addPlugin("MOVIE", movpl);
+                        tool->manager->setActive("MOVIE");
 
-            // Determine if we need the alignment plugin
-            const Movie *movie = movpl->getMovie();
-            if (movie->getMetadata().SizeC > 1)
-            {
-                AlignPlugin *alg = new AlignPlugin(movie, tool);
-                tool->manager->addPlugin("ALIGNMENT", alg);
-            }
+                        // Determine if we need the alignment plugin
+                        const Movie *movie = movpl->getMovie();
+                        if (movie->getMetadata().SizeC > 1)
+                        {
+                            AlignPlugin *alg = new AlignPlugin(movie, tool);
+                            tool->manager->addPlugin("ALIGNMENT", alg);
+                        }
 
-            // Let's also activate:
+                        // Let's also activate:
 
-            // trajectory plugin
-            TrajPlugin *traj = new TrajPlugin(movie, tool);
-            tool->manager->addPlugin("TRAJECTORY", traj);
+                        // trajectory plugin
+                        TrajPlugin *traj = new TrajPlugin(movie, tool);
+                        tool->manager->addPlugin("TRAJECTORY", traj);
 
-            // Gaussian process plugin
-            GPPlugin *gp = new GPPlugin(tool);
-            tool->manager->addPlugin("GPROCESS", gp);
-        }
-        else
-            delete movpl;
-    },
+                        // Gaussian process plugin
+                        GPPlugin *gp = new GPPlugin(tool);
+                        tool->manager->addPlugin("GPROCESS", gp);
+                    }
+                    else
+                        delete movpl;
+                },
                 this, path)
         .detach();
 }

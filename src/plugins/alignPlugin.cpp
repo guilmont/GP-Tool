@@ -40,7 +40,8 @@ void AlignPlugin::showProperties(void)
 
     ///////////////////////////////////////////////////////
     auto fancyDrag = [](const String &XYA, float &val, float reset, float step,
-                        float linewidth) -> bool {
+                        float linewidth) -> bool
+    {
         bool check = false;
 
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {0, 0});
@@ -184,10 +185,11 @@ void AlignPlugin::runAlignment(void)
 
 } // runAlignement
 
-void AlignPlugin::saveJSON(Json::Value &json)
+bool AlignPlugin::saveJSON(Json::Value &json)
 {
 
-    auto jsonGLM = [](const glm::mat3 &mat) -> Json::Value {
+    auto jsonGLM = [](const glm::mat3 &mat) -> Json::Value
+    {
         Json::Value array(Json::arrayValue);
         for (uint32_t k = 0; k < 3; k++)
         {
@@ -214,4 +216,6 @@ void AlignPlugin::saveJSON(Json::Value &json)
 
         json["channel_" + std::to_string(ch)] = std::move(align);
     }
+
+    return true;
 }

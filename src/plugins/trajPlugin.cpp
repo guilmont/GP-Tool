@@ -232,8 +232,11 @@ excess:
 
 } // update
 
-void TrajPlugin::saveJSON(Json::Value &json)
+bool TrajPlugin::saveJSON(Json::Value &json)
 {
+    if (m_traj == nullptr)
+        return false;
+
     const Metadata &meta = movie->getMetadata();
 
     json["PhysicalSizeXY"] = meta.PhysicalSizeXY;
@@ -251,6 +254,8 @@ void TrajPlugin::saveJSON(Json::Value &json)
             json[ch_name]["traj_" + std::to_string(k)] = std::move(jsonEigen(vTraj[k]));
 
     } // loop-channels
+
+    return true;
 
 } //saveJSON
 
@@ -282,7 +287,8 @@ void TrajPlugin::enhanceTracks(void)
 
     tool->mbox.create<Message::Info>("Optimizing trajectories...");
     std::thread(
-        [](Trajectory *m_traj, UITraj *uitraj, uint32_t nChannels) {
+        [](Trajectory *m_traj, UITraj *uitraj, uint32_t nChannels)
+        {
             m_traj->enhanceTracks();
 
             std::random_device rng;
@@ -344,7 +350,8 @@ void TrajPlugin::winLoadTracks(void)
             trackInfo.openCH = ch;
             tool->dialog.createDialog(
                 GDialog::OPEN, "Choose track...", {".xml", ".csv"}, this,
-                [](const std::string &path, void *ptr) -> void {
+                [](const std::string &path, void *ptr) -> void
+                {
                     TrajPlugin *traj = (TrajPlugin *)ptr;
 
                     uint32_t ch = traj->trackInfo.openCH;
@@ -412,7 +419,8 @@ void TrajPlugin::winDetail(void)
 
         tool->dialog.createDialog(
             GDialog::SAVE, "Export CSV", {".csv", ".csv"}, (void *)mat,
-            [](const std::string &path, void *ptr) -> void {
+            [](const std::string &path, void *ptr) -> void
+            {
                 std::array<std::string, Track::NCOLS> header = {
                     "Frame", "Time", "Position X", "Position Y",
                     "Error X", "Error Y", "Size X", "Size Y",

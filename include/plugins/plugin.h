@@ -17,7 +17,7 @@ struct Plugin
     virtual void showProperties(void) = 0;
     virtual void showWindows(void) {}
 
-    virtual void saveJSON(Json::Value &json){};
+    virtual bool saveJSON(Json::Value &json) { return false; }
 };
 
 ///////////////////////////////////////////////////////////

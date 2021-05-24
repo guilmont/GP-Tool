@@ -31,7 +31,7 @@ public:
 
     void showProperties(void) override;
     void update(float deltaTime) override;
-    void saveJSON(Json::Value &json) override;
+    bool saveJSON(Json::Value &json) override;
 
     const glm::vec3 &getColor(uint32_t channel) { return lut.getColor(info[channel].lut_name); }
     const Movie *getMovie(void) { return &movie; }

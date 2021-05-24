@@ -158,7 +158,8 @@ void GPPlugin::showProperties(void)
             gp->partID = std::move(partID);
             vecGP.emplace_back(std::move(gp));
 
-            auto runCell = [](uint32_t nTraj, GP_FBM *gp, Mailbox *mbox) -> void {
+            auto runCell = [](uint32_t nTraj, GP_FBM *gp, Mailbox *mbox) -> void
+            {
                 Message::Timer *msg = nullptr;
                 msg = mbox->create<Message::Timer>("Optimizing cell's parameters");
 
@@ -314,18 +315,19 @@ void GPPlugin::showProperties(void)
             {
                 distribView.gpID = uint32_t(gpID);
 
-                std::thread([](GP_FBM *gp, Mailbox *mbox, bool *show) -> void {
-                    Message::Timer *msg = nullptr;
-                    msg = mbox->create<Message::Timer>("Calculating distributions ...");
+                std::thread([](GP_FBM *gp, Mailbox *mbox, bool *show) -> void
+                            {
+                                Message::Timer *msg = nullptr;
+                                msg = mbox->create<Message::Timer>("Calculating distributions ...");
 
-                    if (gp->getNumParticles() == 1)
-                        gp->distrib_singleModel(sample_size);
-                    else
-                        gp->distrib_coupledModel(sample_size);
+                                if (gp->getNumParticles() == 1)
+                                    gp->distrib_singleModel(sample_size);
+                                else
+                                    gp->distrib_coupledModel(sample_size);
 
-                    *show = true;
-                    msg->stop();
-                },
+                                *show = true;
+                                msg->stop();
+                            },
                             vecGP[gpID].get(), &(tool->mbox), &(distribView.show))
                     .detach();
 
@@ -339,7 +341,8 @@ void GPPlugin::showProperties(void)
                     subView.gpID = uint32_t(gpID);
 
                     std::thread(
-                        [](GP_FBM *gp, Mailbox *mbox, bool *show) -> void {
+                        [](GP_FBM *gp, Mailbox *mbox, bool *show) -> void
+                        {
                             Message::Timer *msg = nullptr;
                             msg = mbox->create<Message::Timer>("Calculating "
                                                                "substrate data...");
@@ -375,9 +378,12 @@ void GPPlugin::showProperties(void)
 
 void GPPlugin::update(float deltaTime) {}
 
-void GPPlugin::saveJSON(Json::Value &json)
+bool GPPlugin::saveJSON(Json::Value &json)
 {
     const uint32_t nCells = uint32_t(vecGP.size());
+
+    if (nCells == 0)
+        return false;
 
     MoviePlugin *pgl = (MoviePlugin *)tool->manager->getPlugin("MOVIE");
     const Metadata &meta = pgl->getMovie()->getMetadata();
@@ -442,6 +448,8 @@ void GPPlugin::saveJSON(Json::Value &json)
         json["Cells"].append(std::move(cell));
 
     } // loop-cells
+
+    return true;
 
 } // saveJSON
 
@@ -607,7 +615,8 @@ void GPPlugin::winSubstrate(void)
     {
         tool->dialog.createDialog(
             GDialog::SAVE, "Export CSV", {".csv"}, (void *)&mat,
-            [](const std::string &path, void *ptr) -> void {
+            [](const std::string &path, void *ptr) -> void
+            {
                 const MatXd &mat = *reinterpret_cast<MatXd *>(ptr);
 
                 std::array<std::string, 6> header = {"Frame", "Time",
