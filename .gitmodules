@@ -1,18 +1,18 @@
 [submodule "vendor/glm"]
-	path = vendor/glm
+	path = GP-Libraries/vendor/glm
 	url = https://github.com/g-truc/glm.git
 [submodule "vendor/glfw"]
-	path = vendor/glfw
+	path = GP-Tool/vendor/glfw
 	url = https://github.com/glfw/glfw.git
 [submodule "vendor/eigen"]
-	path = vendor/eigen
+	path = GP-Libraries/vendor/eigen
 	url = https://gitlab.com/libeigen/eigen.git
 [submodule "vendor/implot"]
-	path = vendor/implot
+	path = GP-Tool/vendor/implot
 	url = https://github.com/epezent/implot.git
 [submodule "vendor/imgui"]
-	path = vendor/imgui
+	path = GP-Tool/vendor/imgui
 	url = https://github.com/ocornut/imgui.git
 [submodule "vendor/jsoncpp"]
-	path = vendor/jsoncpp
+	path = GP-Tool/vendor/jsoncpp
 	url = https://github.com/open-source-parsers/jsoncpp.git
