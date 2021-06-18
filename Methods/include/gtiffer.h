@@ -53,21 +53,21 @@ namespace Tiffer
     class  Read
     {
     public:
-        GP_API Read(const std::string &movie_path);
+        Read(const std::string &movie_path);
 
-        GP_API bool successful(void) const { return success; }
+        bool successful(void) const { return success; }
 
-        GP_API const std::string &getMoviePath(void) const { return movie_path; }
-        GP_API uint32_t getNumDirectories() { return numDir; }
-        GP_API uint32_t getBitCount(void);
-        GP_API uint32_t getWidth(void);
-        GP_API uint32_t getHeight(void);
-        GP_API std::string getDateTime(void);
-        GP_API std::string getMetadata(void);
-        GP_API std::string getIJMetadata(void);
+        const std::string &getMoviePath(void) const { return movie_path; }
+        uint32_t getNumDirectories() { return numDir; }
+        uint32_t getBitCount(void);
+        uint32_t getWidth(void);
+        uint32_t getHeight(void);
+        std::string getDateTime(void);
+        std::string getMetadata(void);
+        std::string getIJMetadata(void);
 
         template <typename T>
-        GP_API Image<T> getImage(const uint32_t id = 0);
+        Image<T> getImage(const uint32_t id = 0);
 
     private:
         std::string movie_path;

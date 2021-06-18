@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.10.0)
 
+
 find_package(Threads REQUIRED)
 
 
@@ -10,6 +11,7 @@ add_subdirectory(vendor)
 project(Methods)
 
 add_library(Methods SHARED
+	"include/header.h"
 	"include/gtiffer.h"     "src/gtiffer.cpp"
 	"include/goptimize.h"   "src/goptimize.cpp"
 	"include/movie.h"       "src/movie.cpp"
@@ -21,7 +23,8 @@ add_library(Methods SHARED
 )
 
 
-target_include_directories(Methods PUBLIC ${PROJECT_SOURCE_DIR}/include)
-target_link_libraries(Methods PUBLIC glm eigen pugixml Threads::Threads)
+target_precompile_headers(Methods PUBLIC "include/header.h")
 
-target_precompile_headers(Methods PUBLIC "${PROJECT_SOURCE_DIR}/include/header.h")
+target_include_directories(Methods PUBLIC ${PROJECT_SOURCE_DIR}/include)
+target_link_libraries(Methods PUBLIC glm_ eigen pugixml Threads::Threads)
+target_compile_definitions(Methods PRIVATE GBUILD_DLL)

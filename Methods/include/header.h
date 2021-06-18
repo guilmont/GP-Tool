@@ -28,10 +28,21 @@ using Image = Eigen::Matrix<T, -1, -1>;
 /////////////////////////////
 
 #ifdef WIN32
-#define GP_API __declspec(dllexport)
+   #define GP_API __declspec(dllexport)
 #else
-#define GP_API
+   #define GP_API
 #endif
+
+//
+//#ifdef WIN32
+//#ifdef GBUILD_DLL
+//#define GP_API __declspec(dllexport)
+//#else
+//#define GP_API __declspec(dllimport)
+//#endif
+//#else
+//#define GP_API
+//#endif
 
 /////////////////////////////
 /////////////////////////////

@@ -1,11 +1,11 @@
 #pragma once
 
-#include "renderer/renderer.h"
+#include "grender.h"
 
-class PluginManager;
-#include "plugins/manager.h"
+//class PluginManager;
+//#include "plugins/manager.h"
 
-class GPTool : public Renderer
+class GPTool : public GRender::Application
 {
 public:
     GPTool(void);
@@ -14,14 +14,16 @@ public:
     void ImGuiLayer(void) override;
     void ImGuiMenuLayer(void) override;
 
-    void openMovie(const String &path);
+    //void openMovie(const String &path);
 
-    std::unique_ptr<PluginManager> manager = nullptr;
+    //std::unique_ptr<PluginManager> manager = nullptr;
 
-    std::unique_ptr<Quad> quad = nullptr;
-    std::unique_ptr<Shader> shader = nullptr;
-    std::unique_ptr<Framebuffer> viewBuf = nullptr; // Histograms and viewport
+    //std::unique_ptr<Quad> quad = nullptr;
+    //std::unique_ptr<Shader> shader = nullptr;
+    //std::unique_ptr<Framebuffer> viewBuf = nullptr; // Histograms and viewport
 
-    // flow variables
-    bool viewport_hover = false;
+    //// flow variables
+    //bool viewport_hover = false;
 };
+
+GRender::Application* GRender::createApplication(void) { return new GPTool(); }

@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 3.10)
 ###########################################################
 ## GLM ####################################################
 
-add_library(glm INTERFACE)
-target_include_directories(glm INTERFACE "glm")
+add_library(glm_ INTERFACE)
+target_include_directories(glm_ INTERFACE "glm")
 
 
 ###########################################################

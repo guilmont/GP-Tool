@@ -15,26 +15,18 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 # We are always build the methods project
 add_subdirectory(Methods)
 
-option(GP_TOOL "Build graphical interface" OFF)
+option(GP_TOOL "Build graphical interface" ON)
+option(BUILD_TESTS "Build test programs for trajectory and GP-FBM methods" OFF)
 
-option(BUILD_TESTS "Build test programs for trajectory and GP-FBM methods" ON)
+
+if (GP_TOOL)
+	add_subdirectory(GP-Tool)
+endif()
+
+
 if (BUILD_TESTS)
 	add_subdirectory(Tests)
 endif()
-
-# if (WIN32)
-#     add_compile_definitions(_CRT_SECURE_NO_WARNINGS)  # sprintf and strcpy warnings
-# endif()
-
-#option(HIDPI "Setup scale for High DPI monitors" OFF)
-#if (HIDPI)
-#    add_compile_definitions(DPI_FACTOR=2)
-#else()
-#    add_compile_definitions(DPI_FACTOR=1)
-#endif()
-#
-#option(COMPILE_GUI "Build graphical user interface" ON)
-#option(COMPILE_LIBRARIES "Build shared libraries for batching with C++" ON)
 
 
 

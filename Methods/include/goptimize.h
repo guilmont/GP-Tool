@@ -15,13 +15,13 @@ namespace GOptimize
     {
         VecXd pos;
         double weight;
-        GP_API Vertex(const VecXd &pos, double weight);
+        Vertex(const VecXd &pos, double weight);
 
-        GP_API Vertex(const Vertex &vt);
-        GP_API Vertex(Vertex &&vt);
+        Vertex(const Vertex &vt);
+        Vertex(Vertex &&vt);
 
-        GP_API Vertex &operator=(const Vertex &vt);
-        GP_API Vertex &operator=(Vertex &&vt);
+        Vertex &operator=(const Vertex &vt);
+        Vertex &operator=(Vertex &&vt);
     }; // struct-vertex
 
     /////////////////////////////////////////////
@@ -29,15 +29,15 @@ namespace GOptimize
     class NMSimplex
     {
     public:
-        GP_API NMSimplex(const VecXd &vec, double thres, double step = 1);
-        GP_API NMSimplex(VecXd &&vec, double thres, double step = 1);
+        NMSimplex(const VecXd &vec, double thres, double step = 1);
+        NMSimplex(VecXd &&vec, double thres, double step = 1);
 
-        GP_API void cancel(void) { running = false; }
-        GP_API void setMaxIterations(uint32_t num) { maxIterations = num; }
-        GP_API VecXd getResults(void) const { return params; }
+        void cancel(void) { running = false; }
+        void setMaxIterations(uint32_t num) { maxIterations = num; }
+        VecXd getResults(void) const { return params; }
 
         template <class CL>
-        GP_API bool runSimplex(double (CL::*weight)(const VecXd &), CL *ptr);
+        bool runSimplex(double (CL::*weight)(const VecXd &), CL *ptr);
 
     private:
         uint32_t
