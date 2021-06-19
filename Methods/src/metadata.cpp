@@ -1,6 +1,5 @@
 #include "metadata.h"
 
-
 Metadata::Metadata(Tiffer::Read *tif)
 {
     // Determining movie name
@@ -70,7 +69,7 @@ bool Metadata::parseOME(const std::string &inputString)
     pugi::xml_document doc;
     if (!doc.load_string(inputString.c_str()))
     {
-        pout("ERROR (Metadata::parseOME) ==> Cannot parse OME metadata!! ::", movie_name);
+        gpout("ERROR (Metadata::parseOME) ==> Cannot parse OME metadata!! ::", movie_name);
         return false;
     }
 
@@ -134,7 +133,8 @@ bool Metadata::parseIJ(const std::string &inputString)
 {
     metaString = inputString;
 
-    auto getInfo = [&](const std::string &tag) -> std::string {
+    auto getInfo = [&](const std::string &tag) -> std::string
+    {
         size_t beg = inputString.find(tag);
         if (beg == std::string::npos)
             return "";
@@ -145,7 +145,8 @@ bool Metadata::parseIJ(const std::string &inputString)
         return inputString.substr(beg, end - beg);
     }; // getInfo
 
-    auto help = [](const std::string &value) -> uint32_t {
+    auto help = [](const std::string &value) -> uint32_t
+    {
         if (value.size() == 0)
             return 1;
         else
@@ -166,7 +167,8 @@ bool Metadata::parseIJ_extended(const std::string &inputString)
 {
     metaString = inputString; // hard copy for display in the gui later
 
-    auto getInfo = [&](const std::string &tag) -> std::string {
+    auto getInfo = [&](const std::string &tag) -> std::string
+    {
         size_t beg = inputString.find(tag);
         if (beg == std::string::npos)
             return "";
@@ -237,7 +239,7 @@ const Plane &Metadata::getPlane(uint32_t c, uint32_t z, uint32_t t) const
             return pl;
     }
 
-    pout("WARN (Metadata::getPlane) => No plane was found for (c,z,t): ", c, z, t);
+    gpout("WARN (Metadata::getPlane) => No plane was found for (c,z,t): ", c, z, t);
     return vPlanes.front();
 
 } // getPlane

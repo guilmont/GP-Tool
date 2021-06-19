@@ -2,7 +2,6 @@
 
 #include "header.h"
 
-
 namespace Tiffer
 {
     // Basic sizes in bytes
@@ -44,13 +43,13 @@ namespace Tiffer
         };
 
         uint16_t dir_count = 0;
-        uint32_t offsetNext = 0;                     // Zero for last IFD
+        uint32_t offsetNext = 0;                 // Zero for last IFD
         std::unordered_map<uint16_t, Tag> field; // To store all the tags
 
         std::vector<Buffer> vData;
     };
 
-    class  Read
+    class Read
     {
     public:
         Read(const std::string &movie_path);
@@ -94,7 +93,7 @@ namespace Tiffer
     {
         if (id >= numDir)
         {
-            pout("ERROR (Tiffer::Read::getImage) ==> Number of directories exceeded!");
+            gpout("ERROR (Tiffer::Read::getImage) ==> Number of directories exceeded!");
             return Image<T>(0, 0);
         }
 
@@ -103,7 +102,7 @@ namespace Tiffer
         size_t check = buf.size() / (width * height);
         if (check != sizeof(T))
         {
-            pout("ERROR(Tiffer::Read::getImage) : Movie expects ",check," bytes!!");
+            gpout("ERROR(Tiffer::Read::getImage) : Movie expects ", check, " bytes!!");
             return Image<T>(0, 0);
         }
 

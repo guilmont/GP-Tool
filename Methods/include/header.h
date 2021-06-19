@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <filesystem>
 #include <fstream>
 #include <thread>
 #include <random>
@@ -17,6 +18,8 @@
 #include "Eigen/LU"
 #include "Eigen/Cholesky"
 
+namespace fs = std::filesystem;
+
 using MatXf = Eigen::Matrix<float, -1, -1, Eigen::RowMajor>; // Used for rendering
 using MatXd = Eigen::MatrixXd;
 using VecXd = Eigen::VectorXd;
@@ -28,30 +31,23 @@ using Image = Eigen::Matrix<T, -1, -1>;
 /////////////////////////////
 
 #ifdef WIN32
-   #define GP_API __declspec(dllexport)
+#ifdef GBUILD_DLL
+#define GP_API __declspec(dllexport)
 #else
-   #define GP_API
+#define GP_API __declspec(dllimport)
+#endif
+#else
+#define GP_API
 #endif
 
-//
-//#ifdef WIN32
-//#ifdef GBUILD_DLL
-//#define GP_API __declspec(dllexport)
-//#else
-//#define GP_API __declspec(dllimport)
-//#endif
-//#else
-//#define GP_API
-//#endif
-
 /////////////////////////////
 /////////////////////////////
 
-static void pout() { std::cout << std::endl; }
+static void gpout() { std::cout << std::endl; }
 
-template <typename TP, typename ...Args>
-static void pout(TP data, Args &&...args)
+template <typename TP, typename... Args>
+static void gpout(TP data, Args &&...args)
 {
-    std::cout << data << " ";
-    pout(args...);
+   std::cout << data << " ";
+   gpout(args...);
 }

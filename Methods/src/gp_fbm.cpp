@@ -1,6 +1,5 @@
 #include "gp_fbm.h"
 
-
 ///////////////////////////////////////////////////////////////////////////////
 // HELPER FUNCTIONS
 
@@ -61,6 +60,8 @@ GP_FBM::GP_FBM(const MatXd &mat)
 GP_FBM::GP_FBM(const std::vector<MatXd> &vMat)
 {
     nParticles = uint32_t(vMat.size());
+    route.resize(nParticles);
+
     std::copy(vMat.begin(), vMat.end(), route.begin());
     initialize();
 }
@@ -77,23 +78,24 @@ GP_FBM::DA *GP_FBM::singleModel(uint32_t id)
     vec << log(0.5), log(0.5),
         route[id](0, Track::POSX), route[id](0, Track::POSY);
 
-    GOptimize::NMSimplex nms(vec, thresSimplex);
-    if (!nms.runSimplex(&GP_FBM::weightSingle, this))
+     nms = std::make_unique< GOptimize::NMSimplex>(vec, thresSimplex);
+    if (!nms->runSimplex(&GP_FBM::weightSingle, this))
     {
-        pout("WARN: (GP_FBM::singleModel) Model didn't converge!");
+        gpout("WARN: (GP_FBM::singleModel) Model didn't converge!");
         return nullptr;
     }
 
-    vec = nms.getResults();
-    double eA = exp(vec(1));
+    vec = nms->getResults();
+    nms.release();
 
+    double eA = exp(vec(1));
     v_da[id] = std::make_unique<DA>();
     v_da[id]->D = exp(vec(0));
     v_da[id]->A = 2.0 * eA / (eA + 1.0);
     v_da[id]->mu = {vec[2], vec[3]};
 
-    return v_da[id].get();
 
+    return v_da[id].get();
 }
 
 GP_FBM::CDA *GP_FBM::coupledModel(void)
@@ -101,7 +103,7 @@ GP_FBM::CDA *GP_FBM::coupledModel(void)
 
     if (nParticles < 2)
     {
-        pout("ERROR: (GP_FBM::coupledModel) Cannot run on single trajectory!!");
+        gpout("ERROR: (GP_FBM::coupledModel) Cannot run on single trajectory!!");
         return nullptr;
     }
 
@@ -146,7 +148,7 @@ GP_FBM::CDA *GP_FBM::coupledModel(void)
 
         if (uint32_t(mat.rows()) < minSizePerTraj)
         {
-            pout("WARN: (GP_FBM::coupledModel) Not all trajectories intersect!!");
+            gpout("WARN: (GP_FBM::coupledModel) Not all trajectories intersect!!");
             return nullptr;
         }
 
@@ -183,20 +185,21 @@ GP_FBM::CDA *GP_FBM::coupledModel(void)
     }
 
     // Optimizing dynamics parameters
-    GOptimize::NMSimplex nms(vec, thresSimplex);
-    if (!nms.runSimplex(&GP_FBM::weightCoupled, this))
+    nms = std::make_unique<GOptimize::NMSimplex>(vec, thresSimplex);
+    if (!nms->runSimplex(&GP_FBM::weightCoupled, this))
     {
-        pout("WARN: (GP_FBM::coupledModel) Model didn't converge!");
+        gpout("WARN: (GP_FBM::coupledModel) Model didn't converge!");
         return nullptr;
     }
 
     // Results were successful, let's create the final pointer
-    vec = nms.getResults().array().exp();
+    vec = nms->getResults().array().exp();
+        nms.release();
 
     cpl_da = std::make_unique<CDA>();
 
     // Substrate
-    double *R = vec.data() + 2 * nParticles;
+    double *R = vec.data() + 2 * uint64_t(nParticles);
     cpl_da->DR = R[0];
     cpl_da->AR = 2.0f * R[1] / (1.0f + R[1]);
 
@@ -204,13 +207,19 @@ GP_FBM::CDA *GP_FBM::coupledModel(void)
     cpl_da->da.resize(nParticles);
     for (uint32_t k = 0; k < nParticles; k++)
     {
-        double *lda = vec.data() + 2 * k;
+        double *lda = vec.data() + 2 * uint64_t(k);
         cpl_da->da[k].D = lda[0];
         cpl_da->da[k].A = 2.0 * lda[1] / (1.0 + lda[1]);
     }
 
     return cpl_da.get();
 } // coupledModel
+
+GP_API void GP_FBM::stop(void)
+{
+    if(nms)
+        nms->stop(); 
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // AVERAGE TRAJECTORIES ///////////////////////////////////////////////////////
@@ -385,8 +394,8 @@ const MatXd &GP_FBM::distrib_singleModel(uint32_t sample_size, uint32_t id)
     VecXd vec(4);
     vec << log(da->D), -log(2.0 / da->A - 1.0), da->mu.x, da->mu.y;
 
-    MatXd mcmc = GOptimize::sampleParameters(vec, sample_size,
-                                             &GP_FBM::weightSingle, this);
+
+    MatXd mcmc = GOptimize::sampleParameters(vec, sample_size, &GP_FBM::weightSingle, this);
 
     for (uint32_t k = 0; k < sample_size; k++)
     {

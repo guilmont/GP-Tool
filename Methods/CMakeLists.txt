@@ -17,8 +17,8 @@ add_library(Methods SHARED
 	"include/movie.h"       "src/movie.cpp"
 	"include/metadata.h"    "src/metadata.cpp"
 	"include/align.h"       "src/align.cpp"
-	"include/trajectory.h"  "src/trajectory.cpp"
 	"include/spot.h"        "src/spot.cpp"
+	"include/trajectory.h"  "src/trajectory.cpp"
 	"include/gp_fbm.h"      "src/gp_fbm.cpp"
 )
 

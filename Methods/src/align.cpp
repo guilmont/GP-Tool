@@ -213,7 +213,8 @@ Align::Align(uint32_t nFrames, const MatXd *im1, const MatXd *im2)
     RT = TransformData(uint32_t(im1[0].cols()), uint32_t(im1[0].rows()));
 
     // Setup transform properties
-    auto parallel_image_treatment = [&](uint32_t tid, uint32_t nThr) -> void {
+    auto parallel_image_treatment = [&](uint32_t tid, uint32_t nThr) -> void
+    {
         for (uint32_t k = tid; k < nFrames; k += nThr)
         {
             vIm0[k] = (255.0 * treatImage(im1[k], 3, 5.0, 32, 32)).array().round().cast<uint8_t>();
@@ -346,35 +347,33 @@ bool Align::alignCameras(void)
     VecXd vec(5);
     vec << RT.translate.x, RT.translate.y, RT.rotate.x, RT.rotate.y, RT.rotate.z;
 
-    GOptimize::NMSimplex spx(vec, 1e-8, 15.0);
-    if (!spx.runSimplex(&Align::weightTransRot, this))
+    nms = std::make_unique<GOptimize::NMSimplex>(vec, 1e-8, 15.0);
+    if (!nms->runSimplex(&Align::weightTransRot, this))
         return false;
 
     // Update TransformData
-    vec = spx.getResults();
+    vec = nms->getResults();
 
     RT.translate = {vec(0), vec(1)};
     RT.rotate = {vec(2), vec(3), vec(4)};
     RT.update();
 
     return true;
-
-} 
+}
 
 bool Align::correctAberrations(void)
 {
     VecXd vec(2);
     vec << RT.scale.x, RT.scale.y;
 
-    GOptimize::NMSimplex spx(vec, 1e-8, 0.1);
-    if (!spx.runSimplex(&Align::weightScale, this))
+    nms = std::make_unique<GOptimize::NMSimplex>(vec, 1e-8, 0.1);
+    if (!nms->runSimplex(&Align::weightScale, this))
         return false;
 
     // Saving to main vector
-    vec = spx.getResults();
+    vec = nms->getResults();
     RT.scale = {vec(0), vec(1)};
     RT.update();
-
 
     return true;
 }

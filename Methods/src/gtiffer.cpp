@@ -32,7 +32,8 @@ namespace Tiffer
         table[257] = "EOI";
 
         // lambda functions
-        auto make_number = [&](uint32_t B) -> uint16_t {
+        auto make_number = [&](uint32_t B) -> uint16_t
+        {
             uint16_t val = 0;
             for (uint32_t k = 0; k < B; k++)
                 if (vBool[bCounter + k])
@@ -42,7 +43,8 @@ namespace Tiffer
             return val;
         };
 
-        auto clear_table = [&](void) -> void {
+        auto clear_table = [&](void) -> void
+        {
             B = 9;
             table.resize(258);
         };
@@ -143,7 +145,7 @@ Tiffer::Read::Read(const std::string &movie_path) : movie_path(movie_path)
     if (arq.fail())
     {
         success = false;
-        pout("ERROR (Tiffer::Read) ==> Cannot read file:", movie_path);
+        gpout("ERROR (Tiffer::Read) ==> Cannot read file:", movie_path);
         return;
     }
 
@@ -161,7 +163,7 @@ Tiffer::Read::Read(const std::string &movie_path) : movie_path(movie_path)
     if (get_uint16(2) != 42)
     {
         success = false;
-        pout("ERROR (Tiffer::Read) ==> Not tiff file:", movie_path);
+        gpout("ERROR (Tiffer::Read) ==> Not tiff file:", movie_path);
         return;
     }
 
@@ -202,7 +204,7 @@ Tiffer::Read::Read(const std::string &movie_path) : movie_path(movie_path)
                 else
                 {
                     success = false;
-                    pout("ERROR (Tiffer::Read) ==> Compression format is not supported! ::", movie_path);
+                    gpout("ERROR (Tiffer::Read) ==> Compression format is not supported! ::", movie_path);
                     return;
                 }
 
@@ -211,7 +213,7 @@ Tiffer::Read::Read(const std::string &movie_path) : movie_path(movie_path)
             if (tag == SAMPLESPERPIXEL && value != 1)
             {
                 success = false;
-                pout("ERROR (Tiffer::Read::load) ==> Only grayscale format is supported! ::", movie_path);
+                gpout("ERROR (Tiffer::Read::load) ==> Only grayscale format is supported! ::", movie_path);
                 return;
             }
 
@@ -232,7 +234,7 @@ Tiffer::Read::Read(const std::string &movie_path) : movie_path(movie_path)
                 if (value < 8 || value > 32)
                 {
                     success = false;
-                    pout("ERROR (Tiffer::Read::load) ==> Only 8/16/32 bits grayscale images are accepted! ::", movie_path);
+                    gpout("ERROR (Tiffer::Read::load) ==> Only 8/16/32 bits grayscale images are accepted! ::", movie_path);
                     return;
                 }
 
@@ -265,7 +267,7 @@ std::string Tiffer::Read::getDateTime(void)
 {
     if (vIFD.at(0).field.find(DATETIME) == vIFD.at(0).field.end())
     {
-        pout("WARN (Tiffer::Read::getDateTime) ==> Movie doesn't contain a time stamp ::", movie_path);
+        gpout("WARN (Tiffer::Read::getDateTime) ==> Movie doesn't contain a time stamp ::", movie_path);
         return "";
     }
     else

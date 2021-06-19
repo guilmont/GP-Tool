@@ -14,15 +14,19 @@ public:
 
     GP_API bool successful(void) const { return success; }
 
-    GP_API const Metadata& getMetadata(void) const;
-    GP_API Metadata& getMetadata(void);
+    GP_API const Metadata &getMetadata(void) const;
+    GP_API Metadata &getMetadata(void);
 
+    GP_API const MatXd& getImage(uint32_t channel, uint32_t frame);
     GP_API const MatXd &getImage(uint32_t channel, uint32_t frame) const;
 
 private:
     bool success = true;
 
     std::unique_ptr<Metadata> meta = nullptr;
-    std::vector<MatXd> vImg;
+
+    // We are going to setup for lazy loading
+    std::unique_ptr<Tiffer::Read> tif = nullptr;
+    std::vector<std::unique_ptr<MatXd>> vImg;
 
 }; // class Trajectory

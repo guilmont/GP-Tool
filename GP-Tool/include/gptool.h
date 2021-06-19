@@ -1,29 +1,48 @@
 #pragma once
 
-#include "grender.h"
+#include "gpch.h"
 
-//class PluginManager;
-//#include "plugins/manager.h"
+#include "mailbox.h"
+#include "moviePlugin.h"
+#include "alignPlugin.h"
+#include "trajPlugin.h"
+#include "gpPlugin.h"
 
 class GPTool : public GRender::Application
 {
 public:
     GPTool(void);
+    ~GPTool(void);
 
+    // Plugin related functions
+    void showHeader(void);
+    void showWindows(void);
+    void showProperties(void);
+    void updateAll(float deltaTime);
+
+    void addPlugin(const std::string& name, Plugin* plugin);
+    Plugin* getPlugin(const std::string& name);
+    void setActive(const std::string& name);
+    
+    // Main loop functions
     void onUserUpdate(float deltaTime) override;
     void ImGuiLayer(void) override;
     void ImGuiMenuLayer(void) override;
 
-    //void openMovie(const String &path);
+    Mailbox mbox;
+    std::unique_ptr<GRender::Quad> quad = nullptr;
+    std::unique_ptr<GRender::Framebuffer> viewBuf = nullptr; // Histograms and viewport
 
-    //std::unique_ptr<PluginManager> manager = nullptr;
+private:
+    Plugin* pActive = nullptr;
+    std::map<std::string, std::unique_ptr<Plugin>> plugins;
 
-    //std::unique_ptr<Quad> quad = nullptr;
-    //std::unique_ptr<Shader> shader = nullptr;
-    //std::unique_ptr<Framebuffer> viewBuf = nullptr; // Histograms and viewport
+    
+    // flow variables
+    bool viewport_hover = false;
 
-    //// flow variables
-    //bool viewport_hover = false;
+private:
+    void openMovie(const std::string &path);
+
 };
 
-GRender::Application* GRender::createApplication(void) { return new GPTool(); }

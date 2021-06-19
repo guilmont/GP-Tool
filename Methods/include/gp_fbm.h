@@ -35,6 +35,7 @@ public:
 
     GP_API DA *singleModel(uint32_t id = 0);
     GP_API CDA *coupledModel(void);
+    GP_API void stop(void);
 
     GP_API const MatXd &distrib_singleModel(uint32_t sample_size = 10000, uint32_t id = 0);
     GP_API const MatXd &distrib_coupledModel(uint32_t sample_size = 10000);
@@ -43,6 +44,7 @@ public:
     GP_API const MatXd &estimateSubstrateMovement(bool redo = false);
 
     GP_API uint32_t getNumParticles(void) const { return nParticles; }
+
 
 private:
 
@@ -67,6 +69,8 @@ private:
     uint32_t runID;
     double thresSimplex = 1e-4; // precision for simplex optimization
     const uint32_t minSizePerTraj = 50;
+
+    std::unique_ptr<GOptimize::NMSimplex> nms = nullptr;
 
     std::vector<std::unique_ptr<DA>> v_da;
     std::unique_ptr<CDA> cpl_da = nullptr;

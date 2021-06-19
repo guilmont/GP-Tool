@@ -18,24 +18,24 @@ int main()
 
     const Metadata &meta = mov.getMetadata();
 
-    pout("Metadata:");
-    pout("acquisitionDate:", meta.acquisitionDate);
-    pout("SignificantBits:", meta.SignificantBits);
-    pout("DimensionOrder:", meta.DimensionOrder);
-    pout("SizeX:", meta.SizeX);
-    pout("SizeY:", meta.SizeY);
-    pout("SizeC:", meta.SizeC);
-    pout("SizeZ:", meta.SizeZ);
-    pout("SizeT:", meta.SizeT);
-    pout("PhysicalSizeXY:", meta.PhysicalSizeXY, meta.PhysicalSizeXYUnit);
-    pout("PhysicalSizeZ:", meta.PhysicalSizeZ, meta.PhysicalSizeZUnit);
-    pout("TimeIncrement:", meta.TimeIncrement, meta.TimeIncrementUnit);
+    gpout("Metadata:");
+    gpout("acquisitionDate:", meta.acquisitionDate);
+    gpout("SignificantBits:", meta.SignificantBits);
+    gpout("DimensionOrder:", meta.DimensionOrder);
+    gpout("SizeX:", meta.SizeX);
+    gpout("SizeY:", meta.SizeY);
+    gpout("SizeC:", meta.SizeC);
+    gpout("SizeZ:", meta.SizeZ);
+    gpout("SizeT:", meta.SizeT);
+    gpout("PhysicalSizeXY:", meta.PhysicalSizeXY, meta.PhysicalSizeXYUnit);
+    gpout("PhysicalSizeZ:", meta.PhysicalSizeZ, meta.PhysicalSizeZUnit);
+    gpout("TimeIncrement:", meta.TimeIncrement, meta.TimeIncrementUnit);
 
-    pout("Channels:");
+    gpout("Channels:");
     for (auto var : meta.nameCH)
-        pout(" ::", var);
+        gpout(" ::", var);
 
-    pout();
+    gpout();
 
     const Track &green = traj.getTrack(0);
     std::ofstream arq(runpath + "/traj_green.txt");

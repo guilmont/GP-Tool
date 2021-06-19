@@ -16,7 +16,6 @@ struct TransformData
     glm::mat3 itrf; // Transform matrix x to 0
 
     GP_API void update(void);
-
 };
 
 class Align
@@ -30,9 +29,17 @@ public:
 
     GP_API const TransformData &getTransformData(void) const { return RT; }
 
+    void stop(void)
+    {
+        if (nms)
+            nms->stop();
+    }
+
 private:
     TransformData RT;                       // Transformation parameters
     std::vector<Image<uint8_t>> vIm0, vIm1; // Treated images
+
+    std::unique_ptr<GOptimize::NMSimplex> nms = nullptr;
 
     // Parallel variables
     glm::mat3 itrf;

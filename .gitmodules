@@ -7,3 +7,6 @@
 [submodule "GP-Tool/vendor/GRender"]
 	path = GP-Tool/vendor/GRender
 	url = https://github.com/guilmont/GRender.git
+[submodule "GP-Tool/vendor/jsoncpp"]
+	path = GP-Tool/vendor/jsoncpp
+	url = https://github.com/open-source-parsers/jsoncpp.git

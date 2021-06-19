@@ -32,7 +32,7 @@ namespace GOptimize
         NMSimplex(const VecXd &vec, double thres, double step = 1);
         NMSimplex(VecXd &&vec, double thres, double step = 1);
 
-        void cancel(void) { running = false; }
+        void stop(void) { running = false; }
         void setMaxIterations(uint32_t num) { maxIterations = num; }
         VecXd getResults(void) const { return params; }
 
@@ -62,8 +62,7 @@ namespace GOptimize
     // This function will use markov chain monte carlo to estimate the probability
     // distribution of each parameter
     template <class CL>
-    MatXd sampleParameters(const VecXd &params, const uint32_t sample_size,
-                           double (CL::*func)(const VecXd &), CL *ptr);
+    MatXd sampleParameters(const VecXd &params, const uint32_t sample_size, double (CL::*func)(const VecXd &), CL *ptr);
 
 } // namespace GOptimize
 
@@ -158,8 +157,7 @@ bool GOptimize::NMSimplex::runSimplex(double (CL::*weight)(const VecXd &), CL *p
 
 
 template <class CL>
-static MatXd GOptimize::sampleParameters(const VecXd &params, const uint32_t sample_size,
-                                  double (CL::*func)(const VecXd &), CL *ptr)
+static MatXd GOptimize::sampleParameters(const VecXd &params, const uint32_t sample_size, double (CL::*func)(const VecXd &), CL *ptr)
 {
     // This functions will sample the used parameters via MCMC.
 

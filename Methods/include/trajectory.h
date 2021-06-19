@@ -6,7 +6,8 @@
 
 struct Track
 {
-    std::string path, description = "No description";
+    fs::path path;
+    std::string description = "No description";
 
     std::vector<MatXd> traj;
 
@@ -33,9 +34,12 @@ public:
     GP_API ~Trajectory(void) = default;
 
     uint32_t spotSize = 3;
-    GP_API  bool useICY(const std::string &xmlTrack, uint32_t ch = 0);
-    GP_API bool useCSV(const std::string &csvTrack, uint32_t ch = 0);
+    GP_API  bool useICY(const fs::path &xmlTrack, uint32_t ch = 0);
+    GP_API bool useCSV(const fs::path &csvTrack, uint32_t ch = 0);
     GP_API void enhanceTracks(void);
+    
+    GP_API float getProgress(void) const { return progress;  }
+    GP_API void stop(void) { running = false; }
 
     GP_API uint32_t getNumTracks(void) const { return uint32_t(m_vTrack.size()); }
 
@@ -49,5 +53,8 @@ private:
 private:
     const Movie *movie = nullptr;
     std::vector<Track> m_vTrack;
+
+    bool running = false;
+    float progress = 0.0f;
 
 };

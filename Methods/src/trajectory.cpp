@@ -7,7 +7,7 @@ static void removeRow(MatXd &mat, int32_t row)
 
     if (row < numRows)
         mat.block(row, 0, numRows - row, numCols) =
-            mat.block(row + 1, 0, numRows - row, numCols);
+            mat.block(row + int32_t(1), 0, numRows - row, numCols);
 
     mat.conservativeResize(numRows, numCols);
 }
@@ -24,13 +24,13 @@ static glm::dvec2 thresOutliers(VecXd vec)
     return {vec(N) - 2.0 * fifty, vec(N) + 2.0 * fifty};
 } 
 
-static MatXd loadFromTextFile(const std::string &path, char delimiter, uint32_t skip_rows, uint32_t skip_cols)
+static MatXd loadFromTextFile(const fs::path &path, char delimiter, uint32_t skip_rows, uint32_t skip_cols)
 {
 
-    std::ifstream arq(path, std::fstream::binary);
+    std::ifstream arq(path.string().c_str(), std::fstream::binary);
     if (arq.fail())
     {
-        pout("ERROR (Trajectory::useCSV) ==> Cannot open:", path);
+        gpout("ERROR (Trajectory::useCSV) ==> Cannot open:", path);
         return MatXd(0, 0);
     }
 
@@ -52,7 +52,7 @@ static MatXd loadFromTextFile(const std::string &path, char delimiter, uint32_t 
         pos = data.find('\n', pos) + 1;
         if (pos == std::string::npos)
         {
-            pout("ERROR (Trajectory::useCSV) ==> More skip_rows than number of rows! ::", path);
+            gpout("ERROR (Trajectory::useCSV) ==> More skip_rows than number of rows! ::", path);
             return MatXd(0, 0);
         }
     } // loop-skip-rows
@@ -99,7 +99,7 @@ static MatXd loadFromTextFile(const std::string &path, char delimiter, uint32_t 
 
     if (sum == 0)
     {
-        pout("ERROR (Trajectory::useCSV) ==> Input matrix is empty!! ::", path);
+        gpout("ERROR (Trajectory::useCSV) ==> Input matrix is empty!! ::", path);
         return MatXd(0, 0);
     }
 
@@ -109,7 +109,7 @@ static MatXd loadFromTextFile(const std::string &path, char delimiter, uint32_t 
 
     if (sum != mat.at(0).size() * mat.size())
     {
-        pout("ERROR (Trajectory::useCSV) ==> Input txt have rows of different widths!! ::", path); 
+        gpout("ERROR (Trajectory::useCSV) ==> Input txt have rows of different widths!! ::", path); 
         return MatXd(0, 0);
     }
 
@@ -124,138 +124,6 @@ static MatXd loadFromTextFile(const std::string &path, char delimiter, uint32_t 
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-// PRIVATE FUNCTIONS
-
-void Trajectory::enhancePoint(uint32_t trackID, uint32_t trajID, uint32_t tid)
-{
-
-    const uint32_t sRoi = 2 * spotSize + 1,
-                   nThreads = std::thread::hardware_concurrency();
-
-    MatXd &route = m_vTrack[trackID].traj[trajID];
-
-    for (uint32_t pt = tid; pt < uint32_t(route.rows()); pt += nThreads)
-    {
-
-        // Get frame and coordinates
-        int frame = int(route(pt, Track::FRAME)),
-            px = int(route(pt, Track::POSX)),
-            py = int(route(pt, Track::POSY));
-
-        // Loading a pointer to image
-        const MatXd &img = movie->getImage(trackID, frame);
-
-        // Let's check if all ROI pixels are within the image
-        int px_o = px - spotSize, px_f = px_o + sRoi,
-            py_o = py - spotSize, py_f = py_o + sRoi;
-
-        bool check = true;
-        check &= px_o >= 0;
-        check &= px_f < img.cols();
-        check &= py_o >= 0;
-        check &= py_f < img.rows();
-
-        if (!check)
-        {
-            // Cannot really work in this situation
-            route(pt, 0) = -1;
-            continue;
-        }
-
-        MatXd roi = img.block(py - spotSize, px - spotSize, sRoi, sRoi);
-
-        // Correcting contrast
-        double bot = roi.minCoeff();
-        double top = roi.maxCoeff();
-
-        roi.array() -= bot;
-        roi.array() *= 255.0f / (top - bot);
-
-        // Sending roi to Spot class for refinement
-        Spot spot(roi);
-        if (spot.successful()) // Everything went well
-        {
-            const SpotInfo &info = spot.getSpotInfo();
-
-            // recentering posision
-            route(pt, Track::POSX) = px + 0.5 + (info.mu.x - 0.5 * sRoi);
-            route(pt, Track::POSY) = py + 0.5 + (info.mu.y - 0.5 * sRoi);
-
-            route(pt, Track::ERRX) = info.error.x;
-            route(pt, Track::ERRY) = info.error.y;
-            route(pt, Track::SIZEX) = 3.0 * info.size.x;
-            route(pt, Track::SIZEY) = 3.0 * info.size.y;
-            route(pt, Track::BG) = info.signal.x;
-            route(pt, Track::SIGNAL) = info.signal.y;
-        }
-        else
-            route(pt, 0) = -1;
-
-    } // loop-rows
-
-}
-
-void Trajectory::enhanceTrajectory(uint32_t trackID, uint32_t trajID)
-{
-
-    // Updating localization and estimating error
-    const uint32_t nThreads = std::thread::hardware_concurrency();
-    std::vector<std::thread> vThr(nThreads);
-
-    for (uint32_t tid = 0; tid < nThreads; tid++)
-        vThr[tid] = std::thread(&Trajectory::enhancePoint, this, trackID, trajID, tid);
-
-    for (std::thread &thr : vThr)
-        thr.join();
-
-    // Removing rows that didn't converge during enhancement
-    MatXd &route = m_vTrack[trackID].traj[trajID];
-
-    int32_t nRows = int32_t(route.rows());
-    for (int32_t k = nRows - 1; k >= 0; k--)
-        if (route(k, 0) < 0)
-            removeRow(route, k);
-
-    nRows = int32_t(route.rows());
-    if (nRows < 10)
-        return;
-
-    glm::dvec2
-        thresSX = thresOutliers(route.col(Track::SIZEX)),
-        thresSY = thresOutliers(route.col(Track::SIZEY)),
-        thresEX = thresOutliers(route.col(Track::ERRX)),
-        thresEY = thresOutliers(route.col(Track::ERRY)),
-        thresSig = thresOutliers(route.col(Track::SIGNAL)),
-        thresBG = thresOutliers(route.col(Track::BG));
-
-    for (int32_t k = nRows - 1; k >= 0; k--)
-    {
-        bool check = true;
-        check &= route(k, Track::SIZEX) < thresSX.y;
-        check &= route(k, Track::SIZEX) > thresSX.x;
-
-        check &= route(k, Track::SIZEY) < thresSY.y;
-        check &= route(k, Track::SIZEY) > thresSY.x;
-
-        check &= route(k, Track::ERRX) < thresEX.y;
-        check &= route(k, Track::ERRX) > thresEX.x;
-
-        check &= route(k, Track::ERRY) < thresEY.y;
-        check &= route(k, Track::ERRY) > thresEY.x;
-
-        check &= route(k, Track::BG) < thresBG.y;
-        check &= route(k, Track::BG) > thresBG.x;
-
-        check &= route(k, Track::SIGNAL) < thresSig.y;
-        check &= route(k, Track::SIGNAL) > thresSig.x;
-
-        if (!check)
-            removeRow(route, k);
-    }
-} 
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 
 Trajectory::Trajectory(const Movie *mov) : movie(mov)
@@ -265,20 +133,20 @@ Trajectory::Trajectory(const Movie *mov) : movie(mov)
 }
 
 
-bool Trajectory::useICY(const std::string &xmlTrack, uint32_t ch)
+bool Trajectory::useICY(const fs::path &xmlTrack, uint32_t ch)
 {
     const Metadata &meta = movie->getMetadata();
 
     pugi::xml_document doc;
     if (!doc.load_file(xmlTrack.c_str()))
     {
-        pout("ERROR (Trajectory::useICY_XML) ==> Couldn't open", xmlTrack);
+        gpout("ERROR (Trajectory::useICY_XML) ==> Couldn't open", xmlTrack.string());
         return false;
     }
 
     pugi::xml_node group = doc.child("root").child("trackgroup");
 
-    m_vTrack[ch].path = std::move(xmlTrack);
+    m_vTrack[ch].path = xmlTrack;
     m_vTrack[ch].description = group.attribute("description").as_string();
 
     for (auto xtr : group.children("track"))
@@ -311,7 +179,7 @@ bool Trajectory::useICY(const std::string &xmlTrack, uint32_t ch)
     return true;
 }
 
-bool Trajectory::useCSV(const std::string &csvTrack, uint32_t ch)
+bool Trajectory::useCSV(const fs::path &csvTrack, uint32_t ch)
 {
 
     // mov is not const because we might want to update metadata later
@@ -324,7 +192,7 @@ bool Trajectory::useCSV(const std::string &csvTrack, uint32_t ch)
         return false;
 
     Track track;
-    track.path = std::move(csvTrack);
+    track.path = csvTrack;
 
     // Splitting particles
 
@@ -369,6 +237,17 @@ bool Trajectory::useCSV(const std::string &csvTrack, uint32_t ch)
 
 void Trajectory::enhanceTracks(void)
 {
+    running = true;
+    progress = 0.0f;
+
+    // calculating total number of tracks to enhance
+    float dp = 0.0f;
+    for (uint32_t ch = 0; ch < m_vTrack.size(); ch++)
+       dp += m_vTrack[ch].traj.size();
+
+
+    dp = 1.0f / dp;
+
     for (uint32_t ch = 0; ch < m_vTrack.size(); ch++)
     {
         Track &track = m_vTrack[ch];
@@ -378,7 +257,148 @@ void Trajectory::enhanceTracks(void)
             continue;
 
         for (uint32_t k = 0; k < N; k++)
+        {
             enhanceTrajectory(ch, k);
+            progress += dp;
+        }
 
     }
+
+    progress = 1.0f;
 } 
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+// PRIVATE FUNCTIONS
+
+void Trajectory::enhancePoint(uint32_t trackID, uint32_t trajID, uint32_t tid)
+{
+
+    const uint32_t sRoi = 2 * spotSize + 1,
+        nThreads = std::thread::hardware_concurrency();
+
+    MatXd& route = m_vTrack[trackID].traj[trajID];
+
+    for (uint32_t pt = tid; pt < uint32_t(route.rows()); pt += nThreads)
+    {
+        if (!running)
+            return;
+
+        // Get frame and coordinates
+        int32_t frame = int(route(pt, Track::FRAME)),
+            px = int(route(pt, Track::POSX)),
+            py = int(route(pt, Track::POSY));
+
+        // Loading a pointer to image
+        const MatXd& img = movie->getImage(trackID, frame);
+
+        // Let's check if all ROI pixels are within the image
+        int32_t px_o = px - spotSize, px_f = px_o + sRoi,
+            py_o = py - spotSize, py_f = py_o + sRoi;
+
+        bool check = true;
+        check &= px_o >= 0;
+        check &= px_f < img.cols();
+        check &= py_o >= 0;
+        check &= py_f < img.rows();
+
+        if (!check)
+        {
+            // Cannot really work in this situation
+            route(pt, 0) = -1;
+            continue;
+        }
+
+        MatXd roi = img.block(uint32_t(py_o), uint32_t(px_o), sRoi, sRoi);
+
+        // Correcting contrast
+        double bot = roi.minCoeff();
+        double top = roi.maxCoeff();
+
+        roi.array() -= bot;
+        roi.array() *= 255.0f / (top - bot);
+
+        // Sending roi to Spot class for refinement
+        Spot spot(roi);
+        if (spot.successful()) // Everything went well
+        {
+            const SpotInfo& info = spot.getSpotInfo();
+
+            // recentering posision
+            route(pt, Track::POSX) = px + 0.5 + (info.mu.x - 0.5 * sRoi);
+            route(pt, Track::POSY) = py + 0.5 + (info.mu.y - 0.5 * sRoi);
+
+            route(pt, Track::ERRX) = info.error.x;
+            route(pt, Track::ERRY) = info.error.y;
+            route(pt, Track::SIZEX) = 3.0 * info.size.x;
+            route(pt, Track::SIZEY) = 3.0 * info.size.y;
+            route(pt, Track::BG) = info.signal.x;
+            route(pt, Track::SIGNAL) = info.signal.y;
+        }
+        else
+            route(pt, 0) = -1;
+
+    } // loop-rows
+
+}
+
+void Trajectory::enhanceTrajectory(uint32_t trackID, uint32_t trajID)
+{
+
+    // Updating localization and estimating error
+    const uint32_t nThreads = std::thread::hardware_concurrency();
+    std::vector<std::thread> vThr(nThreads);
+
+    for (uint32_t tid = 0; tid < nThreads; tid++)
+        vThr[tid] = std::thread(&Trajectory::enhancePoint, this, trackID, trajID, tid);
+
+    for (std::thread& thr : vThr)
+        thr.join();
+
+    // Removing rows that didn't converge during enhancement
+    MatXd& route = m_vTrack[trackID].traj[trajID];
+
+    int32_t nRows = int32_t(route.rows());
+    for (int32_t k = nRows - 1; k >= 0; k--)
+        if (route(k, 0) < 0)
+            removeRow(route, k);
+
+    nRows = int32_t(route.rows());
+    if (nRows < 10)
+        return;
+
+    glm::dvec2
+        thresSX = thresOutliers(route.col(Track::SIZEX)),
+        thresSY = thresOutliers(route.col(Track::SIZEY)),
+        thresEX = thresOutliers(route.col(Track::ERRX)),
+        thresEY = thresOutliers(route.col(Track::ERRY)),
+        thresSig = thresOutliers(route.col(Track::SIGNAL)),
+        thresBG = thresOutliers(route.col(Track::BG));
+
+    for (int32_t k = nRows - 1; k >= 0; k--)
+    {
+        bool check = true;
+        check &= route(k, Track::SIZEX) < thresSX.y;
+        check &= route(k, Track::SIZEX) > thresSX.x;
+
+        check &= route(k, Track::SIZEY) < thresSY.y;
+        check &= route(k, Track::SIZEY) > thresSY.x;
+
+        check &= route(k, Track::ERRX) < thresEX.y;
+        check &= route(k, Track::ERRX) > thresEX.x;
+
+        check &= route(k, Track::ERRY) < thresEY.y;
+        check &= route(k, Track::ERRY) > thresEY.x;
+
+        check &= route(k, Track::BG) < thresBG.y;
+        check &= route(k, Track::BG) > thresBG.x;
+
+        check &= route(k, Track::SIGNAL) < thresSig.y;
+        check &= route(k, Track::SIGNAL) > thresSig.x;
+
+        if (!check)
+            removeRow(route, k);
+    }
+}
