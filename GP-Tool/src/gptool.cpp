@@ -1,10 +1,9 @@
 #include "gptool.h"
 
-
 GPTool::GPTool(void)
 {
     initialize("GP-Tool", 1200 * DPI_FACTOR, 800 * DPI_FACTOR);
-   
+
     uint32_t cor = 0x999999ff;
     quad = std::make_unique<GRender::Quad>();
     viewBuf = std::make_unique<GRender::Framebuffer>(1, 1);
@@ -25,7 +24,7 @@ GPTool::GPTool(void)
 GPTool::~GPTool(void)
 {
     // Releasing all plugins
-    for (auto& [name, ptr] : plugins)
+    for (auto &[name, ptr] : plugins)
         if (ptr)
             ptr.release();
 }
@@ -35,16 +34,16 @@ void GPTool::showHeader(void)
     ImGui::Begin("Plugins");
 
     float width = ImGui::GetContentRegionAvailWidth();
-    ImVec2 buttonSize{ width, 40 * DPI_FACTOR };
+    ImVec2 buttonSize{width, 40 * DPI_FACTOR};
 
     ImVec4
-        deactivated{ 0.13f, 0.16f, 0.3f, 1.f },
-        chosenColor{ 0.1f, 0.6f, 0.1f, 1.0f },
-        hoverColor{ 0.2f, 0.7f, 0.2f, 1.0f };
+        deactivated{0.13f, 0.16f, 0.3f, 1.f},
+        chosenColor{0.1f, 0.6f, 0.1f, 1.0f},
+        hoverColor{0.2f, 0.7f, 0.2f, 1.0f};
 
     fonts.push("bold");
 
-    for (auto const& [name, ptr] : plugins)
+    for (auto const &[name, ptr] : plugins)
     {
         bool check = (pActive == ptr.get()) && ptr;
 
@@ -75,7 +74,7 @@ void GPTool::showHeader(void)
 
 void GPTool::showWindows(void)
 {
-    for (auto& [name, ptr] : plugins)
+    for (auto &[name, ptr] : plugins)
         if (ptr)
             ptr->showWindows();
 }
@@ -94,18 +93,16 @@ void GPTool::showProperties(void)
 
 void GPTool::updateAll(float deltaTime)
 {
-    for (auto& [name, ptr] : plugins)
+    for (auto &[name, ptr] : plugins)
         if (ptr)
             ptr->update(deltaTime);
 }
 
-void GPTool::addPlugin(const std::string& name, Plugin* plugin) { plugins[name].reset(plugin); }
+void GPTool::addPlugin(const std::string &name, Plugin *plugin) { plugins[name].reset(plugin); }
 
-Plugin* GPTool::getPlugin(const std::string& name) { return plugins[name].get(); }
+Plugin *GPTool::getPlugin(const std::string &name) { return plugins[name].get(); }
 
-void GPTool::setActive(const std::string& name) { pActive = plugins[name].get(); }
-
-
+void GPTool::setActive(const std::string &name) { pActive = plugins[name].get(); }
 
 void GPTool::onUserUpdate(float deltaTime)
 {
@@ -116,25 +113,22 @@ void GPTool::onUserUpdate(float deltaTime)
 
     // key combination for opening movie
     if (ctrl & O)
-        dialog.createDialog(GDialog::OPEN, "Choose TIF file...", {"tif", "ome.tif"}, this, 
-            [](const std::string &path, void *ptr) -> void {reinterpret_cast<GPTool *>(ptr)->openMovie(path); });
+        dialog.createDialog(GDialog::OPEN, "Choose TIF file...", {"tif", "ome.tif"}, this,
+                            [](const std::string &path, void *ptr) -> void { reinterpret_cast<GPTool *>(ptr)->openMovie(path); });
 
-    //// key combination to save data
-    //if (ctrl & S)
-    //    dialog.createDialog(GDialog::SAVE, "Save data...", {".json"}, this,
-    //                        [](const std::string &path, void *ptr) -> void
-    //                        {
-    //                            std::thread([](PluginManager *manager, const std::string &path) -> void
-    //                                        { manager->saveJSON(path); },
-    //                                        (PluginManager *)ptr, path)
-    //                                .detach();
-    //                        });
+    // key combination to save data
+    if (ctrl & S)
+       dialog.createDialog(GDialog::SAVE, "Save data...", {"json"}, this,
+                           [](const std::string &path, void *ptr) -> void
+                           {
+                               std::thread([](GPTool *tool, const std::string &path) -> void { tool->saveJSON(path); },
+                                           reinterpret_cast<GPTool *>(ptr), path).detach();
+                           });
 
     ///////////////////////////////////////////////////////
     // key combination open trajectory
     if ((ctrl & T) && plugins["TRAJECTORY"])
-        reinterpret_cast<TrajPlugin*>(plugins["TRAJECTORY"].get())->loadTracks();
-            
+        reinterpret_cast<TrajPlugin *>(plugins["TRAJECTORY"].get())->loadTracks();
 
     if (viewport_hover)
     {
@@ -163,9 +157,9 @@ void GPTool::onUserUpdate(float deltaTime)
     glad_glClear(GL_COLOR_BUFFER_BIT);
     glad_glClearColor(0.6f, 0.6f, 0.6f, 1.0f);
 
-    shader.useProgram("viewport");  // chooseing rendering program
-    updateAll(deltaTime);           // Updateing all plugins
-    quad->draw();                   // rendering final image
+    shader.useProgram("viewport"); // chooseing rendering program
+    updateAll(deltaTime);          // Updateing all plugins
+    quad->draw();                  // rendering final image
     viewBuf->unbind();
 
 } // function
@@ -206,43 +200,39 @@ void GPTool::ImGuiLayer(void)
     viewport_hover = ImGui::IsWindowHovered();
 
     ImGui::End();
-
-
 }
 
 void GPTool::ImGuiMenuLayer(void)
 {
     if (ImGui::BeginMenu("File"))
     {
-        if (ImGui::MenuItem("Open movie..."))
+        if (ImGui::MenuItem("Open movie...", "Ctrl+O"))
             dialog.createDialog(GDialog::OPEN, "Choose TIF file...", {"tif", "ome.tif"}, this,
-                                [](const std::string &path, void *ptr) -> void { reinterpret_cast<GPTool *>(ptr)->openMovie(path); });
+                                [](const std::string &path, void *ptr) -> void{ reinterpret_cast<GPTool *>(ptr)->openMovie(path); });
 
-        if (ImGui::MenuItem("Load trajectories...", NULL, nullptr, plugins["TRAJECTORY"] != nullptr))
-            reinterpret_cast<TrajPlugin*>(plugins["TRAJECTORY"].get())->loadTracks();
+        if (ImGui::MenuItem("Load trajectories...", "Ctrl+T", nullptr, plugins["TRAJECTORY"] != nullptr))
+            reinterpret_cast<TrajPlugin *>(plugins["TRAJECTORY"].get())->loadTracks();
 
-    //    if (ImGui::MenuItem("Save as ...", NULL, nullptr))
-    //        dialog.createDialog(GDialog::SAVE, "Choose TIF file...", {".json"}, manager.get(),
-    //                            [](const std::string &path, void *ptr) -> void
-    //                            {
-    //                                std::thread([](PluginManager *manager, const std::string &path) -> void
-    //                                            { manager->saveJSON(path); },
-    //                                            (PluginManager *)ptr, path)
-    //                                    .detach();
-    //                            });
+        if (ImGui::MenuItem("Save as ...", "Ctrl+S"))
+            dialog.createDialog(GDialog::SAVE, "Choose TIF file...", {"json"}, this,
+                                [](const std::string &path, void *ptr) -> void
+                                {
+                                    std::thread([](GPTool *tool, const std::string &path) -> void { tool->saveJSON(path); },
+                                    reinterpret_cast<GPTool *>(ptr), path).detach();
+                                });
 
         if (ImGui::MenuItem("Exit"))
             closeApp();
 
         ImGui::EndMenu();
-    } 
+    }
 
     if (ImGui::BeginMenu("About"))
     {
         if (ImGui::MenuItem("Show mailbox"))
             mbox.setActive();
 
-          if (ImGui::MenuItem("How to cite"))
+        if (ImGui::MenuItem("How to cite"))
             mbox.createInfo("Refer to paper at https://doi.org/10.1101/2021.03.16.435699");
 
         if (ImGui::MenuItem("Documentation"))
@@ -250,46 +240,86 @@ void GPTool::ImGuiMenuLayer(void)
 
         ImGui::EndMenu();
     }
-
-} 
-
+}
 
 /////////////////////////////////////
 
 void GPTool::openMovie(const std::string &path)
 {
 
-    std::thread([](GPTool *tool, const std::string &path) -> void {
-       
-        MoviePlugin *movpl = new MoviePlugin(path, tool);
+    std::thread([](GPTool *tool, const std::string &path) -> void
+                {
+                    MoviePlugin *movpl = new MoviePlugin(path, tool);
 
-        if (movpl->successful())
-        {
-            tool->camera.reset();
+                    if (movpl->successful())
+                    {
+                        tool->camera.reset();
 
+                        // Including movie plugin into the manager
+                        tool->addPlugin("MOVIE", movpl);
+                        tool->setActive("MOVIE");
 
-            // Including movie plugin into the manager
-            tool->addPlugin("MOVIE", movpl);
-            tool->setActive("MOVIE");
+                        // Determine if we need the alignment plugin
+                        const Movie *movie = movpl->getMovie();
+                        if (movie->getMetadata().SizeC > 1)
+                        {
+                            AlignPlugin *alg = new AlignPlugin(movie, tool);
+                            tool->addPlugin("ALIGNMENT", alg);
+                        }
 
-            // Determine if we need the alignment plugin
-            const Movie *movie = movpl->getMovie();
-            if (movie->getMetadata().SizeC > 1)
-            {
-                AlignPlugin *alg = new AlignPlugin(movie, tool);
-                tool->addPlugin("ALIGNMENT", alg);
-            }
+                        // trajectory plugin
+                        TrajPlugin *traj = new TrajPlugin(movie, tool);
+                        tool->addPlugin("TRAJECTORY", traj);
 
-            // trajectory plugin
-            TrajPlugin *traj = new TrajPlugin(movie, tool);
-            tool->addPlugin("TRAJECTORY", traj);
-
-            // Gaussian process plugin
-            GPPlugin *gp = new GPPlugin(tool);
-            tool->addPlugin("GPROCESS", gp);
-        }
-        else
-            delete movpl;
-
-    },this, path).detach();
+                        // Gaussian process plugin
+                        GPPlugin *gp = new GPPlugin(tool);
+                        tool->addPlugin("GPROCESS", gp);
+                    }
+                    else
+                        delete movpl;
+                },
+                this, path)
+        .detach();
 }
+
+void GPTool::saveJSON(const std::string &path)
+{
+
+    Json::Value output;
+
+    Plugin *pgl = plugins["MOVIE"].get();
+    if (pgl)
+        pgl->saveJSON(output);
+    else
+    {
+        mbox.createInfo("Nothing to be save!!");
+        return;
+    }
+
+    pgl = plugins["ALIGNMENT"].get();
+    if (pgl)
+        pgl->saveJSON(output["Alignment"]);
+
+    pgl = plugins["TRAJECTORY"].get();
+    if (pgl)
+    {
+        Json::Value aux;
+        if (pgl->saveJSON(aux))
+            output["Trajectory"] = std::move(aux);
+    }
+
+    pgl = plugins["GPROCESS"].get();
+    if (pgl)
+    {
+        Json::Value aux;
+        if (pgl->saveJSON(aux))
+            output["GProcess"] = std::move(aux);
+    }
+
+    std::ofstream arq(path);
+    arq << output;
+    arq.close();
+
+    mbox.createInfo("File saved to '" + path + "'");
+
+} // saveJSON

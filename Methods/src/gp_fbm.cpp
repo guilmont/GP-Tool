@@ -78,7 +78,7 @@ GP_FBM::DA *GP_FBM::singleModel(uint32_t id)
     vec << log(0.5), log(0.5),
         route[id](0, Track::POSX), route[id](0, Track::POSY);
 
-     nms = std::make_unique< GOptimize::NMSimplex>(vec, thresSimplex);
+    nms = std::make_unique<GOptimize::NMSimplex>(vec, thresSimplex);
     if (!nms->runSimplex(&GP_FBM::weightSingle, this))
     {
         gpout("WARN: (GP_FBM::singleModel) Model didn't converge!");
@@ -93,7 +93,6 @@ GP_FBM::DA *GP_FBM::singleModel(uint32_t id)
     v_da[id]->D = exp(vec(0));
     v_da[id]->A = 2.0 * eA / (eA + 1.0);
     v_da[id]->mu = {vec[2], vec[3]};
-
 
     return v_da[id].get();
 }
@@ -194,7 +193,7 @@ GP_FBM::CDA *GP_FBM::coupledModel(void)
 
     // Results were successful, let's create the final pointer
     vec = nms->getResults().array().exp();
-        nms.release();
+    nms.release();
 
     cpl_da = std::make_unique<CDA>();
 
@@ -217,8 +216,8 @@ GP_FBM::CDA *GP_FBM::coupledModel(void)
 
 GP_API void GP_FBM::stop(void)
 {
-    if(nms)
-        nms->stop(); 
+    if (nms)
+        nms->stop();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -394,7 +393,6 @@ const MatXd &GP_FBM::distrib_singleModel(uint32_t sample_size, uint32_t id)
     VecXd vec(4);
     vec << log(da->D), -log(2.0 / da->A - 1.0), da->mu.x, da->mu.y;
 
-
     MatXd mcmc = GOptimize::sampleParameters(vec, sample_size, &GP_FBM::weightSingle, this);
 
     for (uint32_t k = 0; k < sample_size; k++)
@@ -431,8 +429,7 @@ const MatXd &GP_FBM::distrib_coupledModel(uint32_t sample_size)
     }
 
     // Generate distribution
-    MatXd mcmc = GOptimize::sampleParameters(vec, sample_size,
-                                             &GP_FBM::weightCoupled, this);
+    MatXd mcmc = GOptimize::sampleParameters(vec, sample_size, &GP_FBM::weightCoupled, this);
 
     // Let's convert results to approppriate space
     for (uint32_t k = 0; k < sample_size; k++)
