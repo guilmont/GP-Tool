@@ -9,7 +9,7 @@ GPTool::GPTool(void)
     viewBuf = std::make_unique<GRender::Framebuffer>(1, 1);
 
     // Initializing shaders
-    fs::path shaderPath(SHADER_PATH);
+    fs::path shaderPath("assets/shaders");
     shader.loadShader("histogram", (shaderPath / "basic.vtx.glsl").string(), (shaderPath / "histogram.frag.glsl").string());
     shader.loadShader("viewport", (shaderPath / "basic.vtx.glsl").string(), (shaderPath / "viewport.frag.glsl").string());
 
@@ -260,7 +260,7 @@ void GPTool::openMovie(const std::string &path)
                         tool->setActive("MOVIE");
 
                         // Determine if we need the alignment plugin
-                        const Movie *movie = movpl->getMovie();
+                        Movie *movie = movpl->getMovie();
                         if (movie->getMetadata().SizeC > 1)
                         {
                             AlignPlugin *alg = new AlignPlugin(movie, tool);

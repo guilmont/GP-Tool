@@ -3,6 +3,8 @@
 
 int main()
 {
+    gpout(fs::current_path());
+
     const std::string runpath(OPATH);
 
     std::string xmlTracks[] = {runpath + "/test_data/test_localization_green.xml",

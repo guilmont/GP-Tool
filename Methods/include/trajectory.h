@@ -30,7 +30,7 @@ struct Track
 class Trajectory
 {
 public:
-    GP_API Trajectory(const Movie *mov);
+    GP_API Trajectory(Movie *mov);
     GP_API ~Trajectory(void) = default;
 
     uint32_t spotSize = 3;
@@ -51,7 +51,7 @@ private:
     void enhanceTrajectory(uint32_t trackID, uint32_t trajID);
 
 private:
-    const Movie *movie = nullptr;
+    Movie *movie = nullptr;
     std::vector<Track> m_vTrack;
 
     bool running = false;

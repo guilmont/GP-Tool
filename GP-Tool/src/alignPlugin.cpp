@@ -1,6 +1,6 @@
 #include "alignPlugin.h"
 
-AlignPlugin::AlignPlugin(const Movie *mov, GPTool *ptr) : movie(mov), tool(ptr)
+AlignPlugin::AlignPlugin(Movie *mov, GPTool *ptr) : movie(mov), tool(ptr)
 {
     const Metadata &meta = movie->getMetadata();
     for (uint32_t ch = 0; ch < meta.SizeC; ch++)

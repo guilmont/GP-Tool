@@ -5,8 +5,6 @@ add_subdirectory(vendor)
 
 project(GP-Tool)
 
-set(SHADER_PATH ${PROJECT_SOURCE_DIR}/assets/shaders)
-
 add_executable(GP-Tool
 	"include/gpch.h"
 	"include/gptool.h"      "src/gptool.cpp"
@@ -23,4 +21,14 @@ target_include_directories(GP-Tool PRIVATE include)
 target_precompile_headers(GP-Tool PRIVATE "include/gpch.h")
 
 target_link_libraries(GP-Tool PUBLIC GRender jsoncpp Methods)
-target_compile_definitions(GP-Tool PRIVATE SHADER_PATH="${SHADER_PATH}")
+
+
+if (WIN32)
+	set_property(TARGET GP-Tool PROPERTY VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+endif()
+
+file(COPY "assets/shaders" DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets)
+
+install(DIRECTORY "assets/shaders" DESTINATION assets)
+install(TARGETS GP-Tool DESTINATION ${CMAKE_INSTALL_PREFIX})
+install(FILES ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets/layout.ini DESTINATION assets)

@@ -28,3 +28,8 @@ target_precompile_headers(Methods PUBLIC "include/header.h")
 target_include_directories(Methods PUBLIC ${PROJECT_SOURCE_DIR}/include)
 target_link_libraries(Methods PUBLIC glm_ eigen pugixml Threads::Threads)
 target_compile_definitions(Methods PRIVATE GBUILD_DLL)
+
+
+file(GLOB INC_FILES "include/*.h")
+install(FILES ${INC_FILES} DESTINATION "include")
+install(TARGETS Methods DESTINATION ${CMAKE_INSTALL_PREFIX})

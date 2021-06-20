@@ -3,7 +3,7 @@
 #include "header.h"
 
 #include "gtiffer.h"
-#include "pugixml.hpp"
+#include "pugixml/pugixml.hpp"
 
 struct Plane
 {

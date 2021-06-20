@@ -58,15 +58,3 @@ const MatXd &Movie::getImage(uint32_t channel, uint32_t frame)
         return *vImg[id].get();
     }
 }
-
-
-const MatXd& Movie::getImage(uint32_t channel, uint32_t frame) const 
-{
-    assert(channel < meta->SizeC && frame < meta->SizeT);
-    uint32_t id = frame * meta->SizeC + channel;
-
-    assert(vImg[id] != nullptr);
-
-    return *vImg[id].get();
-
-}

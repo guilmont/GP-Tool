@@ -32,7 +32,7 @@ static Json::Value jsonEigen(const MatXd &mat)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-TrajPlugin::TrajPlugin(const Movie *mov, GPTool *ptr) : movie(mov), tool(ptr)
+TrajPlugin::TrajPlugin(Movie *mov, GPTool *ptr) : movie(mov), tool(ptr)
 {
     const uint32_t SC = mov->getMetadata().SizeC;
     trackInfo.path.resize(SC);

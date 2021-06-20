@@ -18,7 +18,6 @@ public:
     GP_API Metadata &getMetadata(void);
 
     GP_API const MatXd& getImage(uint32_t channel, uint32_t frame);
-    GP_API const MatXd &getImage(uint32_t channel, uint32_t frame) const;
 
 private:
     bool success = true;

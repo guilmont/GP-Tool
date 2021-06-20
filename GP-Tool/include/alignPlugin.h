@@ -11,7 +11,7 @@ class GPTool;
 class AlignPlugin : public Plugin
 {
 public:
-    AlignPlugin(const Movie *mov, GPTool *ptr);
+    AlignPlugin(Movie *mov, GPTool *ptr);
     ~AlignPlugin(void);
 
     void showProperties(void) override;
@@ -21,7 +21,7 @@ public:
     std::vector<TransformData> data;
 
 private:
-    const Movie *movie = nullptr;
+    Movie *movie = nullptr;
     GPTool *tool = nullptr;
 
     std::unique_ptr<Align> m_align = nullptr;

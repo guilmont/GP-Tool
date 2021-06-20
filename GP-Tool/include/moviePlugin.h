@@ -35,7 +35,8 @@ public:
     bool saveJSON(Json::Value &json) override;
 
     const glm::vec3 &getColor(uint32_t channel) { return lut.getColor(info[channel].lut_name); }
-    const Movie *getMovie(void) { return movie.get(); }
+    
+    Movie *getMovie(void) { return movie.get(); }
     bool successful(void) const { return success; }
 
 private:

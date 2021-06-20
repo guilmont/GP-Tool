@@ -126,7 +126,7 @@ static MatXd loadFromTextFile(const fs::path &path, char delimiter, uint32_t ski
 ///////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 
-Trajectory::Trajectory(const Movie *mov) : movie(mov)
+Trajectory::Trajectory(Movie *mov) : movie(mov)
 {
     uint32_t SC = movie->getMetadata().SizeC;
     m_vTrack.resize(SC); // one track per channel
