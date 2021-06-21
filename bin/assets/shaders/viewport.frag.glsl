@@ -9,7 +9,7 @@ uniform sampler2D u_texture[5];
 // Align plugin 
 uniform mat3 u_align[5];
 
-// Trajectory plugin
+// Trajectory plugin // TODO: use uniform block buffers
 uniform int u_nPoints;
 uniform vec3 u_ptPos[128];
 uniform vec3 u_ptColor[128];

@@ -158,7 +158,10 @@ void TrajPlugin::showProperties(void)
 void TrajPlugin::update(float deltaTime)
 {
     if (m_traj == nullptr)
+    {
+        tool->shader.setInteger("u_nPoints", 0);
         return;
+    }
 
     MoviePlugin *mov = reinterpret_cast<MoviePlugin *>(tool->getPlugin("MOVIE"));
 
@@ -218,6 +221,7 @@ void TrajPlugin::update(float deltaTime)
 
 excess:
 
+    // TODO: Use uniform block buffers
     tool->shader.setInteger("u_nPoints", nPts);
     tool->shader.setVec3fArray("u_ptPos", &vPos[0][0], nPts);
     tool->shader.setVec3fArray("u_ptColor", &vCor[0][0], nPts);
