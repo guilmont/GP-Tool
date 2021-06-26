@@ -42,7 +42,8 @@ public:
 private:
     void calcHistogram(uint32_t channel);
     void updateTexture(uint32_t channel);
-
+    
+    bool firstTime = true;
 
 private:
     struct Info
@@ -53,10 +54,10 @@ private:
     };
 
 
+
     LUT lut;
     std::vector<Info> info;
     std::vector<std::unique_ptr<GRender::Framebuffer>> histo;
-    std::vector<std::unique_ptr<GRender::Texture>> texture;
 
     GPTool *tool = nullptr;
     std::unique_ptr<Movie> movie = nullptr;

@@ -41,7 +41,7 @@ const glm::vec3 &LUT::getColor(const std::string &name) const
 
 ///////////////////////////////////////////////////////////
 
-MoviePlugin::MoviePlugin(const std::string &movie_path, GPTool *ptr) : tool(ptr)
+MoviePlugin::MoviePlugin(const std::string &movie_path, GPTool *ptr) : tool(ptr), firstTime(true)
 {
     // Importing movies
     movie = std::make_unique<Movie>(movie_path);
@@ -57,6 +57,7 @@ MoviePlugin::MoviePlugin(const std::string &movie_path, GPTool *ptr) : tool(ptr)
     bool running = true;
     auto prog = tool->mbox.createProgress("Loading images...", [](void *running) { *reinterpret_cast<bool *>(running) = false; }, &running);
 
+    
     // Setup info, histograms and textures
     const Metadata &meta = movie->getMetadata();
 
@@ -227,13 +228,18 @@ void MoviePlugin::showProperties(void)
 
 void MoviePlugin::update(float deltaTime)
 {
-    if (texture.empty()) // only runs the first time
+    // Creating textures
+    if (firstTime)
     {
+        firstTime = false;
+
+        // To liberate already allocated textures if they exist
+        tool->texture.reset();
 
         const Metadata &meta = movie->getMetadata();
         for (uint32_t ch = 0; ch < meta.SizeC; ch++)
         {
-            texture.emplace_back(std::make_unique<GRender::Texture>(meta.SizeX, meta.SizeY));
+            tool->texture.createFloat(std::to_string(ch), meta.SizeX, meta.SizeY);
             calcHistogram(ch);
         }
     }
@@ -252,7 +258,7 @@ void MoviePlugin::update(float deltaTime)
     std::array<float, 15> vColor = {0.0f};
     for (uint32_t ch = 0; ch < meta.SizeC; ch++)
     {
-        texture[ch]->bind(ch);
+        tool->texture.bind(std::to_string(ch), ch);
         const glm::vec3 &cor = lut.getColor(info[ch].lut_name);
         memcpy(vColor.data() + 3 * ch, &cor[0], 3 * sizeof(float));
     }
@@ -321,7 +327,8 @@ void MoviePlugin::updateTexture(uint32_t channel)
         histo[channel] = std::make_unique<GRender::Framebuffer>(162 * DPI_FACTOR, 100 * DPI_FACTOR);
 
     histo[channel]->bind();
-    tool->quad->draw();
+    tool->quad->draw({0.0f, 0.0f, 0.0f}, {1.0f, 1.0f}, 0.0f, 0.0f);
+    tool->quad->submit();
     histo[channel]->unbind();
 
     // Updating textures
@@ -331,7 +338,7 @@ void MoviePlugin::updateTexture(uint32_t channel)
     // Let's use this function to update out textures for the shader
     MatXf img = movie->getImage(channel, current_frame).cast<float>();
     img = (img.array() - low) / (high - low);
-    texture[channel]->update(img.data());
+    tool->texture.updateFloat(std::to_string(channel), img.data());
 
 }
 

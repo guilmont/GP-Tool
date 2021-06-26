@@ -309,8 +309,6 @@ void TrajPlugin::enhanceTracks(void)
         m_traj.get(), uitraj, nChannels)
         .detach();
 
-    
-
 } // enhanceTracks
 
 ///////////////////////////////////////////////////////////////////////////////

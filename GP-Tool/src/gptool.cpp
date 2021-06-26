@@ -5,7 +5,7 @@ GPTool::GPTool(void)
     initialize("GP-Tool", 1200 * DPI_FACTOR, 800 * DPI_FACTOR);
 
     uint32_t cor = 0x999999ff;
-    quad = std::make_unique<GRender::Quad>();
+    quad = std::make_unique<GRender::Quad>(1);
     viewBuf = std::make_unique<GRender::Framebuffer>(1, 1);
 
     // Initializing shaders
@@ -159,7 +159,8 @@ void GPTool::onUserUpdate(float deltaTime)
 
     shader.useProgram("viewport"); // chooseing rendering program
     updateAll(deltaTime);          // Updateing all plugins
-    quad->draw();                  // rendering final image
+    quad->draw({0.0f, 0.0f, 0.0f}, {1.0f, 1.0f}, 0.0f, 0.0f);
+    quad->submit();                  // rendering final image
     viewBuf->unbind();
 
 } // function
