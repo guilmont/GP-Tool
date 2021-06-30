@@ -175,7 +175,6 @@ void GPTool::ImGuiLayer(void)
     showProperties();
     showWindows();
 
-    dialog.showDialog();
     mbox.showMessages();
 
     /////////////////////////////////////////////////////////
