@@ -233,7 +233,7 @@ Align::Align(uint32_t nFrames, const MatXd *im1, const MatXd *im2)
 
 void Align::calcEnergy(const uint32_t id, const uint32_t nThr)
 {
-    global_energy.at(id) = 0.0;
+    global_energy[id] = 0.0;
 
     const uint32_t
         width = uint32_t(vIm0[0].cols()),
@@ -245,19 +245,14 @@ void Align::calcEnergy(const uint32_t id, const uint32_t nThr)
         for (uint32_t y = 0; y < height; y++)
             for (uint32_t x = 0; x < width; x++)
             {
-                int i = int(itrf[0][0] * (x + 0.5f) +
-                            itrf[0][1] * (y + 0.5f) +
-                            itrf[0][2]);
-
-                int j = int(std::round(itrf[1][0] * (x + 0.5f) +
-                                       itrf[1][1] * (y + 0.5f) +
-                                       itrf[1][2]));
+                int i = static_cast<int32_t>(itrf[0][0] * (x + 0.5f) + itrf[0][1] * (y + 0.5f) + itrf[0][2] + 0.5f);
+                int j = static_cast<int32_t>(itrf[1][0] * (x + 0.5f) + itrf[1][1] * (y + 0.5f) + itrf[1][2] + 0.5f);
 
                 double dr = double(vIm0[fr](y, x));
                 if (i >= 0 && i < int(width) && j >= 0 && j < int(height))
                     dr -= double(vIm1[fr](j, i));
 
-                global_energy.at(id) += dr * dr;
+                global_energy[id] += dr * dr;
             }
 
     } // thread-loop

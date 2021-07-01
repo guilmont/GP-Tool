@@ -19,7 +19,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 add_subdirectory(Methods)
 
 option(GP_TOOL "Build graphical interface" ON)
-option(BUILD_TESTS "Build test programs for trajectory and GP-FBM methods" OFF)
+option(GP_TESTS "Build test programs for trajectory and GP-FBM methods" OFF)
 
 
 if (GP_TOOL)
@@ -27,7 +27,7 @@ if (GP_TOOL)
 endif()
 
 
-if (BUILD_TESTS)
+if (GP_TESTS)
 	add_subdirectory(Tests)
 endif()
 

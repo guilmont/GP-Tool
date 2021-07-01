@@ -4,24 +4,13 @@
 
 namespace Tiffer
 {
-    static Buffer lzw_decoder(const uint8_t *vInput, const size_t SZ)
+    static Buffer lzw_decoder(const uint8_t *vInput, const uint64_t SZ)
     {
         uint8_t B = 9;
         uint32_t bCounter = 0;
         uint16_t oldCode = 0, code = 0;
 
-        // Convert buffer to bool array
-        std::vector<bool> vBool;
-        vBool.reserve(8 * SZ);
-
-        for (size_t k = 0; k < SZ; k++)
-        {
-            uint8_t val = vInput[k];
-            for (int l = 7; l >= 0; l--)
-                vBool.emplace_back((val >> l) & 0x01);
-        }
-
-        // Creating table
+            // Creating table
         std::vector<std::string> table(258);
         table.reserve(5012);
 
@@ -32,19 +21,30 @@ namespace Tiffer
         table[257] = "EOI";
 
         // lambda functions
-        auto make_number = [&](uint32_t B) -> uint16_t
-        {
-            uint16_t val = 0;
-            for (uint32_t k = 0; k < B; k++)
-                if (vBool[bCounter + k])
-                    val |= 1 << (B - k - 1);
+        auto make_number = [&](uint32_t B) -> uint16_t {
+           uint64_t 
+               bit = bCounter % 8,
+               id = bCounter >> 3;
 
+           uint8_t aux = vInput[id];
+
+           uint16_t val = 0;
+           for (int32_t k = B - 1; k >= 0; k--)
+           {
+               val |= ((aux >> (7 - bit)) & 0x01) << k;
+
+               if (++bit == 8)
+               {
+                   aux = vInput[++id];
+                   bit = 0;
+               }
+           }
+           
             bCounter += B;
             return val;
         };
 
-        auto clear_table = [&](void) -> void
-        {
+        auto clear_table = [&](void) -> void {
             B = 9;
             table.resize(258);
         };
