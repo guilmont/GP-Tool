@@ -348,7 +348,7 @@ void Trajectory::enhanceTrajectory(uint32_t trackID, uint32_t trajID)
 {
 
     // Updating localization and estimating error
-    const uint32_t nThreads = std::thread::hardware_concurrency();
+    const uint32_t nThreads = static_cast<uint32_t>(0.8f * std::thread::hardware_concurrency());
     std::vector<std::thread> vThr(nThreads);
 
     for (uint32_t tid = 0; tid < nThreads; tid++)

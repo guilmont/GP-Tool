@@ -17,7 +17,6 @@
     <li>
       <a href="#getting-started">Getting Started</a>
       <ul>
-        <li><a href="#windows-binaries">Windows binaries</a></li>
         <li><a href="#source-code">Source code</a></li>
       </ul>
     </li>
@@ -50,11 +49,6 @@ bioRxiv: https://doi.org/10.1101/2021.03.16.435699
 <!-- GETTING STARTED -->
 ## Getting Started
 
-### Windows binaries
-
-GP-Tool (GUI + libraries) is pre-compiled for Windows 10 (x64). Just download the binaries zip-file, extract it and you are good to go.
-
-
 ### Source code 
 
 1. Clone the repo. As I include several sub-modules as vendors, recursive clone is needed.
@@ -63,9 +57,8 @@ GP-Tool (GUI + libraries) is pre-compiled for Windows 10 (x64). Just download th
    ```
 
 2. Building from source code allows these following options:
-  - HIDPI: Scales GUI by a factor of 2, allows for appropriate sizing in hidpi screens (default OFF);
-  - COMPILE_GUI: Compiles graphical user interface (default ON);
-  - COMPILE_LIBRARIES: Compiles and install dynamic libraries for batching with C++ (default ON);
+  - DPI_FACTOR: Scales GUI by a factor of 2 in hidpi screens (default OFF);
+  - GP_TOOL: Compiles graphical user interface (default ON);
 
 3. Build it with CMake setting CMAKE_BUILD_TYPE (usually Release) and CMAKE_INSTALL_PREFIX. Compile and install.
 
