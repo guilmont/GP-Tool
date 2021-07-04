@@ -71,6 +71,7 @@ double Spot::weightFunction(const VecXd &v)
              dy = (k + 0.5 - my) / ly,
              val = 1.0 - rho * rho;
 
+
       double mu = I0 * exp(-0.5 / val * (dx * dx + dy * dy - 2.0 * rho * dx * dy)) + BG;
 
       logLike += mu - roi(k, l) * log(mu);
