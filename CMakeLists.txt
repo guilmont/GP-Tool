@@ -15,11 +15,17 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 
 
-# We are always build the methods project
-add_subdirectory(Methods)
+if (NOT WIN32)
+	set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX})
+endif()
+
 
 option(GP_TOOL "Build graphical interface" ON)
 option(GP_TESTS "Build test programs for trajectory and GP-FBM methods" OFF)
+option(GP_PRECOMPILED_HEADERS "Builds precompiled headers for whole project" OFF)
+
+# We are always build the methods project
+add_subdirectory(Methods)
 
 
 if (GP_TOOL)
@@ -30,7 +36,6 @@ endif()
 if (GP_TESTS)
 	add_subdirectory(Tests)
 endif()
-
 
 
 

@@ -74,7 +74,7 @@ namespace Message
             ImGui::Text("INFO:");
             ImGui::PopStyleColor();
             ImGui::SameLine();
-            ImGui::Text(content.c_str());
+            ImGui::TextUnformatted(content.c_str());
             ImGui::Spacing();
             is_read = true;
         }
@@ -93,7 +93,7 @@ namespace Message
             ImGui::Text("WARNING:");
             ImGui::PopStyleColor();
             ImGui::SameLine();
-            ImGui::Text(content.c_str());
+            ImGui::TextUnformatted(content.c_str());
             ImGui::Spacing();
             is_read = true;
         }
@@ -112,7 +112,7 @@ namespace Message
             ImGui::Text("ERROR:");
             ImGui::PopStyleColor();
             ImGui::SameLine();
-            ImGui::Text(content.c_str());
+            ImGui::TextUnformatted(content.c_str());
             ImGui::Spacing();
             is_read = true;
         }

@@ -17,14 +17,14 @@ add_executable(GP-Tool
 	"src/app.cpp"
 )
 
-target_include_directories(GP-Tool PRIVATE include)
-target_precompile_headers(GP-Tool PRIVATE "include/gpch.h")
+if (GP_PRECOMPILED_HEADERS)
+	target_precompile_headers(GP-Tool PRIVATE "include/gpch.h")
+endif()
 
+target_include_directories(GP-Tool PRIVATE include)
 target_link_libraries(GP-Tool PUBLIC GRender jsoncpp Methods)
 
 file(COPY "assets/shaders" DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets)
-
-
 
 install(DIRECTORY "assets/shaders" DESTINATION assets)
 install(TARGETS GP-Tool DESTINATION ${CMAKE_INSTALL_PREFIX})

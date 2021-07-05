@@ -534,8 +534,7 @@ void GPPlugin::winSubstrate(void)
     char buf[512] = {0};
 
     ImGui::Indent();
-    sprintf(buf, "DR = %.3e %s^2/%s^A", DCalib * gp->coupledModel()->DR,
-            spaceUnit, timeUnit);
+    sprintf(buf, "DR = %.3e %s^2/%s^A", DCalib * gp->coupledModel()->DR, spaceUnit, timeUnit);
     ImGui::Text(buf);
 
     memset(buf, 0, 512);

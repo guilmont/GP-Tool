@@ -4,6 +4,7 @@
 #include <fstream>
 #include <thread>
 #include <string>
+#include <functional>
 
 #include <chrono>
 #include <random>

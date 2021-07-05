@@ -89,11 +89,11 @@ void TrajPlugin::showProperties(void)
 
                     tool->fonts.text("Filename: ", "bold");
                     ImGui::SameLine();
-                    ImGui::Text("%s", track.path.filename().string().c_str());
+                    ImGui::TextUnformatted(track.path.filename().string().c_str());
 
                     tool->fonts.text("Description: ", "bold");
                     ImGui::SameLine();
-                    ImGui::Text("%s", track.description.c_str());
+                    ImGui::TextUnformatted(track.description.c_str());
 
                     ImGui::Spacing();
                     ImGui::Spacing();
@@ -336,7 +336,7 @@ void TrajPlugin::winLoadTracks(void)
         ImGui::PushID(txt.c_str());
 
         char buf[1024] = {0};
-        ImGui::Text("%s", txt.c_str());
+        ImGui::TextUnformatted(txt.c_str());
         ImGui::SameLine();
 
         strcpy(buf, trackInfo.path[ch].string().c_str());
@@ -393,11 +393,11 @@ void TrajPlugin::winDetail(void)
 
     tool->fonts.text("Path: ", "bold");
     ImGui::SameLine();
-    ImGui::Text("%s", track.path.c_str());
+    ImGui::TextUnformatted((const char*) track.path.c_str());
 
     tool->fonts.text("Description: ", "bold");
     ImGui::SameLine();
-    ImGui::Text("%s", track.description.c_str());
+    ImGui::TextUnformatted(track.description.c_str());
 
     tool->fonts.text("Channel: ", "bold");
     ImGui::SameLine();

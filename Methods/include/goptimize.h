@@ -62,7 +62,7 @@ namespace GOptimize
     // This function will use markov chain monte carlo to estimate the probability
     // distribution of each parameter
     template <class CL>
-    MatXd sampleParameters(const VecXd &params, const uint32_t sample_size, double (CL::*func)(const VecXd &), CL *ptr);
+    static MatXd sampleParameters(const VecXd &params, const uint32_t sample_size, double (CL::*func)(const VecXd &), CL *ptr);
 
 } // namespace GOptimize
 

@@ -21,9 +21,10 @@ add_library(Methods SHARED
 	"include/trajectory.h"  "src/trajectory.cpp"
 	"include/gp_fbm.h"      "src/gp_fbm.cpp"
 )
+if (GP_PRECOMPILED_HEADERS)
+	target_precompile_headers(Methods PUBLIC "include/header.h")
+endif()
 
-
-target_precompile_headers(Methods PUBLIC "include/header.h")
 
 target_include_directories(Methods PUBLIC ${PROJECT_SOURCE_DIR}/include)
 target_link_libraries(Methods PUBLIC glm_ eigen pugixml Threads::Threads)

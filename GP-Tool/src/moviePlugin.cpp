@@ -111,11 +111,11 @@ void MoviePlugin::showProperties(void)
 
     tool->fonts.text("Name: ", "bold");
     ImGui::SameLine();
-    ImGui::Text("%s", meta.movie_name.c_str());
+    ImGui::TextUnformatted(meta.movie_name.c_str());
 
     tool->fonts.text("Acquisition date: ", "bold");
     ImGui::SameLine();
-    ImGui::Text("%s", meta.acquisitionDate.c_str());
+    ImGui::TextUnformatted(meta.acquisitionDate.c_str());
 
     tool->fonts.text("Significant bits: ", "bold");
     ImGui::SameLine();
