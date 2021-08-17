@@ -4,7 +4,7 @@ GPTool::GPTool(void)
 {
     fs::current_path(INSTALL_PATH);
 
-    initialize("GP-Tool", 1200, 800); // "assets/GP-Tool/layout.ini");
+    initialize("GP-Tool", 1200, 800, "assets/GP-Tool/layout.ini");
 
     uint32_t cor = 0x999999ff;
     quad = std::make_unique<GRender::Quad>(1);

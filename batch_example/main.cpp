@@ -1,14 +1,9 @@
 #include <iostream>
-#include <filesystem>
-#include <thread>
 
-// GP-Tool libraries
-#include <movie.h>
-#include <trajectory.h>
-#include <gp_fbm.h>
-#include <align.h>
+// GP-Tool methods library
+#include <GPMethods.h>
 
-void runSample(std::filesystem::path &path)
+void runSample(fs::path &path)
 {
     std::string mov_name = path.string(),
                 base = path.parent_path().string() + "/" + path.stem().string();
@@ -16,13 +11,13 @@ void runSample(std::filesystem::path &path)
     std::vector<MatXd> vCH[2];
     std::array<std::string, 2> xml_name = {"_CH0.xml", "_CH1.xml"};
 
-    Movie mov(mov_name);
-    const Metadata &meta = mov.getMetadata();
+    GPT::Movie mov(mov_name);
+    const GPT::Metadata &meta = mov.getMetadata();
     const uint32_t nChannels = meta.SizeC;
 
     ///////////////////////////////////////////////////////
     // Setting up trajectories
-    Trajectory traj(&mov);
+    GPT::Trajectory traj(&mov);
     traj.spotSize = 3; // selecting spot size
 
     for (uint32_t ch = 0; ch < nChannels; ch++)
@@ -48,12 +43,12 @@ void runSample(std::filesystem::path &path)
         return;
     }
 
-    GP_FBM gp(std::vector<MatXd>{mat0, mat1});
-    GP_FBM::DA
+    GPT::GP_FBM gp(std::vector<MatXd>{mat0, mat1});
+    GPT::GP_FBM::DA
         *da0 = gp.singleModel(0),
         *da1 = gp.singleModel(1);
 
-    GP_FBM::CDA
+    GPT::GP_FBM::CDA
         *cda = gp.coupledModel();
 
     if (cda == nullptr || da0 == nullptr || da1 == nullptr)
@@ -64,7 +59,7 @@ void runSample(std::filesystem::path &path)
 
     ///////////////////////////////////////////////////////
     // Aligning channels
-    Align align(uint32_t(vCH[0].size()), vCH[0].data(), vCH[1].data());
+    GPT::Align align(uint32_t(vCH[0].size()), vCH[0].data(), vCH[1].data());
 
     if (!align.alignCameras())
         std::cout << "WARN: Couldn't align cameras >> " << mov_name << std::endl;
@@ -73,7 +68,7 @@ void runSample(std::filesystem::path &path)
         std::cout << "WARN: Couldn't correct chromatic aberrations >> " << mov_name << std::endl;
 
     // Getting correction values
-    const TransformData &trf = align.getTransformData();
+    const GPT::TransformData &trf = align.getTransformData();
 
     //////////////////////////////////////////////////////
     // Save results as necessary here
@@ -83,7 +78,10 @@ void runSample(std::filesystem::path &path)
 static void runParallel(uint32_t tid, char **argv, uint32_t argc, uint32_t nThreads)
 {
     for (uint32_t l = tid + 1; l < argc; l += nThreads)
-        runSample(std::filesystem::path(argv[l]));
+    {
+        fs::path arq(argv[l]);
+        runSample(arq);
+    }
 }
 
 int main(int argc, char *argv[])

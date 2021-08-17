@@ -3,28 +3,9 @@ project(batch VERSION 0.1.0)
 
 set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_CXX_STANDARD 17)
-find_package(Threads REQUIRED)
 
-if (WIN32)
-    set(GP_INCLUDE "C:/Users/GM Oliveira/Desktop/GP-Tool/include")
-    set(GP_LIB "C:/Users/GM Oliveira/Desktop/GP-Tool/lib")
-
-else()
-    set(GP_INCLUDE "/home/gstark/GP/include")
-    set(GP_LIB "/home/gstark/GP/lib")
-endif()
+find_package(GPMethods REQUIRED)  # Used to find GP-Tool methods installation
 
 
 add_executable(batch main.cpp)
-
-target_include_directories(batch PUBLIC ${GP_INCLUDE})
-target_link_directories(batch PUBLIC ${GP_LIB})
-
-target_link_libraries(batch
-    PUBLIC  
-        Threads::Threads
-        movie
-        align
-        trajectory
-        gpfbm
-)
+target_link_libraries(batch PUBLIC GPMethods)
