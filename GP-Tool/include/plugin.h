@@ -1,9 +1,6 @@
 #pragma once
 
-
 #include "gpch.h"
-
-
 
 struct Plugin
 {

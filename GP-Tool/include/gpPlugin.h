@@ -38,10 +38,10 @@ private:
     void winPlotSubstrate(void);
     void winDistributions(void);
 
-    void addNewCell(const std::vector<MatXd>& vTraj, const std::vector<GP_FBM::ParticleID>& partID);
+    void addNewCell(const std::vector<MatXd>& vTraj, const std::vector<GPT::GP_FBM::ParticleID>& partID);
 
 private:
     GPTool *tool = nullptr;
 
-    std::vector<std::unique_ptr<GP_FBM>> vecGP;
+    std::vector<std::unique_ptr<GPT::GP_FBM>> vecGP;
 };

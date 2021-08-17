@@ -12,8 +12,6 @@
 #include <unordered_map>
 
 // vendor
-#include "glm/glm.hpp"
-
 #include "Eigen/Core"
 #include "Eigen/LU"
 #include "Eigen/Cholesky"
@@ -21,8 +19,14 @@
 namespace fs = std::filesystem;
 
 using MatXf = Eigen::Matrix<float, -1, -1, Eigen::RowMajor>; // Used for rendering
-using MatXd = Eigen::MatrixXd;
+
+using Vec2u = Eigen::Matrix<uint32_t, 2, 1>;
+using Vec2d = Eigen::Matrix<double, 2, 1>;
+using Vec3d = Eigen::Matrix<double, 3, 1>;
+using Mat3d = Eigen::Matrix<double, 3, 3>;
+
 using VecXd = Eigen::VectorXd;
+using MatXd = Eigen::MatrixXd;
 
 template <typename T>
 using Image = Eigen::Matrix<T, -1, -1>;
@@ -43,11 +47,16 @@ using Image = Eigen::Matrix<T, -1, -1>;
 /////////////////////////////
 /////////////////////////////
 
-static void gpout() { std::cout << std::endl; }
-
-template <typename TP, typename... Args>
-static void gpout(TP data, Args &&...args)
+namespace GPT
 {
-   std::cout << data << " ";
-   gpout(args...);
+
+   // PRINTING UTILITY
+   static void pout() { std::cout << std::endl; }
+
+   template <typename TP, typename... Args>
+   static void pout(TP data, Args &&...args)
+   {
+      std::cout << data << " ";
+      pout(args...);
+   }
 }

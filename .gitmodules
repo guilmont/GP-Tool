@@ -1,9 +1,6 @@
 [submodule "Methods/vendor/eigen"]
 	path = Methods/vendor/eigen
 	url = https://gitlab.com/libeigen/eigen.git
-[submodule "Methods/vendor/glm"]
-	path = Methods/vendor/glm
-	url = https://github.com/g-truc/glm.git
 [submodule "GP-Tool/vendor/GRender"]
 	path = GP-Tool/vendor/GRender
 	url = https://github.com/guilmont/GRender.git

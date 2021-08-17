@@ -1,11 +1,11 @@
 #include "goptimize.h"
 
-GOptimize::Vertex::Vertex(const VecXd &pos, double weight) : pos(pos), weight(weight) {}
-GOptimize::Vertex::Vertex(const Vertex &vt) : pos(vt.pos), weight(vt.weight) {}
+GPT::GOptimize::Vertex::Vertex(const VecXd &pos, double weight) : pos(pos), weight(weight) {}
+GPT::GOptimize::Vertex::Vertex(const Vertex &vt) : pos(vt.pos), weight(vt.weight) {}
 
-GOptimize::Vertex::Vertex(Vertex &&vt) : pos(std::move(vt.pos)), weight(std::move(vt.weight)) {}
+GPT::GOptimize::Vertex::Vertex(Vertex &&vt) : pos(std::move(vt.pos)), weight(std::move(vt.weight)) {}
 
-GOptimize::Vertex &GOptimize::Vertex::operator=(const Vertex &vt)
+GPT::GOptimize::Vertex &GPT::GOptimize::Vertex::operator=(const Vertex &vt)
 {
     if (&vt != this)
     {
@@ -16,7 +16,7 @@ GOptimize::Vertex &GOptimize::Vertex::operator=(const Vertex &vt)
     return *this;
 }
 
-GOptimize::Vertex &GOptimize::Vertex::operator=(Vertex &&vt)
+GPT::GOptimize::Vertex &GPT::GOptimize::Vertex::operator=(Vertex &&vt)
 {
     if (&vt != this)
     {
@@ -29,7 +29,7 @@ GOptimize::Vertex &GOptimize::Vertex::operator=(Vertex &&vt)
 
 ///////////////////////
 
-GOptimize::NMSimplex::NMSimplex(const VecXd &vec, double thres, double step)
+GPT::GOptimize::NMSimplex::NMSimplex(const VecXd &vec, double thres, double step)
 {
     this->numParams = uint32_t(vec.size());
     this->sizeThres = thres;
@@ -38,7 +38,7 @@ GOptimize::NMSimplex::NMSimplex(const VecXd &vec, double thres, double step)
 
 } // Constructor
 
-GOptimize::NMSimplex::NMSimplex(VecXd &&vec, double thres, double step)
+GPT::GOptimize::NMSimplex::NMSimplex(VecXd &&vec, double thres, double step)
 {
     this->numParams = uint32_t(vec.size());
     this->sizeThres = thres;
@@ -47,7 +47,7 @@ GOptimize::NMSimplex::NMSimplex(VecXd &&vec, double thres, double step)
 
 } // Constructor
 
-double GOptimize::NMSimplex::GetSimplexSize()
+double GPT::GOptimize::NMSimplex::GetSimplexSize()
 {
     // Returns average longest distance between simplex vertices
     VecXd big(numParams);

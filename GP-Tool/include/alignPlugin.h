@@ -11,20 +11,20 @@ class GPTool;
 class AlignPlugin : public Plugin
 {
 public:
-    AlignPlugin(Movie *mov, GPTool *ptr);
+    AlignPlugin(GPT::Movie *mov, GPTool *ptr);
     ~AlignPlugin(void);
 
     void showProperties(void) override;
     void update(float deltaTime) override;
     bool saveJSON(Json::Value &json) override;
 
-    std::vector<TransformData> data;
+    std::vector<GPT::TransformData> data;
 
 private:
-    Movie *movie = nullptr;
+    GPT::Movie *movie = nullptr;
     GPTool *tool = nullptr;
 
-    std::unique_ptr<Align> m_align = nullptr;
+    std::unique_ptr<GPT::Align> m_align = nullptr;
 
     uint32_t chAlign = 1;
     bool camera = true,

@@ -5,55 +5,60 @@
 #include "gtiffer.h"
 #include "pugixml/pugixml.hpp"
 
-struct Plane
+namespace GPT
 {
-    uint32_t TheC, TheT, TheZ;
 
-    float
-        DeltaT,
-        ExposureTime,
-        PositionX, PositionY, PositionZ;
+    struct Plane
+    {
+        uint32_t TheC, TheT, TheZ;
 
-    std::string
-        DeltaTUnit,
-        ExposureTimeUnit,
-        PositionXUnit,
-        PositionYUnit,
-        PositionZUnit;
-};
+        float
+            DeltaT,
+            ExposureTime,
+            PositionX, PositionY, PositionZ;
 
-class Metadata
-{
-public:
-    uint32_t
-        SignificantBits,
-        SizeC, SizeT, SizeX, SizeY, SizeZ;
+        std::string
+            DeltaTUnit,
+            ExposureTimeUnit,
+            PositionXUnit,
+            PositionYUnit,
+            PositionZUnit;
+    };
 
-    float
-        PhysicalSizeXY,
-        PhysicalSizeZ,
-        TimeIncrement;
+    class Metadata
+    {
+    public:
+        uint32_t
+            SignificantBits,
+            SizeC, SizeT, SizeX, SizeY, SizeZ;
 
-    std::string
-        movie_name,
-        acquisitionDate,
-        DimensionOrder,
-        PhysicalSizeXYUnit,
-        PhysicalSizeZUnit,
-        TimeIncrementUnit;
+        float
+            PhysicalSizeXY,
+            PhysicalSizeZ,
+            TimeIncrement;
 
-    std::string metaString;
-    std::vector<std::string> nameCH;
+        std::string
+            movie_name,
+            acquisitionDate,
+            DimensionOrder,
+            PhysicalSizeXYUnit,
+            PhysicalSizeZUnit,
+            TimeIncrementUnit;
 
-    GP_API Metadata(Tiffer::Read *tif);
+        std::string metaString;
+        std::vector<std::string> nameCH;
 
-    GP_API bool hasPlanes(void) const { return (vPlanes.size() > 0); }
-    GP_API const Plane &getPlane(uint32_t c, uint32_t z, uint32_t t) const;
+        GP_API Metadata(Tiffer::Read *tif);
 
-private:
-    std::vector<Plane> vPlanes;
+        GP_API bool hasPlanes(void) const { return (vPlanes.size() > 0); }
+        GP_API const Plane &getPlane(uint32_t c, uint32_t z, uint32_t t) const;
 
-    bool parseOME(const std::string &inputString);
-    bool parseIJ(const std::string &inputString);
-    bool parseIJ_extended(const std::string &inputString);
-};
+    private:
+        std::vector<Plane> vPlanes;
+
+        bool parseOME(const std::string &inputString);
+        bool parseIJ(const std::string &inputString);
+        bool parseIJ_extended(const std::string &inputString);
+    };
+
+}

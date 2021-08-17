@@ -1,47 +1,46 @@
 #include "align.h"
 
-TransformData::TransformData(uint32_t width, uint32_t height) : size(width, height)
+GPT::TransformData::TransformData(uint32_t width, uint32_t height) : size(width, height)
 {
-    translate = {0.0f, 0.0f};
-    scale = {1.0f, 1.0f};
-    rotate = {0.5f * width, 0.5f * height, 0.0f};
+    translate = {0.0, 0.0};
+    scale = {1.0, 1.0};
+    rotate = {0.5 * width, 0.5 * height, 0.0f};
 
-    trf = glm::mat3(1.0f);
-    itrf = glm::mat3(1.0f);
+    trf = Mat3d::Identity();
+    itrf = Mat3d::Identity();
 } // constructor
 
-void TransformData::update(void)
+void GPT::TransformData::update(void)
 {
     // Creating transform matrix
+    Mat3d A, B, C, D;
 
-    glm::mat3 A(scale.x, 0.0f, (1.0f - scale.x) * 0.5f * size.x,
-                0.0f, scale.y, (1.0f - scale.y) * 0.5f * size.y,
-                0.0f, 0.0f, 1.0f);
+    A << scale(0), 0.0f, (1.0f - scale(0)) * 0.5f * size(0),
+        0.0f, scale(1), (1.0f - scale(1)) * 0.5f * size(1),
+        0.0f, 0.0f, 1.0f;
 
-    glm::mat3 B(1.0, 0.0, translate.x + rotate.x,
-                0.0, 1.0, translate.y + rotate.y,
-                0.0, 0.0, 1.0);
+    B << 1.0, 0.0, translate(0) + rotate(0),
+        0.0, 1.0, translate(1) + rotate(1),
+        0.0, 0.0, 1.0;
 
-    glm::mat3 C(cos(rotate.z), -sin(rotate.z), 0.0,
-                sin(rotate.z), cos(rotate.z), 0.0,
-                0.0, 0.0, 1.0);
+    C << cos(rotate(2)), -sin(rotate(2)), 0.0,
+        sin(rotate(2)), cos(rotate(2)), 0.0,
+        0.0, 0.0, 1.0;
 
-    glm::mat3 D(1.0, 0.0, -rotate.x,
-                0.0, 1.0, -rotate.y,
-                0.0, 0.0, 1.0);
+    D << 1.0, 0.0, -rotate(0),
+        0.0, 1.0, -rotate(1),
+        0.0, 0.0, 1.0;
 
     // Complete transformation
-    // trf = A * B * C * D;
-    trf = D * C * B * A;      // glm goes backwords
-    itrf = glm::inverse(trf); // just a facility
+    trf = A * B * C * D;
+    itrf = trf.inverse(); // just a facility
 
 } // updateTransform
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-static MatXd treatImage(MatXd img, int medianSize, double clipLimit,
-                        uint32_t tileSizeX, uint32_t tileSizeY)
+static MatXd treatImage(MatXd img, int medianSize, double clipLimit, uint32_t tileSizeX, uint32_t tileSizeY)
 {
 
     // Before anything else, let's correct contrast
@@ -205,7 +204,7 @@ static MatXd treatImage(MatXd img, int medianSize, double clipLimit,
 /*******************************************************************/
 /*******************************************************************/
 
-Align::Align(uint32_t nFrames, const MatXd *im1, const MatXd *im2)
+GPT::Align::Align(uint32_t nFrames, const MatXd *im1, const MatXd *im2)
 {
 
     vIm0.resize(nFrames);
@@ -231,7 +230,7 @@ Align::Align(uint32_t nFrames, const MatXd *im1, const MatXd *im2)
 
 } // constructor
 
-void Align::calcEnergy(const uint32_t id, const uint32_t nThr)
+void GPT::Align::calcEnergy(const uint32_t id, const uint32_t nThr)
 {
     global_energy[id] = 0.0;
 
@@ -245,8 +244,8 @@ void Align::calcEnergy(const uint32_t id, const uint32_t nThr)
         for (uint32_t y = 0; y < height; y++)
             for (uint32_t x = 0; x < width; x++)
             {
-                int i = static_cast<int32_t>(itrf[0][0] * (x + 0.5f) + itrf[0][1] * (y + 0.5f) + itrf[0][2] + 0.5f);
-                int j = static_cast<int32_t>(itrf[1][0] * (x + 0.5f) + itrf[1][1] * (y + 0.5f) + itrf[1][2] + 0.5f);
+                int32_t i = static_cast<int32_t>(itrf(0, 0) * (x + 0.5) + itrf(0, 1) * (y + 0.5) + itrf(0, 2) + 0.5);
+                int32_t j = static_cast<int32_t>(itrf(1, 0) * (x + 0.5) + itrf(1, 1) * (y + 0.5) + itrf(1, 2) + 0.5);
 
                 double dr = double(vIm0[fr](y, x));
                 if (i >= 0 && i < int(width) && j >= 0 && j < int(height))
@@ -259,27 +258,30 @@ void Align::calcEnergy(const uint32_t id, const uint32_t nThr)
 
 } // calcEnergy
 
-double Align::weightTransRot(const VecXd &p)
+double GPT::Align::weightTransRot(const VecXd &p)
 {
-    double dx = p[0], dy = p[1],
-           cx = p[2], cy = p[3], angle = p[4];
+    double 
+        dx = p[0], dy = p[1],
+        cx = p[2], cy = p[3], angle = p[4];
 
     // Transformation matrices
-    glm::mat3 A(1.0f, 0.0f, dx + cx,
-                0.0f, 1.0f, dy + cy,
-                0.0f, 0.0f, 1.0f);
+    Mat3d A, B, C;
 
-    glm::mat3 B(cos(angle), -sin(angle), 0.0f,
-                sin(angle), cos(angle), 0.0f,
-                0.0f, 0.0f, 1.0f);
+    A << 1.0, 0.0, dx + cx,
+         0.0, 1.0, dy + cy,
+         0.0, 0.0, 1.0;
 
-    glm::mat3 C(1.0f, 0.0f, -cx,
-                0.0f, 1.0f, -cy,
-                0.0f, 0.0f, 1.0f);
+    B << cos(angle), -sin(angle), 0.0,
+         sin(angle), cos(angle), 0.0,
+         0.0, 0.0, 1.0;
+
+    C << 1.0, 0.0, -cx,
+         0.0, 1.0, -cy,
+         0.0, 0.0, 1.0;
 
     // Complete transformation
-    glm::mat3 trf = C * B * A;
-    itrf = glm::inverse(trf);
+    Mat3d trf = A * B * C;
+    itrf = trf.inverse();
 
     // Splitting log-likelihood calculationg to threads
     const uint32_t nThr = std::thread::hardware_concurrency();
@@ -298,24 +300,26 @@ double Align::weightTransRot(const VecXd &p)
         energy += val;
 
     // We want to minimize, therefore the negative of the maximize
-    return 0.5 * RT.size.x * RT.size.y * log(energy);
+    return 0.5 * RT.size(0) * RT.size(1) * log(energy);
 
 } // weightFunc
 
-double Align::weightScale(const VecXd &p)
+double GPT::Align::weightScale(const VecXd &p)
 {
-    double sx = p[0], sy = p[1],
-           width = static_cast<double>(vIm0[0].cols()),
-           height = static_cast<double>(vIm0[0].rows());
+    double 
+        sx = p[0], sy = p[1],
+        width = static_cast<double>(vIm0[0].cols()), 
+        height = static_cast<double>(vIm0[0].rows());
 
     // Transformation matrices
-    glm::mat3 A(sx, 0.0f, 0.5f * width * (1.0f - sx),
-                0.0f, sy, 0.5f * height * (1.0f - sy),
-                0.0f, 0.0f, 1.0f);
+    Mat3d A;
+    A << sx, 0.0, 0.5 * width * (1.0 - sx),
+         0.0, sy, 0.5 * height * (1.0 - sy),
+         0.0, 0.0, 1.0;
 
     // Inverse of transfomation for mapping
-    glm::mat3 trf = glm::mat3(RT.trf) * A;
-    itrf = glm::inverse(trf);
+    Mat3d trf = A * RT.trf;
+    itrf = trf.inverse();
 
     // Splitting log-likelihood calculationg to threads
     const uint32_t nThr = std::thread::hardware_concurrency();
@@ -329,18 +333,18 @@ double Align::weightScale(const VecXd &p)
     for (auto &thr : vThr)
         thr.join();
 
-    double energy = 0.0f;
+    double energy = 0.0;
     for (double val : global_energy)
         energy += val;
 
     // We want to minimize, therefore the negative of the maximize
-    return 0.5f * width * height * log(energy);
+    return 0.5 * width * height * log(energy);
 }; // weightFunc
 
-bool Align::alignCameras(void)
+bool GPT::Align::alignCameras(void)
 {
     VecXd vec(5);
-    vec << RT.translate.x, RT.translate.y, RT.rotate.x, RT.rotate.y, RT.rotate.z;
+    vec << RT.translate(0), RT.translate(1), RT.rotate(0), RT.rotate(1), RT.rotate(2);
 
     nms = std::make_unique<GOptimize::NMSimplex>(vec, 1e-8, 15.0);
     if (!nms->runSimplex(&Align::weightTransRot, this))
@@ -348,7 +352,6 @@ bool Align::alignCameras(void)
 
     // Update TransformData
     vec = nms->getResults();
-
     RT.translate = {vec(0), vec(1)};
     RT.rotate = {vec(2), vec(3), vec(4)};
     RT.update();
@@ -356,10 +359,10 @@ bool Align::alignCameras(void)
     return true;
 }
 
-bool Align::correctAberrations(void)
+bool GPT::Align::correctAberrations(void)
 {
     VecXd vec(2);
-    vec << RT.scale.x, RT.scale.y;
+    vec << RT.scale(0), RT.scale(1);
 
     nms = std::make_unique<GOptimize::NMSimplex>(vec, 1e-8, 0.1);
     if (!nms->runSimplex(&Align::weightScale, this))

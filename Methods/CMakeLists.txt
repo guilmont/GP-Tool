@@ -1,16 +1,16 @@
 cmake_minimum_required(VERSION 3.10.0)
+project(GPMethods)
 
-
-find_package(Threads REQUIRED)
+set(GP_FBM_INC "${CMAKE_INSTALL_PREFIX}/include/GP_FBM")
+set(GP_EXPORT "${PROJECT_NAME}Config")
 
 
 # Including third party software
+find_package(Threads REQUIRED)
 add_subdirectory(vendor)
 
 # Creating shared project with out methods
-project(Methods)
-
-add_library(Methods SHARED
+add_library(${PROJECT_NAME} SHARED
 	"include/header.h"
 	"include/gtiffer.h"     "src/gtiffer.cpp"
 	"include/goptimize.h"   "src/goptimize.cpp"
@@ -21,16 +21,34 @@ add_library(Methods SHARED
 	"include/trajectory.h"  "src/trajectory.cpp"
 	"include/gp_fbm.h"      "src/gp_fbm.cpp"
 )
+
 if (GP_PRECOMPILED_HEADERS)
-	target_precompile_headers(Methods PUBLIC "include/header.h")
+	target_precompile_headers(${PROJECT_NAME} PUBLIC "include/header.h")
 endif()
 
 
-target_include_directories(Methods PUBLIC ${PROJECT_SOURCE_DIR}/include)
-target_link_libraries(Methods PUBLIC glm_ eigen pugixml Threads::Threads)
-target_compile_definitions(Methods PRIVATE GBUILD_DLL)
+target_compile_definitions(${PROJECT_NAME} PRIVATE GBUILD_DLL)
+target_include_directories(${PROJECT_NAME} PUBLIC
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include> 
+    $<INSTALL_INTERFACE:${GP_FBM_INC}>
+)
 
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    OUTPUT_NAME_RELEASE ${PROJECT_NAME}
+    OUTPUT_NAME_RELWITHDEBINFO ${PROJECT_NAME}_RelWithDebInfo
+    OUTPUT_NAME_DEBUG ${PROJECT_NAME}_Debug
+)
+
+target_link_libraries(${PROJECT_NAME} PUBLIC eigen pugixml Threads::Threads)
 
 file(GLOB INC_FILES "include/*.h")
-install(FILES ${INC_FILES} DESTINATION "include")
-install(TARGETS Methods DESTINATION ${CMAKE_INSTALL_PREFIX})
+install(FILES ${INC_FILES} DESTINATION ${GP_FBM_INC})
+
+install(TARGETS ${PROJECT_NAME}
+    EXPORT ${GP_EXPORT}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+    RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+)
+
+install(EXPORT ${GP_EXPORT} FILE ${GP_EXPORT}.cmake DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/cmake)

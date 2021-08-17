@@ -11,7 +11,7 @@ using UITraj = std::vector<std::pair<bool, glm::vec3>>;
 class TrajPlugin : public Plugin
 {
 public:
-    TrajPlugin(Movie *mov, GPTool *ptr);
+    TrajPlugin(GPT::Movie *mov, GPTool *ptr);
     ~TrajPlugin(void);
 
     void showWindows(void) override;
@@ -21,7 +21,7 @@ public:
 
     void loadTracks(void) { trackInfo.show = true; }
 
-    const Trajectory *getTrajectory(void) { return m_traj.get(); }
+    const GPT::Trajectory *getTrajectory(void) { return m_traj.get(); }
     UITraj *getUITrajectory(void) { return uitraj; }
 
 private:
@@ -50,10 +50,10 @@ private:
     void winPlots(void);
 
 private:
-    Movie *movie = nullptr;
+    GPT::Movie *movie = nullptr;
     GPTool *tool = nullptr;
 
-    std::unique_ptr<Trajectory> m_traj = nullptr;
+    std::unique_ptr<GPT::Trajectory> m_traj = nullptr;
 
     UITraj *uitraj = nullptr;
 

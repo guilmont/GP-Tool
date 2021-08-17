@@ -1,6 +1,5 @@
 #include "moviePlugin.h"
 
-
 LUT::LUT(void)
 {
     names.emplace_back("None");
@@ -44,27 +43,29 @@ const glm::vec3 &LUT::getColor(const std::string &name) const
 MoviePlugin::MoviePlugin(const std::string &movie_path, GPTool *ptr) : tool(ptr), firstTime(true)
 {
     // Importing movies
-    movie = std::make_unique<Movie>(movie_path);
+    movie = std::make_unique<GPT::Movie>(movie_path);
     if (!movie->successful())
     {
-        tool->mbox.createError("Could not open movie " + movie_path);
+        tool->mailbox.createError("Could not open movie " + movie_path);
         success = false;
         return;
     }
 
-    tool->mbox.createInfo("Movie: " + movie_path);
+    tool->mailbox.createInfo("Movie: " + movie_path);
 
     bool running = true;
-    auto prog = tool->mbox.createProgress("Loading images...", [](void *running) { *reinterpret_cast<bool *>(running) = false; }, &running);
+    auto prog = tool->mailbox.createProgress(
+        "Loading images...", [](void *running)
+        { *reinterpret_cast<bool *>(running) = false; },
+        &running);
 
-    
     // Setup info, histograms and textures
-    const Metadata &meta = movie->getMetadata();
+    const GPT::Metadata &meta = movie->getMetadata();
 
     info.resize(meta.SizeC);
     histo.resize(meta.SizeC);
 
-    uint32_t 
+    uint32_t
         counter = 0,
         nFrames = meta.SizeC * meta.SizeT;
 
@@ -107,7 +108,7 @@ void MoviePlugin::showProperties(void)
 
     ImGui::Begin("Properties");
 
-    const Metadata &meta = movie->getMetadata();
+    const GPT::Metadata &meta = movie->getMetadata();
 
     tool->fonts.text("Name: ", "bold");
     ImGui::SameLine();
@@ -236,7 +237,7 @@ void MoviePlugin::update(float deltaTime)
         // To liberate already allocated textures if they exist
         tool->texture.reset();
 
-        const Metadata &meta = movie->getMetadata();
+        const GPT::Metadata &meta = movie->getMetadata();
         for (uint32_t ch = 0; ch < meta.SizeC; ch++)
         {
             tool->texture.createFloat(std::to_string(ch), meta.SizeX, meta.SizeY);
@@ -244,7 +245,7 @@ void MoviePlugin::update(float deltaTime)
         }
     }
 
-    const Metadata &meta = movie->getMetadata();
+    const GPT::Metadata &meta = movie->getMetadata();
 
     glm::mat4 trf = tool->camera.getViewMatrix();
     trf = glm::scale(trf, {1.0f, float(meta.SizeY) / float(meta.SizeX), 1.0f});
@@ -300,9 +301,7 @@ void MoviePlugin::calcHistogram(uint32_t channel)
         loc->histogram[k] /= norma;
 
     updateTexture(channel);
-
 }
-
 
 void MoviePlugin::updateTexture(uint32_t channel)
 {
@@ -339,13 +338,12 @@ void MoviePlugin::updateTexture(uint32_t channel)
     MatXf img = movie->getImage(channel, current_frame).cast<float>();
     img = (img.array() - low) / (high - low);
     tool->texture.updateFloat(std::to_string(channel), img.data());
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 bool MoviePlugin::saveJSON(Json::Value &json)
 {
-    const Metadata &meta = movie->getMetadata();
+    const GPT::Metadata &meta = movie->getMetadata();
     json["movie_name"] = meta.movie_name;
     json["numChannels"] = meta.SizeC;
 

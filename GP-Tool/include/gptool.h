@@ -2,7 +2,6 @@
 
 #include "gpch.h"
 
-#include "mailbox.h"
 #include "moviePlugin.h"
 #include "alignPlugin.h"
 #include "trajPlugin.h"
@@ -29,9 +28,14 @@ public:
     void ImGuiLayer(void) override;
     void ImGuiMenuLayer(void) override;
 
-    Mailbox mbox;
     std::unique_ptr<GRender::Quad> quad = nullptr;
     std::unique_ptr<GRender::Framebuffer> viewBuf = nullptr; // Histograms and viewport
+
+private:
+    // Layout used for first time ever
+    glm::vec2 plPos = {0.01f, 0.05f}, plSize = {0.37f, 0.28f};
+    glm::vec2 propPos = {0.01f, 0.34f}, propSize = {0.37f, 0.65f};
+    glm::vec2 vwPos = {0.39f, 0.05f}, vwSize = {0.6f, 0.94f};
 
 private:
     Plugin *pActive = nullptr;

@@ -2,7 +2,7 @@
 
 #include <fstream>
 
-namespace Tiffer
+namespace GPT::Tiffer
 {
     static Buffer lzw_decoder(const uint8_t *vInput, const uint64_t SZ)
     {
@@ -135,9 +135,9 @@ namespace Tiffer
 
     } // get_uint32
 
-}; // namespace Tiffer
+}
 
-Tiffer::Read::Read(const std::string &movie_path) : movie_path(movie_path)
+GPT::Tiffer::Read::Read(const std::string &movie_path) : movie_path(movie_path)
 {
     // Reading binary data
     std::ifstream arq(movie_path, std::ios::binary);
@@ -145,7 +145,7 @@ Tiffer::Read::Read(const std::string &movie_path) : movie_path(movie_path)
     if (arq.fail())
     {
         success = false;
-        gpout("ERROR (Tiffer::Read) ==> Cannot read file:", movie_path);
+        pout("ERROR (GPT::Tiffer::Read) ==> Cannot read file:", movie_path);
         return;
     }
 
@@ -163,7 +163,7 @@ Tiffer::Read::Read(const std::string &movie_path) : movie_path(movie_path)
     if (get_uint16(2) != 42)
     {
         success = false;
-        gpout("ERROR (Tiffer::Read) ==> Not tiff file:", movie_path);
+        pout("ERROR (GPT::Tiffer::Read) ==> Not tiff file:", movie_path);
         return;
     }
 
@@ -204,7 +204,7 @@ Tiffer::Read::Read(const std::string &movie_path) : movie_path(movie_path)
                 else
                 {
                     success = false;
-                    gpout("ERROR (Tiffer::Read) ==> Compression format is not supported! ::", movie_path);
+                    pout("ERROR (GPT::Tiffer::Read) ==> Compression format is not supported! ::", movie_path);
                     return;
                 }
 
@@ -213,7 +213,7 @@ Tiffer::Read::Read(const std::string &movie_path) : movie_path(movie_path)
             if (tag == SAMPLESPERPIXEL && value != 1)
             {
                 success = false;
-                gpout("ERROR (Tiffer::Read::load) ==> Only grayscale format is supported! ::", movie_path);
+                pout("ERROR (GPT::Tiffer::Read::load) ==> Only grayscale format is supported! ::", movie_path);
                 return;
             }
 
@@ -234,7 +234,7 @@ Tiffer::Read::Read(const std::string &movie_path) : movie_path(movie_path)
                 if (value < 8 || value > 32)
                 {
                     success = false;
-                    gpout("ERROR (Tiffer::Read::load) ==> Only 8/16/32 bits grayscale images are accepted! ::", movie_path);
+                    pout("ERROR (GPT::Tiffer::Read::load) ==> Only 8/16/32 bits grayscale images are accepted! ::", movie_path);
                     return;
                 }
 
@@ -259,15 +259,15 @@ Tiffer::Read::Read(const std::string &movie_path) : movie_path(movie_path)
 
 } // constructor
 
-uint32_t Tiffer::Read::getBitCount(void) { return vIFD.at(0).field[BITSPERSAMPLE].value; }
-uint32_t Tiffer::Read::getWidth(void) { return vIFD.at(0).field[IMAGEWIDTH].value; }
-uint32_t Tiffer::Read::getHeight(void) { return vIFD.at(0).field[IMAGEHEIGHT].value; }
+uint32_t GPT::Tiffer::Read::getBitCount(void) { return vIFD.at(0).field[BITSPERSAMPLE].value; }
+uint32_t GPT::Tiffer::Read::getWidth(void) { return vIFD.at(0).field[IMAGEWIDTH].value; }
+uint32_t GPT::Tiffer::Read::getHeight(void) { return vIFD.at(0).field[IMAGEHEIGHT].value; }
 
-std::string Tiffer::Read::getDateTime(void)
+std::string GPT::Tiffer::Read::getDateTime(void)
 {
     if (vIFD.at(0).field.find(DATETIME) == vIFD.at(0).field.end())
     {
-        gpout("WARN (Tiffer::Read::getDateTime) ==> Movie doesn't contain a time stamp ::", movie_path);
+        pout("WARN (GPT::Tiffer::Read::getDateTime) ==> Movie doesn't contain a time stamp ::", movie_path);
         return "";
     }
     else
@@ -279,7 +279,7 @@ std::string Tiffer::Read::getDateTime(void)
     }
 } // getDateTime
 
-std::string Tiffer::Read::getMetadata(void)
+std::string GPT::Tiffer::Read::getMetadata(void)
 {
     auto it = vIFD.at(0).field.find(DESCRIPTION);
 
@@ -294,7 +294,7 @@ std::string Tiffer::Read::getMetadata(void)
     return out;
 } // getMetadata
 
-std::string Tiffer::Read::getIJMetadata(void)
+std::string GPT::Tiffer::Read::getIJMetadata(void)
 {
     auto it = vIFD[0].field.find(IJ_META_DATA);
 
@@ -313,7 +313,7 @@ std::string Tiffer::Read::getIJMetadata(void)
     return out;
 } // getIJMetadata
 
-Tiffer::ImData Tiffer::Read::getImageData(const uint32_t id)
+GPT::Tiffer::ImData GPT::Tiffer::Read::getImageData(const uint32_t id)
 {
     // pointer to directory
     auto &dir = vIFD.at(id).field;

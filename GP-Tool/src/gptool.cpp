@@ -2,14 +2,16 @@
 
 GPTool::GPTool(void)
 {
-    initialize("GP-Tool", 1200 * DPI_FACTOR, 800 * DPI_FACTOR);
+    fs::current_path(INSTALL_PATH);
+
+    initialize("GP-Tool", 1200, 800); // "assets/GP-Tool/layout.ini");
 
     uint32_t cor = 0x999999ff;
     quad = std::make_unique<GRender::Quad>(1);
     viewBuf = std::make_unique<GRender::Framebuffer>(1, 1);
 
     // Initializing shaders
-    fs::path shaderPath("assets/shaders");
+    fs::path shaderPath("assets/GP-Tool/shaders");
     shader.loadShader("histogram", (shaderPath / "basic.vtx.glsl").string(), (shaderPath / "histogram.frag.glsl").string());
     shader.loadShader("viewport", (shaderPath / "basic.vtx.glsl").string(), (shaderPath / "viewport.frag.glsl").string());
 
@@ -31,6 +33,11 @@ GPTool::~GPTool(void)
 
 void GPTool::showHeader(void)
 {
+    const ImVec2 wp = ImGui::GetMainViewport()->WorkPos;
+    const ImVec2 ws = ImGui::GetMainViewport()->WorkSize;
+    ImGui::SetNextWindowPos({wp.x + ws.x * plPos.x, wp.y + ws.y * plPos.y}, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize({ws.x * plSize.x, ws.y * plSize.y}, ImGuiCond_FirstUseEver);
+
     ImGui::Begin("Plugins");
 
     float width = ImGui::GetContentRegionAvailWidth();
@@ -81,6 +88,12 @@ void GPTool::showWindows(void)
 
 void GPTool::showProperties(void)
 {
+
+    const ImVec2 wp = ImGui::GetMainViewport()->WorkPos;
+    const ImVec2 ws = ImGui::GetMainViewport()->WorkSize;
+    ImGui::SetNextWindowPos({wp.x + ws.x * propPos.x, wp.y + ws.y * propPos.y}, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize({ws.x * propSize.x, ws.y * propSize.y}, ImGuiCond_FirstUseEver);
+
     if (pActive)
         pActive->showProperties();
     else
@@ -118,12 +131,11 @@ void GPTool::onUserUpdate(float deltaTime)
 
     // key combination to save data
     if (ctrl & S)
-       dialog.createDialog(GDialog::SAVE, "Save data...", {"json"}, this,
-                           [](const std::string &path, void *ptr) -> void
-                           {
-                               std::thread([](GPTool *tool, const std::string &path) -> void { tool->saveJSON(path); },
-                                           reinterpret_cast<GPTool *>(ptr), path).detach();
-                           });
+        dialog.createDialog(GDialog::SAVE, "Save data...", {"json"}, this,
+                            [](const std::string &path, void *ptr) -> void
+                            {
+                                std::thread([](GPTool *tool, const std::string &path) -> void{ tool->saveJSON(path); }, reinterpret_cast<GPTool *>(ptr), path).detach();
+                            });
 
     ///////////////////////////////////////////////////////
     // key combination open trajectory
@@ -160,24 +172,25 @@ void GPTool::onUserUpdate(float deltaTime)
     shader.useProgram("viewport"); // chooseing rendering program
     updateAll(deltaTime);          // Updateing all plugins
     quad->draw({0.0f, 0.0f, 0.0f}, {1.0f, 1.0f}, 0.0f, 0.0f);
-    quad->submit();                  // rendering final image
+    quad->submit(); // rendering final image
     viewBuf->unbind();
 
 } // function
 
 void GPTool::ImGuiLayer(void)
 {
-    // ImGui::ShowDemoWindow();
-    // ImPlot::ShowDemoWindow();
-
     // Plugin functions
     showHeader();
     showProperties();
     showWindows();
 
-    mbox.showMessages();
-
     /////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////
+
+    const ImVec2 wp = ImGui::GetMainViewport()->WorkPos;
+    const ImVec2 ws = ImGui::GetMainViewport()->WorkSize;
+    ImGui::SetNextWindowPos({wp.x + ws.x * vwPos.x, wp.y + ws.y * vwPos.y}, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize({ws.x * vwSize.x, ws.y * vwSize.y}, ImGuiCond_FirstUseEver);
 
     ImGui::Begin("Viewport", NULL, ImGuiWindowFlags_NoTitleBar);
 
@@ -208,7 +221,7 @@ void GPTool::ImGuiMenuLayer(void)
     {
         if (ImGui::MenuItem("Open movie...", "Ctrl+O"))
             dialog.createDialog(GDialog::OPEN, "Choose TIF file...", {"tif", "ome.tif"}, this,
-                                [](const std::string &path, void *ptr) -> void{ reinterpret_cast<GPTool *>(ptr)->openMovie(path); });
+                                [](const std::string &path, void *ptr) -> void { reinterpret_cast<GPTool *>(ptr)->openMovie(path); });
 
         if (ImGui::MenuItem("Load trajectories...", "Ctrl+T", nullptr, plugins["TRAJECTORY"] != nullptr))
             reinterpret_cast<TrajPlugin *>(plugins["TRAJECTORY"].get())->loadTracks();
@@ -217,8 +230,7 @@ void GPTool::ImGuiMenuLayer(void)
             dialog.createDialog(GDialog::SAVE, "Choose TIF file...", {"json"}, this,
                                 [](const std::string &path, void *ptr) -> void
                                 {
-                                    std::thread([](GPTool *tool, const std::string &path) -> void { tool->saveJSON(path); },
-                                    reinterpret_cast<GPTool *>(ptr), path).detach();
+                                    std::thread([](GPTool *tool, const std::string &path) -> void { tool->saveJSON(path); }, reinterpret_cast<GPTool *>(ptr), path).detach();
                                 });
 
         if (ImGui::MenuItem("Exit"))
@@ -230,13 +242,13 @@ void GPTool::ImGuiMenuLayer(void)
     if (ImGui::BeginMenu("About"))
     {
         if (ImGui::MenuItem("Show mailbox"))
-            mbox.setActive();
+            mailbox.setActive();
 
         if (ImGui::MenuItem("How to cite"))
-            mbox.createInfo("Refer to paper at https://doi.org/10.1101/2021.03.16.435699");
+            mailbox.createInfo("Refer to paper at https://doi.org/10.1101/2021.03.16.435699");
 
         if (ImGui::MenuItem("Documentation"))
-            mbox.createInfo("View complete documentation at https://github.com/guilmont/GP-Tool");
+            mailbox.createInfo("View complete documentation at https://github.com/guilmont/GP-Tool");
 
         ImGui::EndMenu();
     }
@@ -247,38 +259,39 @@ void GPTool::ImGuiMenuLayer(void)
 void GPTool::openMovie(const std::string &path)
 {
 
-    std::thread([](GPTool *tool, const std::string &path) -> void
+    std::thread(
+        [](GPTool *tool, const std::string &path) -> void
+        {
+            MoviePlugin *movpl = new MoviePlugin(path, tool);
+
+            if (movpl->successful())
+            {
+                tool->camera.reset();
+
+                // Including movie plugin into the manager
+                tool->addPlugin("MOVIE", movpl);
+                tool->setActive("MOVIE");
+
+                // Determine if we need the alignment plugin
+                GPT::Movie *movie = movpl->getMovie();
+                if (movie->getMetadata().SizeC > 1)
                 {
-                    MoviePlugin *movpl = new MoviePlugin(path, tool);
+                    AlignPlugin *alg = new AlignPlugin(movie, tool);
+                    tool->addPlugin("ALIGNMENT", alg);
+                }
 
-                    if (movpl->successful())
-                    {
-                        tool->camera.reset();
+                // trajectory plugin
+                TrajPlugin *traj = new TrajPlugin(movie, tool);
+                tool->addPlugin("TRAJECTORY", traj);
 
-                        // Including movie plugin into the manager
-                        tool->addPlugin("MOVIE", movpl);
-                        tool->setActive("MOVIE");
-
-                        // Determine if we need the alignment plugin
-                        Movie *movie = movpl->getMovie();
-                        if (movie->getMetadata().SizeC > 1)
-                        {
-                            AlignPlugin *alg = new AlignPlugin(movie, tool);
-                            tool->addPlugin("ALIGNMENT", alg);
-                        }
-
-                        // trajectory plugin
-                        TrajPlugin *traj = new TrajPlugin(movie, tool);
-                        tool->addPlugin("TRAJECTORY", traj);
-
-                        // Gaussian process plugin
-                        GPPlugin *gp = new GPPlugin(tool);
-                        tool->addPlugin("GPROCESS", gp);
-                    }
-                    else
-                        delete movpl;
-                },
-                this, path)
+                // Gaussian process plugin
+                GPPlugin *gp = new GPPlugin(tool);
+                tool->addPlugin("GPROCESS", gp);
+            }
+            else
+                delete movpl;
+        },
+        this, path)
         .detach();
 }
 
@@ -292,7 +305,7 @@ void GPTool::saveJSON(const std::string &path)
         pgl->saveJSON(output);
     else
     {
-        mbox.createInfo("Nothing to be save!!");
+        mailbox.createInfo("Nothing to be save!!");
         return;
     }
 
@@ -320,6 +333,6 @@ void GPTool::saveJSON(const std::string &path)
     arq << output;
     arq.close();
 
-    mbox.createInfo("File saved to '" + path + "'");
+    mailbox.createInfo("File saved to '" + path + "'");
 
 } // saveJSON

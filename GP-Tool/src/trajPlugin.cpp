@@ -32,7 +32,7 @@ static Json::Value jsonEigen(const MatXd &mat)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-TrajPlugin::TrajPlugin(Movie *mov, GPTool *ptr) : movie(mov), tool(ptr)
+TrajPlugin::TrajPlugin(GPT::Movie *mov, GPTool *ptr) : movie(mov), tool(ptr)
 {
     const uint32_t SC = mov->getMetadata().SizeC;
     trackInfo.path.resize(SC);
@@ -85,7 +85,7 @@ void TrajPlugin::showProperties(void)
                 {
                     ImGui::PushID(txt.c_str());
 
-                    Track track = m_traj->getTrack(ch);
+                    GPT::Track track = m_traj->getTrack(ch);
 
                     tool->fonts.text("Filename: ", "bold");
                     ImGui::SameLine();
@@ -165,20 +165,20 @@ void TrajPlugin::update(float deltaTime)
 
     MoviePlugin *mov = reinterpret_cast<MoviePlugin *>(tool->getPlugin("MOVIE"));
 
-    const Metadata &meta = movie->getMetadata();
+    const GPT::Metadata &meta = movie->getMetadata();
 
     const uint32_t frame = mov->current_frame,
                    nChannels = movie->getMetadata().SizeC;
 
     const glm::vec2 size = {float(meta.SizeY), float(meta.SizeX)};
-    glm::mat3 trf(1.0f);
+    Mat3d trf = Mat3d::Identity();
 
     uint32_t nPts = 0;
     std::array<glm::vec3, 128> vCor, vPos;
     for (uint32_t ch = 0; ch < nChannels; ch++)
     {
         int32_t ct = -1;
-        const Track &track = m_traj->getTrack(ch);
+        const GPT::Track &track = m_traj->getTrack(ch);
 
         if (ch > 0)
         {
@@ -196,15 +196,14 @@ void TrajPlugin::update(float deltaTime)
             for (uint32_t k = 0; k < uint32_t(mat.rows()); k++)
                 if (uint32_t(mat(k, 0)) == frame)
                 {
-                    float x = float(mat(k, Track::POSX)),
-                          y = float(mat(k, Track::POSY)),
-                          rx = float(mat(k, Track::SIZEX)) / size.x,
-                          ry = float(mat(k, Track::SIZEY)) / size.y;
-
-                    float r = 0.5f * std::sqrt(rx * rx + ry * ry);
-
-                    float nx = trf[0][0] * x + trf[0][1] * y + trf[0][2],
-                          ny = trf[1][0] * x + trf[1][1] * y + trf[1][2];
+                    double 
+                        x = mat(k, GPT::Track::POSX),
+                        y = mat(k, GPT::Track::POSY),
+                        rx = mat(k, GPT::Track::SIZEX) / size.x,
+                        ry = mat(k, GPT::Track::SIZEY) / size.y,
+                        r = 0.5f * std::sqrt(rx * rx + ry * ry),
+                        nx = trf(0, 0) * x + trf(0, 1) * y + trf(0, 2),
+                        ny = trf(1, 0) * x + trf(1, 1) * y + trf(1, 2);
 
                     vPos[nPts] = {nx, ny, r};
                     vCor[nPts] = cor;
@@ -233,7 +232,7 @@ bool TrajPlugin::saveJSON(Json::Value &json)
     if (m_traj == nullptr)
         return false;
 
-    const Metadata &meta = movie->getMetadata();
+    const GPT::Metadata &meta = movie->getMetadata();
 
     json["PhysicalSizeXY"] = meta.PhysicalSizeXY;
     json["PhysicalSizeXYUnit"] = meta.PhysicalSizeXYUnit;
@@ -260,7 +259,7 @@ bool TrajPlugin::saveJSON(Json::Value &json)
 
 void TrajPlugin::enhanceTracks(void)
 {
-    m_traj = std::make_unique<Trajectory>(movie);
+    m_traj = std::make_unique<GPT::Trajectory>(movie);
 
     m_traj->spotSize = trackInfo.spotSize;
     const uint32_t nChannels = movie->getMetadata().SizeC;
@@ -279,15 +278,23 @@ void TrajPlugin::enhanceTracks(void)
 
     } // loop - channels
 
-    auto prog = tool->mbox.createProgress("Optimizing trajectories...", [](void *traj) { reinterpret_cast<Trajectory* >(traj)->stop(); }, m_traj.get());
-
-    std::thread([](Trajectory* traj, Message::Progress* prog) {
-        while (prog->progress < 1.0f)
-            prog->progress = traj->getProgress();
-        }, m_traj.get(), prog).detach();
+    auto prog = tool->mailbox.createProgress(
+        "Optimizing trajectories...",
+        [](void *traj)
+        { reinterpret_cast<GPT::Trajectory *>(traj)->stop(); },
+        m_traj.get());
 
     std::thread(
-        [](Trajectory *m_traj, UITraj *uitraj, uint32_t nChannels)
+        [](GPT::Trajectory *traj, GRender::Progress *prog)
+        {
+            while (prog->progress < 1.0f)
+                prog->progress = traj->getProgress();
+        },
+        m_traj.get(), prog)
+        .detach();
+
+    std::thread(
+        [](GPT::Trajectory *m_traj, UITraj *uitraj, uint32_t nChannels)
         {
             m_traj->enhanceTracks();
 
@@ -297,7 +304,7 @@ void TrajPlugin::enhanceTracks(void)
 
             for (uint32_t ch = 0; ch < nChannels; ch++)
             {
-                const Track &track = m_traj->getTrack(ch);
+                const GPT::Track &track = m_traj->getTrack(ch);
                 const uint32_t NT = uint32_t(track.traj.size());
 
                 uitraj[ch].resize(NT);
@@ -385,7 +392,7 @@ void TrajPlugin::winLoadTracks(void)
 
 void TrajPlugin::winDetail(void)
 {
-    const Track &track = m_traj->getTrack(detail.trackID);
+    const GPT::Track &track = m_traj->getTrack(detail.trackID);
     const MatXd &mat = track.traj.at(detail.trajID);
     const uint32_t nRows = static_cast<uint32_t>(mat.rows());
 
@@ -393,7 +400,7 @@ void TrajPlugin::winDetail(void)
 
     tool->fonts.text("Path: ", "bold");
     ImGui::SameLine();
-    ImGui::TextUnformatted((const char*) track.path.c_str());
+    ImGui::TextUnformatted((const char *)track.path.c_str());
 
     tool->fonts.text("Description: ", "bold");
     ImGui::SameLine();
@@ -421,7 +428,7 @@ void TrajPlugin::winDetail(void)
             GDialog::SAVE, "Export CSV", {"csv"}, (void *)mat,
             [](const std::string &path, void *ptr) -> void
             {
-                std::array<std::string, Track::NCOLS> header = {
+                std::array<std::string, GPT::Track::NCOLS> header = {
                     "Frame", "Time", "Position X", "Position Y",
                     "Error X", "Error Y", "Size X", "Size Y",
                     "Background", "Signal"};
@@ -455,10 +462,10 @@ void TrajPlugin::winDetail(void)
     ImGuiTableFlags flags = ImGuiTableFlags_ScrollY;
     flags |= ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_BordersV;
 
-    if (ImGui::BeginTable("table1", Track::NCOLS, flags))
+    if (ImGui::BeginTable("table1", GPT::Track::NCOLS, flags))
     {
         // Header
-        for (uint32_t k = 0; k < Track::NCOLS; k++)
+        for (uint32_t k = 0; k < GPT::Track::NCOLS; k++)
             ImGui::TableSetupColumn(names[k]);
         ImGui::TableHeadersRow();
 
@@ -472,7 +479,7 @@ void TrajPlugin::winDetail(void)
             ImGui::Text("%.0f", mat(row, 0));
 
             // remains columns
-            for (uint32_t column = 1; column < Track::NCOLS; column++)
+            for (uint32_t column = 1; column < GPT::Track::NCOLS; column++)
             {
                 ImGui::TableSetColumnIndex(column);
                 ImGui::Text("%.3f", mat(row, column));
@@ -512,15 +519,15 @@ void TrajPlugin::winPlots(void)
     const double xmin = mat(0, 0),
                  xmax = mat(nPts - 1, 0);
 
-    const VecXd &frame = mat.col(Track::FRAME);
+    const VecXd &frame = mat.col(GPT::Track::FRAME);
 
     if (id == 0) // Movement
     {
-        VecXd X = mat.col(Track::POSX).array() - mat(0, Track::POSX),
-              Y = mat.col(Track::POSY).array() - mat(0, Track::POSY);
+        VecXd X = mat.col(GPT::Track::POSX).array() - mat(0, GPT::Track::POSX),
+              Y = mat.col(GPT::Track::POSY).array() - mat(0, GPT::Track::POSY);
 
-        VecXd errx = 1.96 * mat.col(Track::ERRX),
-              erry = 1.96 * mat.col(Track::ERRY);
+        VecXd errx = 1.96 * mat.col(GPT::Track::ERRX),
+              erry = 1.96 * mat.col(GPT::Track::ERRY);
 
         VecXd lowX = X - errx, highX = X + errx;
         VecXd lowY = Y - erry, highY = Y + erry;
@@ -546,8 +553,8 @@ void TrajPlugin::winPlots(void)
 
     else if (id == 1) // Spot size
     {
-        const VecXd &szx = mat.col(Track::SIZEX),
-                    &szy = mat.col(Track::SIZEY);
+        const VecXd &szx = mat.col(GPT::Track::SIZEX),
+                    &szy = mat.col(GPT::Track::SIZEY);
 
         const double ymin = 0.5 * std::min(szx.minCoeff(), szy.minCoeff()),
                      ymax = 1.2 * std::max(szx.maxCoeff(), szy.maxCoeff());
@@ -563,8 +570,8 @@ void TrajPlugin::winPlots(void)
 
     else // Signal and background
     {
-        const VecXd &bg = mat.col(Track::BG),
-                    &sig = mat.col(Track::SIGNAL);
+        const VecXd &bg = mat.col(GPT::Track::BG),
+                    &sig = mat.col(GPT::Track::SIGNAL);
 
         const double ymin = 0.5 * std::min(bg.minCoeff(), sig.minCoeff()),
                      ymax = 1.2 * std::max(bg.maxCoeff(), sig.maxCoeff());

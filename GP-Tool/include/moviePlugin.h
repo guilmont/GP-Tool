@@ -36,7 +36,7 @@ public:
 
     const glm::vec3 &getColor(uint32_t channel) { return lut.getColor(info[channel].lut_name); }
     
-    Movie *getMovie(void) { return movie.get(); }
+    GPT::Movie *getMovie(void) { return movie.get(); }
     bool successful(void) const { return success; }
 
 private:
@@ -60,7 +60,7 @@ private:
     std::vector<std::unique_ptr<GRender::Framebuffer>> histo;
 
     GPTool *tool = nullptr;
-    std::unique_ptr<Movie> movie = nullptr;
+    std::unique_ptr<GPT::Movie> movie = nullptr;
 
     bool success = true;
 };

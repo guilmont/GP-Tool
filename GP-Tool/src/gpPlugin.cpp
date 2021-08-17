@@ -94,7 +94,7 @@ void GPPlugin::showWindows(void)
 void GPPlugin::showProperties(void)
 {
     TrajPlugin *pgl = reinterpret_cast<TrajPlugin *>(tool->getPlugin("TRAJECTORY"));
-    const Trajectory *vTrack = pgl->getTrajectory();
+    const GPT::Trajectory *vTrack = pgl->getTrajectory();
 
     ImGui::Begin("Properties");
 
@@ -119,12 +119,12 @@ void GPPlugin::showProperties(void)
     {
         // Checking which trajectories are selected
         std::vector<MatXd> vTraj;
-        std::vector<GP_FBM::ParticleID> partID;
+        std::vector<GPT::GP_FBM::ParticleID> partID;
 
         const uint32_t nTracks = vTrack->getNumTracks();
         for (uint32_t tr = 0; tr < nTracks; tr++)
         {
-            const Track &track = vTrack->getTrack(tr);
+            const GPT::Track &track = vTrack->getTrack(tr);
             const uint32_t nTraj = uint32_t(track.traj.size());
 
             // TODO: Correct trajectory for alignment when necessary
@@ -135,7 +135,7 @@ void GPPlugin::showProperties(void)
                 {
                     if (track.traj[k].rows() < 50)
                     {
-                        tool->mbox.createWarn("Discarding trajectory with less than 50 frames!");
+                        tool->mailbox.createWarn("Discarding trajectory with less than 50 frames!");
                     }
                     else
                     {
@@ -151,17 +151,16 @@ void GPPlugin::showProperties(void)
         } // loop-tracks
 
         if (vTraj.size() == 0)
-            tool->mbox.createWarn("No trajectories selected!!");
+            tool->mailbox.createWarn("No trajectories selected!!");
 
         else if (vTraj.size() > 5)
-            tool->mbox.createWarn("A maximum of 5 trajectories are allowed per cell!");
+            tool->mailbox.createWarn("A maximum of 5 trajectories are allowed per cell!");
 
         else
         {
             const uint32_t nTraj = uint32_t(vTraj.size());
-            
+
             std::thread(&GPPlugin::addNewCell, this, vTraj, partID).detach();
-       
         }
     } // if-add-cell
 
@@ -183,7 +182,7 @@ void GPPlugin::showProperties(void)
 
     for (auto &gp : vecGP)
     {
-        const Movie *movie = reinterpret_cast<MoviePlugin *>(tool->getPlugin("MOVIE"))->getMovie();
+        const GPT::Movie *movie = reinterpret_cast<MoviePlugin *>(tool->getPlugin("MOVIE"))->getMovie();
 
         const float
             pix2mu = movie->getMetadata().PhysicalSizeXY,
@@ -296,9 +295,9 @@ void GPPlugin::showProperties(void)
             {
                 distribView.gpID = uint32_t(gpID);
 
-                std::thread([](GP_FBM *gp, Mailbox *mbox, bool *show) -> void
+                std::thread([](GPT::GP_FBM *gp, GRender::Mailbox *mailbox, bool *show) -> void
                             {
-                                auto msg = mbox->createTimer("Calculating distributions ...", [](void *) {});
+                                auto msg = mailbox->createTimer("Calculating distributions ...", [](void *) {});
 
                                 if (gp->getNumParticles() == 1)
                                     gp->distrib_singleModel(sample_size);
@@ -308,7 +307,7 @@ void GPPlugin::showProperties(void)
                                 *show = true;
                                 msg->stop();
                             },
-                            vecGP[gpID].get(), &(tool->mbox), &(distribView.show))
+                            vecGP[gpID].get(), &(tool->mailbox), &(distribView.show))
                     .detach();
 
             } // button-distribution
@@ -321,9 +320,9 @@ void GPPlugin::showProperties(void)
                     subView.gpID = uint32_t(gpID);
 
                     std::thread(
-                        [](GP_FBM *gp, Mailbox *mbox, bool *show) -> void
+                        [](GPT::GP_FBM *gp, GRender::Mailbox *mailbox, bool *show) -> void
                         {
-                            auto msg = mbox->createTimer("Calculating substrate data...", [](void *) {});
+                            auto msg = mailbox->createTimer("Calculating substrate data...", [](void *) {});
 
                             gp->estimateSubstrateMovement();
                             gp->distrib_coupledModel(sample_size);
@@ -331,7 +330,7 @@ void GPPlugin::showProperties(void)
 
                             msg->stop();
                         },
-                        vecGP[gpID].get(), &(tool->mbox), &(subView.show))
+                        vecGP[gpID].get(), &(tool->mailbox), &(subView.show))
                         .detach();
                 }
             }
@@ -364,7 +363,7 @@ bool GPPlugin::saveJSON(Json::Value &json)
         return false;
 
     MoviePlugin *pgl = reinterpret_cast<MoviePlugin *>(tool->getPlugin("MOVIE"));
-    const Metadata &meta = pgl->getMovie()->getMetadata();
+    const GPT::Metadata &meta = pgl->getMovie()->getMetadata();
     const double Dcalib = meta.PhysicalSizeXY * meta.PhysicalSizeXY;
 
     json["D_units"] = meta.PhysicalSizeXYUnit + "^2/" + meta.TimeIncrementUnit + "^A";
@@ -372,7 +371,7 @@ bool GPPlugin::saveJSON(Json::Value &json)
     for (uint32_t id = 0; id < nCells; id++)
     {
         Json::Value cell;
-        GP_FBM *gp = vecGP[id].get();
+        GPT::GP_FBM *gp = vecGP[id].get();
 
         const uint32_t nParticles = gp->getNumParticles();
 
@@ -383,15 +382,15 @@ bool GPPlugin::saveJSON(Json::Value &json)
         single["dynamics"] = Json::arrayValue;
         for (uint32_t pt = 0; pt < nParticles; pt++)
         {
-            GP_FBM::DA *da = gp->singleModel(pt);
+            GPT::GP_FBM::DA *da = gp->singleModel(pt);
 
             Json::Value row(Json::arrayValue);
             row.append(gp->partID[pt].trackID);
             row.append(gp->partID[pt].trajID);
             row.append(Dcalib * da->D);
             row.append(da->A);
-            row.append(da->mu.x);
-            row.append(da->mu.y);
+            row.append(da->mu(0));
+            row.append(da->mu(1));
             single["dynamics"].append(std::move(row));
         }
 
@@ -402,7 +401,7 @@ bool GPPlugin::saveJSON(Json::Value &json)
             coupled["columns"] = "channel, particle_id, D, A";
 
             coupled["dynamics"] = Json::arrayValue;
-            GP_FBM::CDA *cda = gp->coupledModel();
+            GPT::GP_FBM::CDA *cda = gp->coupledModel();
             for (uint32_t pt = 0; pt < nParticles; pt++)
             {
                 Json::Value row(Json::arrayValue);
@@ -437,35 +436,34 @@ bool GPPlugin::saveJSON(Json::Value &json)
 void GPPlugin::winAvgView(void)
 {
     // Getting data from specific particle
-    const GP_FBM::ParticleID pid = vecGP[avgView.gpID]->partID[avgView.trajID];
+    const GPT::GP_FBM::ParticleID pid = vecGP[avgView.gpID]->partID[avgView.trajID];
 
-    const Trajectory *traj = reinterpret_cast<TrajPlugin *>(tool->getPlugin("TRAJECTORY"))->getTrajectory();
+    const GPT::Trajectory *traj = reinterpret_cast<TrajPlugin *>(tool->getPlugin("TRAJECTORY"))->getTrajectory();
 
     // Getting its original trajectory
     const MatXd &orig = traj->getTrack(pid.trackID).traj[pid.trajID];
     const uint32_t nRows = uint32_t(orig.rows());
 
     // Preparing data for scatter plot
-    VecXd OT = orig.col(Track::TIME),
-          OX = orig.col(Track::POSX).array() - orig(0, Track::POSX),
-          OY = orig.col(Track::POSY).array() - orig(0, Track::POSY);
+    VecXd OT = orig.col(GPT::Track::TIME),
+          OX = orig.col(GPT::Track::POSX).array() - orig(0, GPT::Track::POSX),
+          OY = orig.col(GPT::Track::POSY).array() - orig(0, GPT::Track::POSY);
 
     // Calculating most probable trajectory with error
-    const uint32_t nPts = uint32_t(
-        float(orig(nRows - 1, Track::TIME) - orig(0, Track::TIME)) / 0.05f);
+    const uint32_t nPts = uint32_t(float(orig(nRows - 1, GPT::Track::TIME) - orig(0, GPT::Track::TIME)) / 0.05f);
 
     VecXd vt(nPts);
     for (uint32_t k = 0; k < nPts; k++)
-        vt(k) = orig(0, Track::TIME) + 0.05f * k;
+        vt(k) = orig(0, GPT::Track::TIME) + 0.05f * k;
 
     const MatXd &mat = vecGP[avgView.gpID]->calcAvgTrajectory(vt, avgView.trajID);
 
     // Preparing data for shaded plot
-    VecXd X = mat.col(Track::POSX - 1).array() - mat(0, Track::POSX - 1),
-          Y = mat.col(Track::POSY - 1).array() - mat(0, Track::POSY - 1);
+    VecXd X = mat.col(GPT::Track::POSX - 1).array() - mat(0, GPT::Track::POSX - 1),
+          Y = mat.col(GPT::Track::POSY - 1).array() - mat(0, GPT::Track::POSY - 1);
 
-    VecXd errx = 1.96 * mat.col(Track::ERRX - 1),
-          erry = 1.96 * mat.col(Track::ERRY - 1);
+    VecXd errx = 1.96 * mat.col(GPT::Track::ERRX - 1),
+          erry = 1.96 * mat.col(GPT::Track::ERRY - 1);
 
     VecXd lowX = X - errx, highX = X + errx;
     VecXd lowY = Y - erry, highY = Y + erry;
@@ -510,7 +508,7 @@ void GPPlugin::winAvgView(void)
 void GPPlugin::winSubstrate(void)
 {
     // Gathering some information
-    const Movie *movie = reinterpret_cast<MoviePlugin *>(tool->getPlugin("MOVIE"))->getMovie();
+    const GPT::Movie *movie = reinterpret_cast<MoviePlugin *>(tool->getPlugin("MOVIE"))->getMovie();
 
     const float
         pix2mu = movie->getMetadata().PhysicalSizeXY,
@@ -520,7 +518,7 @@ void GPPlugin::winSubstrate(void)
         *spaceUnit = movie->getMetadata().PhysicalSizeXYUnit.c_str(),
         *timeUnit = movie->getMetadata().TimeIncrementUnit.c_str();
 
-    GP_FBM *gp = vecGP[subView.gpID].get();
+    GPT::GP_FBM *gp = vecGP[subView.gpID].get();
     const MatXd &mat = gp->estimateSubstrateMovement();
     const MatXd &distrib = gp->distrib_coupledModel();
 
@@ -648,12 +646,12 @@ void GPPlugin::winPlotSubstrate(void)
     const uint32_t nPts = uint32_t(mat.rows());
 
     // Preparing data for shaded plot
-    VecXd T = mat.col(Track::TIME),
-          X = mat.col(Track::POSX).array() - mat(0, Track::POSX),
-          Y = mat.col(Track::POSY).array() - mat(0, Track::POSY);
+    VecXd T = mat.col(GPT::Track::TIME),
+          X = mat.col(GPT::Track::POSX).array() - mat(0, GPT::Track::POSX),
+          Y = mat.col(GPT::Track::POSY).array() - mat(0, GPT::Track::POSY);
 
-    VecXd errx = 1.96 * mat.col(Track::ERRX),
-          erry = 1.96 * mat.col(Track::ERRY);
+    VecXd errx = 1.96 * mat.col(GPT::Track::ERRX),
+          erry = 1.96 * mat.col(GPT::Track::ERRY);
 
     VecXd lowX = X - errx, highX = X + errx;
     VecXd lowY = Y - erry, highY = Y + erry;
@@ -698,10 +696,10 @@ void GPPlugin::winDistributions(void)
     binOption(bins); // helper function
 
     // Gathering the data we need
-    GP_FBM *gp = vecGP[distribView.gpID].get();
+    GPT::GP_FBM *gp = vecGP[distribView.gpID].get();
     const uint32_t nParticles = gp->getNumParticles();
 
-    const Metadata &meta = reinterpret_cast<MoviePlugin *>(tool->getPlugin("MOVIE"))->getMovie()->getMetadata();
+    const GPT::Metadata &meta = reinterpret_cast<MoviePlugin *>(tool->getPlugin("MOVIE"))->getMovie()->getMetadata();
 
     float Dcalib = meta.PhysicalSizeXY * meta.PhysicalSizeXY;
 
@@ -750,19 +748,22 @@ void GPPlugin::winDistributions(void)
 
 } // winDistributions
 
-void GPPlugin::addNewCell(const std::vector<MatXd>& vTraj, const std::vector<GP_FBM::ParticleID>& partID)
+void GPPlugin::addNewCell(const std::vector<MatXd> &vTraj, const std::vector<GPT::GP_FBM::ParticleID> &partID)
 {
 
-    GP_FBM* gp = new GP_FBM(vTraj);
+    GPT::GP_FBM *gp = new GPT::GP_FBM(vTraj);
     gp->partID = partID;
 
-    auto msg = tool->mbox.createTimer("Optimizing cell's parameters", [](void* gp) { reinterpret_cast<GP_FBM*>(gp)->stop(); }, gp);
+    auto msg = tool->mailbox.createTimer(
+        "Optimizing cell's parameters", [](void *gp)
+        { reinterpret_cast<GPT::GP_FBM *>(gp)->stop(); },
+        gp);
 
     if (vTraj.size() == 1)
     {
         if (!gp->singleModel())
         {
-            tool->mbox.createWarn("GP-FBM :: single model didn't converge!");
+            tool->mailbox.createWarn("GP-FBM :: single model didn't converge!");
             return;
         }
     }
@@ -770,7 +771,7 @@ void GPPlugin::addNewCell(const std::vector<MatXd>& vTraj, const std::vector<GP_
     {
         if (!gp->coupledModel())
         {
-            tool->mbox.createWarn("GP-FBM :: coupled model didn't converge!");
+            tool->mailbox.createWarn("GP-FBM :: coupled model didn't converge!");
             return;
         }
     }
