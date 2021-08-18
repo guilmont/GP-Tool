@@ -137,7 +137,7 @@ namespace GPT::Tiffer
 
 }
 
-GPT::Tiffer::Read::Read(const std::string &movie_path) : movie_path(movie_path)
+GPT::Tiffer::Read::Read(const fs::path &movie_path) : movie_path(movie_path)
 {
     // Reading binary data
     std::ifstream arq(movie_path, std::ios::binary);

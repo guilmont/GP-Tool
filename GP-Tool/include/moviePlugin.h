@@ -25,7 +25,7 @@ private:
 class MoviePlugin : public Plugin
 {
 public:
-    MoviePlugin(const std::string &path, GPTool *ptr);
+    MoviePlugin(const fs::path &path, GPTool *ptr);
     ~MoviePlugin(void);
 
     int32_t current_frame = 0;

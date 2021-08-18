@@ -28,6 +28,9 @@ public:
     void ImGuiLayer(void) override;
     void ImGuiMenuLayer(void) override;
 
+    void openMovie(const fs::path &path);
+    void saveJSON(const fs::path &path);
+
     std::unique_ptr<GRender::Quad> quad = nullptr;
     std::unique_ptr<GRender::Framebuffer> viewBuf = nullptr; // Histograms and viewport
 
@@ -44,7 +47,4 @@ private:
     // flow variables
     bool viewport_hover = false;
 
-private:
-    void openMovie(const std::string &path);
-    void saveJSON(const std::string &path);
 };

@@ -3,7 +3,7 @@
 
 namespace GPT
 {
-    Movie::Movie(const std::string &movie_path)
+    Movie::Movie(const fs::path &movie_path)
     {
 
         tif = std::make_unique<Tiffer::Read>(movie_path);

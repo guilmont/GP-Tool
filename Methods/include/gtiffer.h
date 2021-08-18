@@ -55,11 +55,11 @@ namespace GPT
         class Read
         {
         public:
-            Read(const std::string &movie_path);
+            Read(const fs::path &movie_path);
 
             bool successful(void) const { return success; }
 
-            const std::string &getMoviePath(void) const { return movie_path; }
+            const fs::path &getMoviePath(void) const { return movie_path; }
             uint32_t getNumDirectories() { return numDir; }
             uint32_t getBitCount(void);
             uint32_t getWidth(void);
@@ -72,7 +72,7 @@ namespace GPT
             Image<T> getImage(const uint32_t id = 0);
 
         private:
-            std::string movie_path;
+            fs::path movie_path;
             bool success = true;
 
             bool bigEndian = false; //  true = big | false = little

@@ -40,18 +40,18 @@ const glm::vec3 &LUT::getColor(const std::string &name) const
 
 ///////////////////////////////////////////////////////////
 
-MoviePlugin::MoviePlugin(const std::string &movie_path, GPTool *ptr) : tool(ptr), firstTime(true)
+MoviePlugin::MoviePlugin(const fs::path &movie_path, GPTool *ptr) : tool(ptr), firstTime(true)
 {
     // Importing movies
     movie = std::make_unique<GPT::Movie>(movie_path);
     if (!movie->successful())
     {
-        tool->mailbox.createError("Could not open movie " + movie_path);
+        tool->mailbox.createError("Could not open movie " + movie_path.string());
         success = false;
         return;
     }
 
-    tool->mailbox.createInfo("Movie: " + movie_path);
+    tool->mailbox.createInfo("Movie: " + movie_path.string());
 
     bool running = true;
     auto prog = tool->mailbox.createProgress(

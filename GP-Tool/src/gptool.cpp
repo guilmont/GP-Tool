@@ -119,10 +119,11 @@ void GPTool::setActive(const std::string &name) { pActive = plugins[name].get();
 
 void GPTool::onUserUpdate(float deltaTime)
 {
-    bool ctrl = keyboard[GKey::LEFT_CONTROL] == GEvent::PRESS || keyboard[GKey::RIGHT_CONTROL] == GEvent::PRESS,
-         O = keyboard['O'] == GEvent::RELEASE,
-         S = keyboard['S'] == GEvent::RELEASE,
-         T = keyboard['T'] == GEvent::RELEASE;
+    bool 
+      ctrl = keyboard[GKey::LEFT_CONTROL] == GEvent::PRESS || keyboard[GKey::RIGHT_CONTROL] == GEvent::PRESS,
+      O = keyboard['O'] == GEvent::RELEASE,
+      S = keyboard['S'] == GEvent::RELEASE,
+      T = keyboard['T'] == GEvent::RELEASE;
 
     // key combination for opening movie
     if (ctrl & O)
@@ -256,11 +257,11 @@ void GPTool::ImGuiMenuLayer(void)
 
 /////////////////////////////////////
 
-void GPTool::openMovie(const std::string &path)
+void GPTool::openMovie(const fs::path &path)
 {
 
     std::thread(
-        [](GPTool *tool, const std::string &path) -> void
+        [](GPTool *tool, const fs::path &path) -> void
         {
             MoviePlugin *movpl = new MoviePlugin(path, tool);
 
@@ -295,7 +296,7 @@ void GPTool::openMovie(const std::string &path)
         .detach();
 }
 
-void GPTool::saveJSON(const std::string &path)
+void GPTool::saveJSON(const fs::path &path)
 {
 
     Json::Value output;
@@ -333,6 +334,6 @@ void GPTool::saveJSON(const std::string &path)
     arq << output;
     arq.close();
 
-    mailbox.createInfo("File saved to '" + path + "'");
+    mailbox.createInfo("File saved to '" + path.string() + "'");
 
 } // saveJSON

@@ -23,7 +23,7 @@ project(GP_FBM_LIBRARY VERSION 0.2.0)
 add_compile_definitions(_CRT_SECURE_NO_WARNINGS)  # Removing sprintf warnings
 
 option(GP_TOOL "Build graphical interface" ON)
-option(GP_PYTHON "Build python bindings for GP-FBM methods" ON)
+#option(GP_PYTHON "Build python bindings for GP-FBM methods" ON)
 option(GP_TESTS "Build test programs for trajectory and GP-FBM methods" OFF)
 option(GP_PRECOMPILED_HEADERS "Builds precompiled headers for whole project" OFF)
 

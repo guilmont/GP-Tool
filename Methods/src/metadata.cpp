@@ -4,11 +4,6 @@ namespace GPT
 {
    Metadata::Metadata(Tiffer::Read *tif)
     {
-        // Determining movie name
-        const std::string &movie_path = tif->getMoviePath();
-        size_t pos = movie_path.find_last_of("/");
-        movie_name = movie_path.substr(pos + 1);
-
         // Does it have extended IJ metadata
         std::string info = tif->getIJMetadata();
         if (info.size() > 0)

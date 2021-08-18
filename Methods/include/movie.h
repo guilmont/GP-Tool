@@ -12,7 +12,7 @@ namespace GPT
     {
 
     public:
-        GP_API Movie(const std::string &movie_path);
+        GP_API Movie(const fs::path &movie_path);
         GP_API ~Movie(void) = default;
 
         GP_API bool successful(void) const { return success; }

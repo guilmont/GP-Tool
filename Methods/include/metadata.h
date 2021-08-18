@@ -10,12 +10,17 @@ namespace GPT
 
     struct Plane
     {
-        uint32_t TheC, TheT, TheZ;
+        uint32_t 
+            TheC = 0,
+            TheT = 0,
+            TheZ = 0;
 
         float
-            DeltaT,
-            ExposureTime,
-            PositionX, PositionY, PositionZ;
+            DeltaT = 0.0f,
+            ExposureTime = 0.0f,
+            PositionX = 0.0f,
+            PositionY = 0.0f,
+            PositionZ = 0.0f;
 
         std::string
             DeltaTUnit,
@@ -33,7 +38,7 @@ namespace GPT
             SizeC, SizeT, SizeX, SizeY, SizeZ;
 
         float
-            PhysicalSizeXY,
+            PhysicalSizeXY = 0.0f,
             PhysicalSizeZ,
             TimeIncrement;
 
