@@ -237,8 +237,7 @@ bool TrajPlugin::saveJSON(Json::Value &json)
     json["PhysicalSizeXY"] = meta.PhysicalSizeXY;
     json["PhysicalSizeXYUnit"] = meta.PhysicalSizeXYUnit;
     json["TimeIncrementUnit"] = meta.TimeIncrementUnit;
-    json["rows"] = "{frame, time, pos_x, error_x, pos_y, error_y,"
-                   "size_x, size_y, background, signal}";
+    json["rows"] = "{frame, time, pos_x, pos_y, error_x, error_y, size_x, size_y, background, signal}";
 
     for (uint32_t ch = 0; ch < meta.SizeC; ch++)
     {
