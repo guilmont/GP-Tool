@@ -12,8 +12,6 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR} CACHE PATH "Location to install this application")
 
-
-
 if (NOT WIN32)
 	set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX})
 endif()
@@ -24,7 +22,6 @@ add_compile_definitions(_CRT_SECURE_NO_WARNINGS)  # Removing sprintf warnings
 
 option(GP_TOOL "Build graphical interface" ON)
 #option(GP_PYTHON "Build python bindings for GP-FBM methods" ON)
-option(GP_TESTS "Build test programs for trajectory and GP-FBM methods" OFF)
 option(GP_PRECOMPILED_HEADERS "Builds precompiled headers for whole project" OFF)
 
 # We are always build the methods project
@@ -34,12 +31,3 @@ add_subdirectory(Methods)
 if (GP_TOOL)
 	add_subdirectory(GP-Tool)
 endif()
-
-
-if (GP_TESTS)
-	add_subdirectory(Tests)
-endif()
-
-
-
-

@@ -122,28 +122,49 @@ namespace GPT
             } // while true
 
             //////////////////////////////////////////////
-            // Running distribution
-            for (uint32_t mcs = 0; mcs < sample_size; mcs++)
+            // Running distribution in parallel to improve speed a bit
+
+            auto funcParallel = [](const uint32_t tid, const uint32_t nThreads, const uint32_t N, const uint32_t sample_size, double LIKE, VecXd DA, const double S,
+                double (CL::* func)(const VecXd&), CL* ptr, MatXd *mcmc) -> void
             {
-                // Proposing new position
-                for (uint32_t k = 0; k < N; k++)
-                    da(k) = DA(k) + normal(rng);
+                std::random_device rnd;
+                std::mt19937 rng(rnd());
+                std::uniform_real_distribution<double> unif(0.0, 1.0);
+                std::normal_distribution<double> normal(0.0, S);
+                
+                VecXd da(N);
 
-                // Estimating posterior and transition probabilities
-                double like = -(ptr->*func)(da);
-                double ratio = exp(like - LIKE);
-
-                // Are the proposed values accepted?
-                if (ratio > unif(rng))
+                for (uint32_t mcs = tid; mcs < sample_size; mcs+=nThreads)
                 {
-                    DA = da;
-                    LIKE = like;
-                }
+                    // Proposing new position
+                    for (uint32_t k = 0; k < N; k++)
+                        da(k) = DA(k) + normal(rng);
 
-                // Saving correct values to mcmc matrix
-                mcmc.row(mcs) = DA;
+                    // Estimating posterior and transition probabilities
+                    double like = -(ptr->*func)(da);
+                    double ratio = exp(like - LIKE);
 
-            } // loop-mcs
+                    // Are the proposed values accepted?
+                    if (ratio > unif(rng))
+                    {
+                        DA = da;
+                        LIKE = like;
+                    }
+
+                    // Saving correct values to mcmc matrix
+                    mcmc->row(mcs) = DA;
+
+                } // loop-mcs
+            }; 
+
+            const uint32_t nThreads = std::thread::hardware_concurrency();
+            std::vector<std::thread> vec(nThreads);
+
+            for (uint32_t k = 0; k < nThreads; k++)
+                vec[k] = std::thread(funcParallel, k, nThreads, N, sample_size, LIKE, DA, S, func, ptr, &mcmc);
+
+            for (std::thread& thr : vec)
+                thr.join();
 
             return mcmc;
 
