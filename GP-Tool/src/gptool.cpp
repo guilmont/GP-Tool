@@ -128,14 +128,14 @@ void GPTool::onUserUpdate(float deltaTime)
     // key combination for opening movie
     if (ctrl & O)
         dialog.createDialog(GDialog::OPEN, "Choose TIF file...", {"tif", "ome.tif"}, this,
-                            [](const std::string &path, void *ptr) -> void { reinterpret_cast<GPTool *>(ptr)->openMovie(path); });
+                            [](const fs::path &path, void *ptr) -> void { reinterpret_cast<GPTool *>(ptr)->openMovie(path); });
 
     // key combination to save data
     if (ctrl & S)
         dialog.createDialog(GDialog::SAVE, "Save data...", {"json"}, this,
-                            [](const std::string &path, void *ptr) -> void
+                            [](const fs::path &path, void *ptr) -> void
                             {
-                                std::thread([](GPTool *tool, const std::string &path) -> void{ tool->saveJSON(path); }, reinterpret_cast<GPTool *>(ptr), path).detach();
+                                std::thread([](GPTool *tool, const fs::path &path) -> void{ tool->saveJSON(path); }, reinterpret_cast<GPTool *>(ptr), path).detach();
                             });
 
     ///////////////////////////////////////////////////////
@@ -222,16 +222,16 @@ void GPTool::ImGuiMenuLayer(void)
     {
         if (ImGui::MenuItem("Open movie...", "Ctrl+O"))
             dialog.createDialog(GDialog::OPEN, "Choose TIF file...", {"tif", "ome.tif"}, this,
-                                [](const std::string &path, void *ptr) -> void { reinterpret_cast<GPTool *>(ptr)->openMovie(path); });
+                                [](const fs::path &path, void *ptr) -> void { reinterpret_cast<GPTool *>(ptr)->openMovie(path); });
 
         if (ImGui::MenuItem("Load trajectories...", "Ctrl+T", nullptr, plugins["TRAJECTORY"] != nullptr))
             reinterpret_cast<TrajPlugin *>(plugins["TRAJECTORY"].get())->loadTracks();
 
         if (ImGui::MenuItem("Save as ...", "Ctrl+S"))
             dialog.createDialog(GDialog::SAVE, "Choose TIF file...", {"json"}, this,
-                                [](const std::string &path, void *ptr) -> void
+                                [](const fs::path &path, void *ptr) -> void
                                 {
-                                    std::thread([](GPTool *tool, const std::string &path) -> void { tool->saveJSON(path); }, reinterpret_cast<GPTool *>(ptr), path).detach();
+                                    std::thread([](GPTool *tool, const fs::path &path) -> void { tool->saveJSON(path); }, reinterpret_cast<GPTool *>(ptr), path).detach();
                                 });
 
         if (ImGui::MenuItem("Exit"))

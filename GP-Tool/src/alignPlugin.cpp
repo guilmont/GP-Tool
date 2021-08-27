@@ -111,6 +111,12 @@ void AlignPlugin::showProperties(void)
     ImGui::Spacing();
     ImGui::Spacing();
 
+    if (ImGui::Button("Save movie"))
+        tool->dialog.createDialog(GDialog::SAVE, "Save TIF file...", { "tif", "ome.tif" }, this,
+            [](const fs::path& path, void* ptr) -> void { std::thread(&AlignPlugin::saveTIF, reinterpret_cast<AlignPlugin*>(ptr), path).detach(); });
+
+    ImGui::SameLine();
+
     if (ImGui::Button("Reset"))
     {
         const GPT::Metadata &meta = movie->getMetadata();
@@ -200,10 +206,8 @@ void AlignPlugin::runAlignment(void)
 
     if (chromatic)
     {
-        auto clock = tool->mailbox.createTimer(
-            "Correcting chromatic aberration...", [](void *align)
-            { reinterpret_cast<GPT::Align *>(align)->stop(); },
-            m_align.get());
+        auto clock = tool->mailbox.createTimer("Correcting chromatic aberration...", [](void *align) { reinterpret_cast<GPT::Align *>(align)->stop(); }, m_align.get());
+        
         if (!m_align->correctAberrations())
         {
             tool->mailbox.createWarn("Chromatic aberration correction didn't converge!!");
@@ -255,4 +259,109 @@ bool AlignPlugin::saveJSON(Json::Value &json)
     }
 
     return true;
+}
+
+template <typename TP>
+static void workOnFrame(Image<TP>* vImg, GPT::Movie* movie, const Mat3d& itrf, const uint32_t channel)
+{
+    const uint32_t
+        nChannels = movie->getMetadata().SizeC,
+        nFrames = movie->getMetadata().SizeT,
+        nRows = movie->getMetadata().SizeY,
+        nCols = movie->getMetadata().SizeX,
+        nThreads = std::thread::hardware_concurrency();
+
+
+    auto func = [&](const uint32_t tid) -> void
+    {
+        // Aligning second channel
+        for (uint32_t frame = tid; frame < nFrames; frame += nThreads)
+        {
+            const uint32_t dir = frame * nChannels + channel;
+            const MatXd& old = movie->getImage(channel, frame);
+
+            Image<TP> img(nRows, nCols);
+            for (uint32_t k = 0; k < nRows; k++)
+                for (uint32_t l = 0; l < nCols; l++)
+                {
+                    int32_t x = static_cast<int32_t>(itrf(0, 0) * (l + 0.5) + itrf(0, 1) * (k + 0.5) + itrf(0, 2));
+                    int32_t y = static_cast<int32_t>(itrf(1, 0) * (l + 0.5) + itrf(1, 1) * (k + 0.5) + itrf(1, 2));
+
+                    if (x >= 0 && x < static_cast<int32_t>(nCols) && y >= 0 && y < static_cast<int32_t>(nRows))
+                        img(k, l) = static_cast<TP>(old(y, x));
+                    else
+                        img(k, l) = 0;
+                }
+
+            vImg[dir] = img;
+        }
+    };
+
+
+    std::vector<std::thread> vec(nThreads);
+    for (uint32_t k = 0; k < nThreads; k++)
+        vec[k] = std::thread(func, k);
+
+    for (std::thread& thr : vec)
+        thr.join();
+    
+}
+
+void AlignPlugin::saveTIF(const fs::path& path)
+{
+
+    tool->mailbox.createInfo("Processing frames...");
+
+    const uint32_t
+        nChannels = movie->getMetadata().SizeC,
+        nFrames = movie->getMetadata().SizeT,
+        nDirs = nFrames * nChannels,
+        nBits = movie->getMetadata().SignificantBits;
+    
+    if (nBits == 8)
+    {
+        std::vector<Image<uint8_t>> vImg(nDirs);
+        for (uint32_t fr = 0; fr < nFrames; fr++)
+            vImg[fr * nChannels] = movie->getImage(0, fr).cast<uint8_t>();
+
+        for (uint32_t ch = 1; ch < nChannels; ch++)
+            workOnFrame(vImg.data(), movie, data[ch].itrf, ch);
+
+        movie->save(vImg, path, true);
+    }
+    
+    else if (nBits == 16)
+    {
+        std::vector<Image<uint16_t>> vImg(nDirs);
+        for (uint32_t fr = 0; fr < nFrames; fr++)
+            vImg[fr * nChannels] = movie->getImage(0, fr).cast<uint16_t>();
+
+        for (uint32_t ch = 1; ch < nChannels; ch++)
+            workOnFrame(vImg.data(), movie, data[ch].itrf, ch);
+
+        movie->save(vImg, path, true);
+    }
+
+
+    else if (nBits == 32)
+    {
+        std::vector<Image<uint32_t>> vImg(nDirs);
+        for (uint32_t fr = 0; fr < nFrames; fr++)
+            vImg[fr * nChannels] = movie->getImage(0, fr).cast<uint32_t>();
+
+        for (uint32_t ch = 1; ch < nChannels; ch++)
+            workOnFrame(vImg.data(), movie, data[ch].itrf, ch);
+
+        movie->save(vImg, path, true);
+    }
+
+    else
+    {
+        GPT::pout("ERROR: (Alignment plugin:: save movie ==> Movie format not recognized!!");
+        exit(-1);
+    }
+
+    
+    tool->mailbox.createInfo("Aligned movie was saved to path: " + path.string());
+
 }

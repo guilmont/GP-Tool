@@ -94,7 +94,7 @@ MoviePlugin::MoviePlugin(const fs::path &movie_path, GPTool *ptr) : tool(ptr), f
 
         float minValue = 0.8f * gl_low, maxValue = 1.2f * gl_high;
 
-        info[ch].lut_name = lut.names[ch + 1];
+        info[ch].lut_name = lut.names[ch + uint32_t(1)];
         info[ch].contrast = {gl_low, gl_high};
         info[ch].minMaxValue = {minValue, maxValue};
     }

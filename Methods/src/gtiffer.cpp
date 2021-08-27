@@ -105,6 +105,93 @@ namespace GPT::Tiffer
 
     } // decoder
 
+    static Buffer lzw_encoder(Buffer vInput)
+    {
+
+        uint8_t B;
+        uint16_t code;
+        std::string Omega, K;
+        std::unordered_map<std::string, uint16_t> table;
+        std::vector<std::pair<uint8_t, uint16_t>> encoded;
+
+        auto clear_table = [&](void) -> void
+        {
+            std::string ch;
+            B = 9;
+            code = 258;
+            table.clear();
+            for (uint16_t k = 0; k < 256; k++)
+            {
+                ch = char(k);
+                table[ch] = k;
+            }
+        };
+
+        // starting initial sequence
+        clear_table();
+        Omega = "";
+        encoded.push_back({ B, CLEAR_CODE });
+
+        for (uint32_t id = 0; id < vInput.size(); id++)
+        {
+            K = char(vInput.at(id));
+
+            // if present in table
+            if (table.find(Omega + K) != table.end())
+            {
+                Omega = Omega + K;
+            }
+            else
+            {
+                encoded.push_back({ B, table[Omega] });
+                table[Omega + K] = code;
+                Omega = K;
+                code++;
+
+                if (code == 512 || code == 1024 || code == 2048)
+                    B++;
+
+                if (code == 4094)
+                {
+                    encoded.push_back({ 12, CLEAR_CODE });
+                    clear_table();
+                }
+            }
+
+        } // loop-numbers
+
+        encoded.push_back({ B, table[Omega] }); // Omega must be in the table
+        code++;
+        if (code == 512 || code == 1024 || code == 2048)
+            B++;
+
+        encoded.push_back({ B, EOI_CODE });
+
+        //  converting to binary --> little endian by default
+        std::vector<bool> vec;
+        for (auto num : encoded)
+            for (int k = num.first - 1; k >= 0; k--)
+                vec.push_back(num.second >> k & 0x01);
+
+        // padding end for multiple of 8
+        uint32_t dif = 8 * uint32_t(ceil(float(vec.size()) / 8.0f)) - uint32_t(vec.size());
+        for (uint32_t l = 0; l < dif; l++)
+            vec.push_back(true);
+
+        // Creating bytes array
+        Buffer arr;
+        for (uint32_t k = 0; k < vec.size(); k += 8)
+        {
+            uint8_t val = 0;
+            for (uint32_t l = 0; l < 8; l++)
+                val |= vec.at(k + l) << (7 - l); // little endian
+
+            arr.push_back(val);
+        } // loop-bytes
+
+        return arr;
+    }
+
     uint8_t Read::get_uint8(const uint32_t pos)
     {
         return buffer.at(pos);
@@ -136,6 +223,10 @@ namespace GPT::Tiffer
     } // get_uint32
 
 }
+
+/***************************************************************************************/
+/***************************************************************************************/
+// READ API IMPLEMENTATION
 
 GPT::Tiffer::Read::Read(const fs::path &movie_path) : movie_path(movie_path)
 {
@@ -379,3 +470,72 @@ GPT::Tiffer::ImData GPT::Tiffer::Read::getImageData(const uint32_t id)
     return {width, height, output};
 
 } // getImageData
+
+
+/***************************************************************************************/
+/***************************************************************************************/
+// WRITE API IMPLEMENTATION
+
+void GPT::Tiffer::Write::funcLZW(const uint32_t tid, const uint32_t nThreads, uint32_t nStrips, IFD* ifd)
+{
+    for (uint32_t k = tid; k < nStrips; k += nThreads)
+    {
+        Buffer hi = lzw_encoder(ifd->vData.at(k));
+        ifd->vData.at(k).resize(hi.size());
+        std::copy(hi.data(), hi.data() + hi.size(), ifd->vData.at(k).data());
+    }
+}
+
+void GPT::Tiffer::Write::save(const fs::path& filename)
+{
+    // initialize specifying file is in little endian notation, it is a tif file
+    // and the offset to first ifd is 8
+    Buffer vOut = { 'I', 'I', 0x2A, 0x00, 0x08, 0x00, 0x00, 0x00 };
+
+    for (IFD& ifd : vIFD)
+    {
+        ifd.field[STRIPOFFSETS].value = globalOffset;
+        globalOffset += uint32_t(4 * ifd.vData.size());
+        ifd.field[STRIPBYTECOUNTS].value = globalOffset;
+        globalOffset += uint32_t(4 * ifd.vData.size());
+
+        writeValue(&vOut, uint16_t(ifd.dir_count));
+
+        for (auto it = ifd.field.begin(); it != ifd.field.end(); it++)
+        {
+            writeValue(&vOut, uint16_t(it->first));
+            writeValue(&vOut, uint16_t(it->second.type));
+            writeValue(&vOut, uint32_t(it->second.count));
+            writeValue(&vOut, uint32_t(it->second.value));
+        }
+
+        writeValue(&vOut, uint32_t(ifd.offsetNext));
+    } // loop -- ifd
+
+    // wrting metadata
+    for (uint32_t k = 0; k < metadata.size(); k++)
+        vOut.push_back(metadata[k]);
+
+    // writing location of images
+    for (IFD& ifd : vIFD)
+    {
+        for (auto v : ifd.vData)
+        {
+            writeValue(&vOut, uint32_t(globalOffset));
+            globalOffset += uint32_t(v.size());
+        }
+
+        for (auto v : ifd.vData)
+            writeValue(&vOut, uint32_t(v.size()));
+    }
+
+    // writting strips accordingly
+    for (IFD& ifd : vIFD)
+        for (Buffer v : ifd.vData)
+            vOut.insert(vOut.end(), v.begin(), v.end());
+
+    std::ofstream outfile(filename, std::ios::binary);
+    outfile.write((const char*)vOut.data(), vOut.size());
+    outfile.close();
+
+}

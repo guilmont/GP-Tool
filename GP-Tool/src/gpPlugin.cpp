@@ -5,7 +5,7 @@
 
 static constexpr uint32_t sample_size = 10000;
 
-static void saveCSV(const std::string &path, const std::string *header,
+static void saveCSV(const fs::path &path, const std::string *header,
                     const MatXd &mat)
 {
 
@@ -533,11 +533,11 @@ void GPPlugin::winSubstrate(void)
 
     ImGui::Indent();
     sprintf(buf, "DR = %.3e %s^2/%s^A", DCalib * gp->coupledModel()->DR, spaceUnit, timeUnit);
-    ImGui::Text(buf);
+    ImGui::TextUnformatted(buf);
 
     memset(buf, 0, 512);
     sprintf(buf, "AR = %.3f", gp->coupledModel()->AR);
-    ImGui::Text(buf);
+    ImGui::TextUnformatted(buf);
     ImGui::Unindent();
 
     ImGui::Separator();
@@ -589,7 +589,7 @@ void GPPlugin::winSubstrate(void)
     {
         tool->dialog.createDialog(
             GDialog::SAVE, "Export CSV", {".csv"}, (void *)&mat,
-            [](const std::string &path, void *ptr) -> void
+            [](const fs::path &path, void *ptr) -> void
             {
                 const MatXd &mat = *reinterpret_cast<MatXd *>(ptr);
 
@@ -719,7 +719,7 @@ void GPPlugin::winDistributions(void)
         sprintf(buf, "Channel %d :: ID %d ", gp->partID[k].trackID, gp->partID[k].trajID);
 
         ImGui::PushID(buf);
-        ImGui::Text(buf);
+        ImGui::TextUnformatted(buf);
 
         if (ImPlot::BeginPlot("##Histogram_diffusion", "Diffusion coefficient", "Density",
                               {width, 0.6f * width}))

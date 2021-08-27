@@ -1,6 +1,6 @@
 #include "trajPlugin.h"
 
-static void saveCSV(const std::string &path, const std::string *header, const MatXd &mat)
+static void saveCSV(const fs::path &path, const std::string *header, const MatXd &mat)
 {
 
     const uint32_t nCols = uint32_t(mat.cols()),
@@ -356,7 +356,7 @@ void TrajPlugin::winLoadTracks(void)
             trackInfo.openCH = ch;
             tool->dialog.createDialog(
                 GDialog::OPEN, "Choose track...", {"xml", "csv"}, this,
-                [](const std::string &path, void *ptr) -> void
+                [](const fs::path &path, void *ptr) -> void
                 {
                     TrajPlugin *traj = (TrajPlugin *)ptr;
 
@@ -425,7 +425,7 @@ void TrajPlugin::winDetail(void)
 
         tool->dialog.createDialog(
             GDialog::SAVE, "Export CSV", {"csv"}, (void *)mat,
-            [](const std::string &path, void *ptr) -> void
+            [](const fs::path &path, void *ptr) -> void
             {
                 std::array<std::string, GPT::Track::NCOLS> header = {
                     "Frame", "Time", "Position X", "Position Y",

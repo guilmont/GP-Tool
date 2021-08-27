@@ -29,7 +29,7 @@ using VecXd = Eigen::VectorXd;
 using MatXd = Eigen::MatrixXd;
 
 template <typename T>
-using Image = Eigen::Matrix<T, -1, -1>;
+using Image = Eigen::Matrix<T, -1, -1, Eigen::RowMajor>;
 
 /////////////////////////////
 /////////////////////////////

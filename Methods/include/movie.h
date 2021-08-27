@@ -22,6 +22,9 @@ namespace GPT
 
         GP_API const MatXd& getImage(uint32_t channel, uint32_t frame);
 
+        template<typename TP>
+        void save(const std::vector<Image<TP>>& vImg, const fs::path& path, bool lzw = false);
+
     private:
         bool success = true;
 
@@ -32,5 +35,12 @@ namespace GPT
         std::vector<std::unique_ptr<MatXd>> vImg;
 
     }; // class Trajectory
+
+    template <typename TP>
+    void Movie::save(const std::vector<Image<TP>>& vImg, const fs::path& path, bool lzw)
+    {
+        GPT::Tiffer::Write wrt(vImg, this->getMetadata().metaString, lzw);
+        wrt.save(path);
+    }
 
 }

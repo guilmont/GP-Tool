@@ -50,7 +50,7 @@ namespace GPT
             PhysicalSizeZUnit,
             TimeIncrementUnit;
 
-        std::string metaString;
+        std::string metaString;  // raw metadata in the format of a string
         std::vector<std::string> nameCH;
 
         GP_API Metadata(Tiffer::Read *tif);

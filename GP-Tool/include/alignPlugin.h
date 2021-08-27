@@ -17,7 +17,7 @@ public:
     void showProperties(void) override;
     void update(float deltaTime) override;
     bool saveJSON(Json::Value &json) override;
-
+    void saveTIF(const fs::path& path);
     std::vector<GPT::TransformData> data;
 
 private:
