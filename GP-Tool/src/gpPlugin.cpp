@@ -262,20 +262,20 @@ void GPPlugin::showProperties(void)
                     ImGui::TableSetColumnIndex(1);
                     ImGui::Text("%d", gp->partID[k].trajID);
 
-                    float D, A;
+                    double D, A;
                     if (nParticles == 1)
                     {
-                        D = float(gp->singleModel(k)->D);
-                        A = float(gp->singleModel(k)->A);
+                        D = DCalib * gp->singleModel(k)->D;
+                        A = gp->singleModel(k)->A;
                     }
                     else
                     {
-                        D = float(gp->coupledModel()->da[k].D);
-                        A = float(gp->coupledModel()->da[k].A);
+                        D = DCalib * gp->coupledModel()->da[k].D;
+                        A = gp->coupledModel()->da[k].A;
                     }
 
                     ImGui::TableSetColumnIndex(2);
-                    ImGui::Text("%.2e", double(pix2mu) * double(D));
+                    ImGui::Text("%.2e", D);
                     ImGui::TableSetColumnIndex(3);
                     ImGui::Text("%.3f", A);
 

@@ -327,7 +327,9 @@ void AlignPlugin::saveTIF(const fs::path& path)
         for (uint32_t ch = 1; ch < nChannels; ch++)
             workOnFrame(vImg.data(), movie, data[ch].itrf, ch);
 
-        movie->save(vImg, path, true);
+
+        GPT::Tiffer::Write wrt(vImg, movie->getMetadata().metaString, true);
+        wrt.save(path);
     }
     
     else if (nBits == 16)
@@ -339,7 +341,8 @@ void AlignPlugin::saveTIF(const fs::path& path)
         for (uint32_t ch = 1; ch < nChannels; ch++)
             workOnFrame(vImg.data(), movie, data[ch].itrf, ch);
 
-        movie->save(vImg, path, true);
+        GPT::Tiffer::Write wrt(vImg, movie->getMetadata().metaString, true);
+        wrt.save(path);
     }
 
 
@@ -352,7 +355,8 @@ void AlignPlugin::saveTIF(const fs::path& path)
         for (uint32_t ch = 1; ch < nChannels; ch++)
             workOnFrame(vImg.data(), movie, data[ch].itrf, ch);
 
-        movie->save(vImg, path, true);
+        GPT::Tiffer::Write wrt(vImg, movie->getMetadata().metaString, true);
+        wrt.save(path);
     }
 
     else
