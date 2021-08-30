@@ -3,14 +3,13 @@
 namespace GPT
 {
 
-    static void removeRow(MatXd &mat, int32_t row)
+    static void removeRow(MatXd &mat, uint64_t row)
     {
-        int32_t numRows = int32_t(mat.rows()) - 1;
-        int32_t numCols = int32_t(mat.cols());
+        uint64_t numRows = mat.rows() - 1;
+        uint64_t numCols = mat.cols();
 
         if (row < numRows)
-            mat.block(row, 0, numRows - row, numCols) =
-                mat.block(row + int32_t(1), 0, numRows - row, numCols);
+            mat.block(row, 0, numRows - row, numCols) = mat.block(row + 1, 0, numRows - row, numCols);
 
         mat.conservativeResize(numRows, numCols);
     }
@@ -19,15 +18,16 @@ namespace GPT
     {
         std::sort(vec.data(), vec.data() + vec.size());
 
-        uint32_t N = uint32_t(0.5f * vec.size()),
-                FQ = uint32_t(0.25f * vec.size()),
-                TQ = uint32_t(0.75f * vec.size());
+        uint64_t
+            N =  static_cast<uint64_t>(0.5 * vec.size()),
+            FQ = static_cast<uint64_t>(0.25 * vec.size()),
+            TQ = static_cast<uint64_t>(0.75 * vec.size());
 
         double fifty = vec(TQ) - vec(FQ);
-        return {vec(N) - 2.0 * fifty, vec(N) + 2.0 * fifty};
+        return {vec(N) - 3.0 * fifty, vec(N) + 3.0 * fifty};
     } 
 
-    static MatXd loadFromTextFile(const fs::path &path, char delimiter, uint32_t skip_rows, uint32_t skip_cols)
+    static MatXd loadFromTextFile(const fs::path &path)
     {
 
         std::ifstream arq(path.string().c_str(), std::fstream::binary);
@@ -39,7 +39,7 @@ namespace GPT
 
         std::string data;
         arq.seekg(0, arq.end);
-        data.resize(size_t(arq.tellg()));
+        data.resize(arq.tellg());
 
         arq.seekg(0, arq.beg);
         arq.read(data.data(), data.size());
@@ -47,18 +47,11 @@ namespace GPT
         arq.close();
 
         // so we know where we are
-        size_t pos = 0;
+        uint64_t pos = 0;
 
-        // skipping rows demanded
-        for (size_t k = 0; k < skip_rows; k++)
-        {
+        // Check if files line has a comment
+        if (data.find('#') != std::string::npos)
             pos = data.find('\n', pos) + 1;
-            if (pos == std::string::npos)
-            {
-                pout("ERROR (Trajectory::useCSV) ==> More skip_rows than number of rows! ::", path);
-                return MatXd(0, 0);
-            }
-        } // loop-skip-rows
 
         // Reading data to matrix
         std::vector<std::vector<double>> mat;
@@ -66,7 +59,7 @@ namespace GPT
         while (true)
         {
             // loading row if existent
-            size_t brk = std::min(data.find('\n', pos), data.size());
+            uint64_t brk = std::min(data.find('\n', pos), data.size());
 
             // in case there are multiple empty lines at the bottom
             // in case there are no empty lines at bottom
@@ -74,14 +67,11 @@ namespace GPT
                 break;
 
             // Parsing row
-            size_t ct = 0;
             std::vector<double> vec;
             while (true)
             {
-                size_t loc = std::min(data.find(delimiter, pos), brk);
-
-                if (++ct > skip_cols)
-                    vec.emplace_back(stof(data.substr(pos, loc - pos)));
+                uint64_t loc = std::min(data.find(',', pos), brk);
+                vec.emplace_back(stof(data.substr(pos, loc - pos)));
 
                 pos = loc + 1;
 
@@ -96,7 +86,7 @@ namespace GPT
         } // while-rows
 
         // Let's check is alls rows have same width
-        size_t sum = 0;
+        uint64_t sum = 0;
         for (auto &vec : mat)
             sum += vec.size();
 
@@ -106,7 +96,7 @@ namespace GPT
             return MatXd(0, 0);
         }
 
-        const size_t
+        const uint64_t
             NX = mat[0].size(),
             NY = mat.size();
 
@@ -117,8 +107,8 @@ namespace GPT
         }
 
         MatXd obj(NY, NX);
-        for (uint32_t k = 0; k < NY; k++)
-            for (uint32_t l = 0; l < NX; l++)
+        for (uint64_t k = 0; k < NY; k++)
+            for (uint64_t l = 0; l < NX; l++)
                 obj(k, l) = mat[k][l];
 
         return obj;
@@ -131,12 +121,12 @@ namespace GPT
 
     Trajectory::Trajectory(Movie *mov) : movie(mov)
     {
-        uint32_t SC = movie->getMetadata().SizeC;
+        uint64_t SC = movie->getMetadata().SizeC;
         m_vTrack.resize(SC); // one track per channel
     }
 
 
-    bool Trajectory::useICY(const fs::path &xmlTrack, uint32_t ch)
+    bool Trajectory::useICY(const fs::path &xmlTrack, uint64_t ch)
     {
         const Metadata &meta = movie->getMetadata();
 
@@ -157,10 +147,10 @@ namespace GPT
             std::vector<Vec3d> vec;
             for (auto dtc : xtr.children("detection"))
                 vec.emplace_back(dtc.attribute("t").as_double(),
-                                dtc.attribute("x").as_double(),
-                                dtc.attribute("y").as_double());
+                                 dtc.attribute("x").as_double(),
+                                 dtc.attribute("y").as_double());
 
-            uint32_t counter = 0;
+            uint64_t counter = 0;
             MatXd mat = MatXd::Zero(vec.size(), Track::NCOLS);
             for (Vec3d &txy : vec)
             {
@@ -182,42 +172,43 @@ namespace GPT
         return true;
     }
 
-    bool Trajectory::useCSV(const fs::path &csvTrack, uint32_t ch)
+    bool Trajectory::useCSV(const fs::path &csvTrack, uint64_t ch)
     {
 
         // mov is not const because we might want to update metadata later
         const Metadata &meta = movie->getMetadata();
 
         // Importing all particles for channel
-        MatXd particles = loadFromTextFile(csvTrack, ',', 1, 0);
+        MatXd particles = loadFromTextFile(csvTrack);
 
         if (particles.size() == 0)
             return false;
 
-        Track track;
+        Track_API track;
         track.path = csvTrack;
 
         // Splitting particles
 
-        uint32_t row = 0,
-                partID = uint32_t(particles(0, 0)),
-                nRows = uint32_t(particles.rows());
+        uint64_t 
+            row = 0,
+            partID = static_cast<uint64_t>(particles(0, 0)),
+            nRows = particles.rows();
 
-        for (uint32_t k = 0; k < nRows; k++)
+        for (uint64_t k = 0; k < nRows; k++)
             if (particles(k, 0) != partID || k == nRows - 1)
             {
-                uint32_t N = k - row;
+                uint64_t N = k - row;
                 if (k == nRows - 1)
                     N++;
 
-                MatXd loc(N, uint32_t(Track::NCOLS));
+                MatXd loc(N, uint64_t(Track::NCOLS));
                 loc.fill(0.0);
 
-                for (uint32_t r = 0; r < N; r++)
+                for (uint64_t r = 0; r < N; r++)
                 {
-                    uint32_t fr = uint32_t(particles(row + r, 1));
+                    uint64_t fr = static_cast<uint64_t>(particles(row + r, 1));
 
-                    loc(r, Track::FRAME) = fr;
+                    loc(r, Track::FRAME) = particles(row + r, 1);
                     loc(r, Track::POSX) = particles(row + r, 2);
                     loc(r, Track::POSY) = particles(row + r, 3);
 
@@ -229,7 +220,7 @@ namespace GPT
 
                 track.traj.emplace_back(loc);
 
-                partID = uint32_t(particles(k, 0));
+                partID = static_cast<uint64_t>(particles(k, 0));
                 row = k;
             }
 
@@ -245,21 +236,21 @@ namespace GPT
 
         // calculating total number of tracks to enhance
         float dp = 0.0f;
-        for (uint32_t ch = 0; ch < m_vTrack.size(); ch++)
+        for (uint64_t ch = 0; ch < m_vTrack.size(); ch++)
         dp += m_vTrack[ch].traj.size();
 
 
         dp = 1.0f / dp;
 
-        for (uint32_t ch = 0; ch < m_vTrack.size(); ch++)
+        for (uint64_t ch = 0; ch < m_vTrack.size(); ch++)
         {
-            Track &track = m_vTrack[ch];
-            const uint32_t N = uint32_t(track.traj.size());
+            Track_API &track = m_vTrack[ch];
+            const uint64_t N = track.traj.size();
 
             if (N == 0)
                 continue;
 
-            for (uint32_t k = 0; k < N; k++)
+            for (uint64_t k = 0; k < N; k++)
             {
                 enhanceTrajectory(ch, k);
                 progress += dp;
@@ -276,29 +267,30 @@ namespace GPT
     ///////////////////////////////////////////////////////////////////////////////
     // PRIVATE FUNCTIONS
 
-    void Trajectory::enhancePoint(uint32_t trackID, uint32_t trajID, uint32_t tid)
+    void Trajectory::enhancePoint(uint64_t trackID, uint64_t trajID, uint64_t tid, uint64_t nThreads)
     {
 
-        const uint32_t sRoi = 2 * spotSize + 1,
-            nThreads = std::thread::hardware_concurrency();
+        const uint64_t sRoi = 2 * spotSize + 1;
 
         MatXd& route = m_vTrack[trackID].traj[trajID];
 
-        for (uint32_t pt = tid; pt < uint32_t(route.rows()); pt += nThreads)
+        for (int64_t pt = tid; pt < route.rows(); pt += nThreads)
         {
             if (!running)
                 return;
 
             // Get frame and coordinates
-            int32_t frame = int(route(pt, Track::FRAME)),
-                px = int(route(pt, Track::POSX)),
-                py = int(route(pt, Track::POSY));
+            int64_t 
+                frame = static_cast<int64_t>(route(pt, Track::FRAME)),
+                px = static_cast<int64_t>(route(pt, Track::POSX)),
+                py = static_cast<int64_t>(route(pt, Track::POSY));
 
             // Loading a pointer to image
             const MatXd& img = movie->getImage(trackID, frame);
 
             // Let's check if all ROI pixels are within the image
-            int32_t px_o = px - spotSize, px_f = px_o + sRoi,
+            int64_t 
+                px_o = px - spotSize, px_f = px_o + sRoi,
                 py_o = py - spotSize, py_f = py_o + sRoi;
 
             bool check = true;
@@ -314,14 +306,14 @@ namespace GPT
                 continue;
             }
 
-            MatXd roi = img.block(uint32_t(py_o), uint32_t(px_o), sRoi, sRoi);
+            MatXd roi = img.block(py_o, px_o, sRoi, sRoi);
 
             // Correcting contrast
             double bot = roi.minCoeff();
             double top = roi.maxCoeff();
 
             roi.array() -= bot;
-            roi.array() *= 255.0f / (top - bot);
+            roi.array() *= 255.0 / (top - bot);
 
             // Sending roi to Spot class for refinement
             Spot spot(roi);
@@ -347,15 +339,15 @@ namespace GPT
 
     }
 
-    void Trajectory::enhanceTrajectory(uint32_t trackID, uint32_t trajID)
+    void Trajectory::enhanceTrajectory(uint64_t trackID, uint64_t trajID)
     {
 
         // Updating localization and estimating error
-        const uint32_t nThreads = static_cast<uint32_t>(0.8f * std::thread::hardware_concurrency());
+        const uint64_t nThreads = std::thread::hardware_concurrency();
         std::vector<std::thread> vThr(nThreads);
 
-        for (uint32_t tid = 0; tid < nThreads; tid++)
-            vThr[tid] = std::thread(&Trajectory::enhancePoint, this, trackID, trajID, tid);
+        for (uint64_t tid = 0; tid < nThreads; tid++)
+            vThr[tid] = std::thread(&Trajectory::enhancePoint, this, trackID, trajID, tid, nThreads);
 
         for (std::thread& thr : vThr)
             thr.join();
@@ -363,24 +355,24 @@ namespace GPT
         // Removing rows that didn't converge during enhancement
         MatXd& route = m_vTrack[trackID].traj[trajID];
 
-        int32_t nRows = int32_t(route.rows());
-        for (int32_t k = nRows - 1; k >= 0; k--)
+        int64_t nRows = route.rows();
+        for (int64_t k = nRows - 1; k >= 0; k--)
             if (route(k, 0) < 0)
                 removeRow(route, k);
 
-        nRows = int32_t(route.rows());
+        nRows = route.rows();
         if (nRows < 10)
             return;
 
         Vec2d
-            thresSX = thresOutliers(route.col(Track::SIZEX)),
-            thresSY = thresOutliers(route.col(Track::SIZEY)),
-            thresEX = thresOutliers(route.col(Track::ERRX)),
-            thresEY = thresOutliers(route.col(Track::ERRY)),
-            thresSig = thresOutliers(route.col(Track::SIGNAL)),
-            thresBG = thresOutliers(route.col(Track::BG));
+          thresSX = thresOutliers(route.col(Track::SIZEX)),
+          thresSY = thresOutliers(route.col(Track::SIZEY)),
+          thresEX = thresOutliers(route.col(Track::ERRX)),
+          thresEY = thresOutliers(route.col(Track::ERRY)),
+          thresSig = thresOutliers(route.col(Track::SIGNAL)),
+          thresBG = thresOutliers(route.col(Track::BG));
 
-        for (int32_t k = nRows - 1; k >= 0; k--)
+        for (int64_t k = nRows - 1; k >= 0; k--)
         {
             bool check = true;
             check &= route(k, Track::SIZEX) < thresSX(1);

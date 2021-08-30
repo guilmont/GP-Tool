@@ -29,7 +29,7 @@ namespace GPT
     private:
         bool flag = false; // Tells if everything was calculated properly
 
-        uint32_t NX, NY;
+        uint64_t NX, NY;
         MatXd roi; // region of interest
         SpotInfo info;
 

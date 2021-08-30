@@ -28,20 +28,20 @@ private:
     struct
     {
         bool show = false;
-        int32_t spotSize = 3, openCH = 0;
+        uint64_t spotSize = 3, openCH = 0;
         std::vector<fs::path> path;
     } trackInfo;
 
     struct
     {
         bool show = false;
-        uint32_t trackID, trajID;
+        uint64_t trackID = 0, trajID = 0;
     } detail;
 
     struct
     {
         bool show = false;
-        uint32_t trackID, trajID, plotID = 0;
+        uint64_t trackID = 0, trajID = 0, plotID = 0;
         const char *options[3] = {"Movement", "Spot size", "Signal"};
     } plot;
 

@@ -8,8 +8,8 @@ namespace GPT
     double a = 0.0,
           a2 = 0.0;
 
-    const uint32_t N = uint32_t(vec.size());
-    for (uint32_t k = 0; k < N; k++)
+    const uint64_t N = vec.size();
+    for (uint64_t k = 0; k < N; k++)
     {
       a += vec(k);
       a2 += vec(k) * vec(k);
@@ -25,14 +25,13 @@ namespace GPT
 
   Spot::Spot(const MatXd &mat)
   {
-    this->NX = static_cast<int32_t>(mat.cols());
-    this->NY = static_cast<int32_t>(mat.rows());
+    this->NX = mat.cols();
+    this->NY = mat.rows();
 
     // Converting to integer for Poisson noise
     roi = mat.array().round();
 
-    double BG = 0.25f * (roi.col(0).mean() + roi.row(0).mean() +
-                        roi.col(NX - 1).mean() + roi.row(NY - 1).mean());
+    double BG = 0.25 * (roi.col(0).mean() + roi.row(0).mean() + roi.col(NX - 1).mean() + roi.row(NY - 1).mean());
 
     double I0 = roi.maxCoeff() - BG;
 
@@ -67,8 +66,8 @@ namespace GPT
           rho = 2.0 * erho / (1.0 + erho) - 1.0;
 
     double logLike = 0.0f;
-    for (uint32_t k = 0; k < NY; k++)
-      for (uint32_t l = 0; l < NX; l++)
+    for (uint64_t k = 0; k < NY; k++)
+      for (uint64_t l = 0; l < NX; l++)
       {
         double dx = (l + 0.5 - mx) / lx,
               dy = (k + 0.5 - my) / ly,
@@ -127,11 +126,11 @@ namespace GPT
             log(info.size(0)), log(info.size(1)), log(info.signal[0]), log(info.signal[1]),
           -log(2.0 / (info.rho + 1.0) - 1.0f);
 
-    uint32_t maxMCS = 10000;
+    uint64_t maxMCS = 10000;
     MatXd stats = GOptimize::sampleParameters(MXY, maxMCS, &Spot::weightFunction, this);
 
     MatXd pos(maxMCS, 2);
-    for (uint32_t k = 0; k < maxMCS; k++)
+    for (uint64_t k = 0; k < maxMCS; k++)
     {
       double mx = exp(stats(k, 0)), my = exp(stats(k, 1));
       pos(k, 0) = NX * mx / (1.0f + mx);

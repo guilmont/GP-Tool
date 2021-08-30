@@ -50,6 +50,21 @@ using Image = Eigen::Matrix<T, -1, -1, Eigen::RowMajor>;
 namespace GPT
 {
 
+    enum Track : const uint64_t
+    {
+        FRAME = 0,
+        TIME = 1,
+        POSX = 2,
+        POSY = 3,
+        ERRX = 4,
+        ERRY = 5,
+        SIZEX = 6,
+        SIZEY = 7,
+        BG = 8,
+        SIGNAL = 9,
+        NCOLS = 10
+    };
+
    // PRINTING UTILITY
    static void pout() { std::cout << std::endl; }
 

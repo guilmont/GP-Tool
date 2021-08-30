@@ -25,7 +25,7 @@ namespace GPT
 
         struct ParticleID
         {
-            uint32_t trackID, trajID;
+            uint64_t trackID, trajID;
         };
 
     public:
@@ -34,17 +34,17 @@ namespace GPT
 
         std::vector<ParticleID> partID;
 
-        GP_API DA *singleModel(uint32_t id = 0);
+        GP_API DA *singleModel(uint64_t id = 0);
         GP_API CDA *coupledModel(void);
         GP_API void stop(void);
 
-        GP_API const MatXd &distrib_singleModel(uint32_t sample_size = 10000, uint32_t id = 0);
-        GP_API const MatXd &distrib_coupledModel(uint32_t sample_size = 10000);
+        GP_API const MatXd &distrib_singleModel(uint64_t sample_size = 10000, uint64_t id = 0);
+        GP_API const MatXd &distrib_coupledModel(uint64_t sample_size = 10000);
         
-        GP_API const MatXd &calcAvgTrajectory(const VecXd &vTime, uint32_t id = 0, bool redo = false);
+        GP_API const MatXd &calcAvgTrajectory(const VecXd &vTime, uint64_t id = 0, bool redo = false);
         GP_API const MatXd &estimateSubstrateMovement(bool redo = false);
 
-        GP_API uint32_t getNumParticles(void) const { return nParticles; }
+        GP_API uint64_t getNumParticles(void) const { return nParticles; }
 
 
     private:
@@ -53,30 +53,17 @@ namespace GPT
         double weightSingle(const VecXd &DA);
         double weightCoupled(const VecXd &DA);
 
-        // This is not ideal, cuz it should be identical (a priori)
-        // to the one in method trajectory
-        enum Track : uint32_t
-        {
-            FRAME = 0,
-            TIME = 1,
-            POSX = 2,
-            POSY = 3,
-            ERRX = 4,
-            ERRY = 5,
-            NCOLS = 6
-        };
-
     private:
-        uint32_t runID;
+        uint64_t runID;
         double thresSimplex = 1e-4; // precision for simplex optimization
-        const uint32_t minSizePerTraj = 50;
+        const int64_t minSizePerTraj = 50;
 
         std::unique_ptr<GOptimize::NMSimplex> nms = nullptr;
 
         std::vector<std::unique_ptr<DA>> v_da;
         std::unique_ptr<CDA> cpl_da = nullptr;
 
-        uint32_t nParticles;
+        uint64_t nParticles;
         std::vector<MatXd> route; // Holders all particles's routes
         MatXd cRoute;             // concatenates all routes in one
 

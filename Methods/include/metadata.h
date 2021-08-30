@@ -10,7 +10,7 @@ namespace GPT
 
     struct Plane
     {
-        uint32_t 
+        uint64_t 
             TheC = 0,
             TheT = 0,
             TheZ = 0;
@@ -33,12 +33,12 @@ namespace GPT
     class Metadata
     {
     public:
-        uint32_t
+        uint64_t
             SignificantBits,
             SizeC, SizeT, SizeX, SizeY, SizeZ;
 
-        float
-            PhysicalSizeXY = 0.0f,
+        double
+            PhysicalSizeXY = 0.0,
             PhysicalSizeZ,
             TimeIncrement;
 
@@ -56,7 +56,7 @@ namespace GPT
         GP_API Metadata(Tiffer::Read *tif);
 
         GP_API bool hasPlanes(void) const { return (vPlanes.size() > 0); }
-        GP_API const Plane &getPlane(uint32_t c, uint32_t z, uint32_t t) const;
+        GP_API const Plane &getPlane(uint64_t c, uint64_t z, uint64_t t) const;
 
     private:
         std::vector<Plane> vPlanes;

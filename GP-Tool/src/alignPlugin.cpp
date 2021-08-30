@@ -3,7 +3,7 @@
 AlignPlugin::AlignPlugin(GPT::Movie *mov, GPTool *ptr) : movie(mov), tool(ptr)
 {
     const GPT::Metadata &meta = movie->getMetadata();
-    for (uint32_t ch = 0; ch < meta.SizeC; ch++)
+    for (uint64_t ch = 0; ch < meta.SizeC; ch++)
         data.emplace_back(meta.SizeX, meta.SizeY);
 
 } // construct
@@ -14,16 +14,16 @@ void AlignPlugin::showProperties(void)
 {
     ImGui::Begin("Properties");
 
-    const uint32_t nChannels = movie->getMetadata().SizeC;
+    const uint64_t nChannels = movie->getMetadata().SizeC;
 
     char txt[128] = {0};
-    sprintf(txt, "Channel %d", chAlign);
+    sprintf(txt, "Channel %lld", chAlign);
 
     if (ImGui::BeginCombo("To align", txt))
     {
-        for (uint32_t ch = 1; ch < nChannels; ch++)
+        for (uint64_t ch = 1; ch < nChannels; ch++)
         {
-            sprintf(txt, "Channel %d", ch);
+            sprintf(txt, "Channel %lld", ch);
             if (ImGui::Selectable(txt))
             {
                 chAlign = ch;
@@ -155,11 +155,11 @@ void AlignPlugin::update(float deltaTime)
 {
     std::array<float, 5 * 3 * 3> mat = {0};
 
-    const uint32_t SC = movie->getMetadata().SizeC;
-    uint32_t ct = 0;
-    for (uint32_t ch = 0; ch < SC; ch++)
-        for (uint32_t k = 0; k < 3; k++)
-            for (uint32_t l = 0; l < 3; l++)
+    const uint64_t SC = movie->getMetadata().SizeC;
+    uint64_t ct = 0;
+    for (uint64_t ch = 0; ch < SC; ch++)
+        for (uint64_t k = 0; k < 3; k++)
+            for (uint64_t l = 0; l < 3; l++)
                 mat[ct++] = static_cast<float>(data[ch].itrf(k, l));
 
 
@@ -176,11 +176,11 @@ void AlignPlugin::runAlignment(void)
 
     tool->mailbox.createInfo("Running alignment algorithm...");
 
-    uint32_t nFrames = movie->getMetadata().SizeT;
-    nFrames = std::min<uint32_t>(5, nFrames);
+    uint64_t nFrames = movie->getMetadata().SizeT;
+    nFrames = std::min<uint64_t>(5, nFrames);
 
     std::vector<MatXd> vi1, vi2;
-    for (uint32_t k = 0; k < nFrames; k++)
+    for (uint64_t k = 0; k < nFrames; k++)
     {
         vi1.push_back(movie->getImage(0, k));
         vi2.push_back(movie->getImage(chAlign, k));
@@ -232,10 +232,10 @@ bool AlignPlugin::saveJSON(Json::Value &json)
     auto jsonMat3d = [](const Mat3d &mat) -> Json::Value
     {
         Json::Value array(Json::arrayValue);
-        for (uint32_t k = 0; k < 3; k++)
+        for (uint64_t k = 0; k < 3; k++)
         {
             Json::Value row(Json::arrayValue);
-            for (uint32_t l = 0; l < 3; l++)
+            for (uint64_t l = 0; l < 3; l++)
                 row.append(mat(k, l));
 
             array.append(std::move(row));
@@ -262,9 +262,9 @@ bool AlignPlugin::saveJSON(Json::Value &json)
 }
 
 template <typename TP>
-static void workOnFrame(Image<TP>* vImg, GPT::Movie* movie, const Mat3d& itrf, const uint32_t channel)
+static void workOnFrame(Image<TP>* vImg, GPT::Movie* movie, const Mat3d& itrf, const uint64_t channel)
 {
-    const uint32_t
+    const uint64_t
         nChannels = movie->getMetadata().SizeC,
         nFrames = movie->getMetadata().SizeT,
         nRows = movie->getMetadata().SizeY,
@@ -272,22 +272,22 @@ static void workOnFrame(Image<TP>* vImg, GPT::Movie* movie, const Mat3d& itrf, c
         nThreads = std::thread::hardware_concurrency();
 
 
-    auto func = [&](const uint32_t tid) -> void
+    auto func = [&](const uint64_t tid) -> void
     {
         // Aligning second channel
-        for (uint32_t frame = tid; frame < nFrames; frame += nThreads)
+        for (uint64_t frame = tid; frame < nFrames; frame += nThreads)
         {
-            const uint32_t dir = frame * nChannels + channel;
+            const uint64_t dir = frame * nChannels + channel;
             const MatXd& old = movie->getImage(channel, frame);
 
             Image<TP> img(nRows, nCols);
-            for (uint32_t k = 0; k < nRows; k++)
-                for (uint32_t l = 0; l < nCols; l++)
+            for (uint64_t k = 0; k < nRows; k++)
+                for (uint64_t l = 0; l < nCols; l++)
                 {
-                    int32_t x = static_cast<int32_t>(itrf(0, 0) * (l + 0.5) + itrf(0, 1) * (k + 0.5) + itrf(0, 2));
-                    int32_t y = static_cast<int32_t>(itrf(1, 0) * (l + 0.5) + itrf(1, 1) * (k + 0.5) + itrf(1, 2));
+                    int64_t x = static_cast<int64_t>(itrf(0, 0) * (l + 0.5) + itrf(0, 1) * (k + 0.5) + itrf(0, 2));
+                    int64_t y = static_cast<int64_t>(itrf(1, 0) * (l + 0.5) + itrf(1, 1) * (k + 0.5) + itrf(1, 2));
 
-                    if (x >= 0 && x < static_cast<int32_t>(nCols) && y >= 0 && y < static_cast<int32_t>(nRows))
+                    if (x >= 0 && x < static_cast<int64_t>(nCols) && y >= 0 && y < static_cast<int64_t>(nRows))
                         img(k, l) = static_cast<TP>(old(y, x));
                     else
                         img(k, l) = 0;
@@ -299,7 +299,7 @@ static void workOnFrame(Image<TP>* vImg, GPT::Movie* movie, const Mat3d& itrf, c
 
 
     std::vector<std::thread> vec(nThreads);
-    for (uint32_t k = 0; k < nThreads; k++)
+    for (uint64_t k = 0; k < nThreads; k++)
         vec[k] = std::thread(func, k);
 
     for (std::thread& thr : vec)
@@ -312,7 +312,7 @@ void AlignPlugin::saveTIF(const fs::path& path)
 
     tool->mailbox.createInfo("Processing frames...");
 
-    const uint32_t
+    const uint64_t
         nChannels = movie->getMetadata().SizeC,
         nFrames = movie->getMetadata().SizeT,
         nDirs = nFrames * nChannels,
@@ -321,10 +321,10 @@ void AlignPlugin::saveTIF(const fs::path& path)
     if (nBits == 8)
     {
         std::vector<Image<uint8_t>> vImg(nDirs);
-        for (uint32_t fr = 0; fr < nFrames; fr++)
+        for (uint64_t fr = 0; fr < nFrames; fr++)
             vImg[fr * nChannels] = movie->getImage(0, fr).cast<uint8_t>();
 
-        for (uint32_t ch = 1; ch < nChannels; ch++)
+        for (uint64_t ch = 1; ch < nChannels; ch++)
             workOnFrame(vImg.data(), movie, data[ch].itrf, ch);
 
 
@@ -335,10 +335,10 @@ void AlignPlugin::saveTIF(const fs::path& path)
     else if (nBits == 16)
     {
         std::vector<Image<uint16_t>> vImg(nDirs);
-        for (uint32_t fr = 0; fr < nFrames; fr++)
+        for (uint64_t fr = 0; fr < nFrames; fr++)
             vImg[fr * nChannels] = movie->getImage(0, fr).cast<uint16_t>();
 
-        for (uint32_t ch = 1; ch < nChannels; ch++)
+        for (uint64_t ch = 1; ch < nChannels; ch++)
             workOnFrame(vImg.data(), movie, data[ch].itrf, ch);
 
         GPT::Tiffer::Write wrt(vImg, movie->getMetadata().metaString, true);
@@ -348,11 +348,11 @@ void AlignPlugin::saveTIF(const fs::path& path)
 
     else if (nBits == 32)
     {
-        std::vector<Image<uint32_t>> vImg(nDirs);
-        for (uint32_t fr = 0; fr < nFrames; fr++)
-            vImg[fr * nChannels] = movie->getImage(0, fr).cast<uint32_t>();
+        std::vector<Image<uint64_t>> vImg(nDirs);
+        for (uint64_t fr = 0; fr < nFrames; fr++)
+            vImg[fr * nChannels] = movie->getImage(0, fr).cast<uint64_t>();
 
-        for (uint32_t ch = 1; ch < nChannels; ch++)
+        for (uint64_t ch = 1; ch < nChannels; ch++)
             workOnFrame(vImg.data(), movie, data[ch].itrf, ch);
 
         GPT::Tiffer::Write wrt(vImg, movie->getMetadata().metaString, true);

@@ -135,17 +135,17 @@ namespace GPT
 
         auto getInfo = [&](const std::string &tag) -> std::string
         {
-            size_t beg = inputString.find(tag);
+            uint64_t beg = inputString.find(tag);
             if (beg == std::string::npos)
                 return "";
 
             beg += tag.size();
-            size_t end = inputString.find('\n', beg);
+            uint64_t end = inputString.find('\n', beg);
 
             return inputString.substr(beg, end - beg);
         }; // getInfo
 
-        auto help = [](const std::string &value) -> uint32_t
+        auto help = [](const std::string &value) -> uint64_t
         {
             if (value.size() == 0)
                 return 1;
@@ -157,7 +157,7 @@ namespace GPT
         this->SizeC = help(getInfo("channels="));
         this->SizeZ = help(getInfo("slices="));
 
-        for (uint32_t ch = 0; ch < SizeC; ch++)
+        for (uint64_t ch = 0; ch < SizeC; ch++)
             this->nameCH.emplace_back("channel" + std::to_string(ch));
 
         return true;
@@ -169,12 +169,12 @@ namespace GPT
 
         auto getInfo = [&](const std::string &tag) -> std::string
         {
-            size_t beg = inputString.find(tag);
+            uint64_t beg = inputString.find(tag);
             if (beg == std::string::npos)
                 return "";
 
             beg += tag.size();
-            size_t end = inputString.find('\n', beg);
+            uint64_t end = inputString.find('\n', beg);
 
             return inputString.substr(beg, end - beg);
         }; // getInfo
@@ -217,7 +217,7 @@ namespace GPT
 
         TimeIncrementUnit = "secs";
 
-        for (uint32_t ch = 0; ch < SizeC; ch++)
+        for (uint64_t ch = 0; ch < SizeC; ch++)
             nameCH.emplace_back(getInfo("WaveName" + std::to_string(ch + 1) + " = "));
 
         return true;
@@ -226,7 +226,7 @@ namespace GPT
     ///////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////
 
-    const Plane &Metadata::getPlane(uint32_t c, uint32_t z, uint32_t t) const
+    const Plane &Metadata::getPlane(uint64_t c, uint64_t z, uint64_t t) const
     {
         for (const Plane &pl : vPlanes)
         {

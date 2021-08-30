@@ -20,10 +20,10 @@ namespace GPT
             Vertex(const VecXd &pos, double weight);
 
             Vertex(const Vertex &vt);
-            Vertex(Vertex &&vt);
+            Vertex(Vertex &&vt) noexcept;
 
             Vertex &operator=(const Vertex &vt);
-            Vertex &operator=(Vertex &&vt);
+            Vertex &operator=(Vertex &&vt) noexcept;
         }; // struct-vertex
 
         /////////////////////////////////////////////
@@ -35,14 +35,14 @@ namespace GPT
             NMSimplex(VecXd &&vec, double thres, double step = 1);
 
             void stop(void) { running = false; }
-            void setMaxIterations(uint32_t num) { maxIterations = num; }
+            void setMaxIterations(uint64_t num) { maxIterations = num; }
             VecXd getResults(void) const { return params; }
 
             template <class CL>
             bool runSimplex(double (CL::*weight)(const VecXd &), CL *ptr);
 
         private:
-            uint32_t
+            uint64_t
                 numParams,
                 maxIterations = 10000;
 
@@ -64,11 +64,11 @@ namespace GPT
         // DISTRIBUTION ESTIMATION
 
         template <class CL>
-        static MatXd sampleParameters(const VecXd &params, const uint32_t sample_size, double (CL::*func)(const VecXd &), CL *ptr)
+        static MatXd sampleParameters(const VecXd &params, const uint64_t sample_size, double (CL::*func)(const VecXd &), CL *ptr)
         {
             // This functions will sample the used parameters via MCMC.
 
-            const uint32_t N = uint32_t(params.size()); // number of parameters
+            const uint64_t N = params.size(); // number of parameters
 
             VecXd DA(params), da(params);
             MatXd mcmc(sample_size, N);
@@ -84,15 +84,15 @@ namespace GPT
 
             ///////////////////////////////////////////////////
             // calibrating variance for "good" acceptance ratio ~0.25
-            const uint32_t nStep = 1000;
-            uint32_t ct = 0;
+            const uint64_t nStep = 1000;
+            uint64_t ct = 0;
             while (ct++ < 100)
             {
                 float accepted = 0.0f;
-                for (uint32_t mcs = 0; mcs < nStep; mcs++)
+                for (uint64_t mcs = 0; mcs < nStep; mcs++)
                 {
                     // Proposing new position
-                    for (uint32_t k = 0; k < N; k++)
+                    for (uint64_t k = 0; k < N; k++)
                         da(k) = DA(k) + normal(rng);
 
                     // Estimating posterior and transition probabilities
@@ -124,7 +124,7 @@ namespace GPT
             //////////////////////////////////////////////
             // Running distribution in parallel to improve speed a bit
 
-            auto funcParallel = [](const uint32_t tid, const uint32_t nThreads, const uint32_t N, const uint32_t sample_size, double LIKE, VecXd DA, const double S,
+            auto funcParallel = [](const uint64_t tid, const uint64_t nThreads, const uint64_t N, const uint64_t sample_size, double LIKE, VecXd DA, const double S,
                 double (CL::* func)(const VecXd&), CL* ptr, MatXd *mcmc) -> void
             {
                 std::random_device rnd;
@@ -134,10 +134,10 @@ namespace GPT
                 
                 VecXd da(N);
 
-                for (uint32_t mcs = tid; mcs < sample_size; mcs+=nThreads)
+                for (uint64_t mcs = tid; mcs < sample_size; mcs+=nThreads)
                 {
                     // Proposing new position
-                    for (uint32_t k = 0; k < N; k++)
+                    for (uint64_t k = 0; k < N; k++)
                         da(k) = DA(k) + normal(rng);
 
                     // Estimating posterior and transition probabilities
@@ -157,10 +157,10 @@ namespace GPT
                 } // loop-mcs
             }; 
 
-            const uint32_t nThreads = std::thread::hardware_concurrency();
+            const uint64_t nThreads = std::thread::hardware_concurrency();
             std::vector<std::thread> vec(nThreads);
 
-            for (uint32_t k = 0; k < nThreads; k++)
+            for (uint64_t k = 0; k < nThreads; k++)
                 vec[k] = std::thread(funcParallel, k, nThreads, N, sample_size, LIKE, DA, S, func, ptr, &mcmc);
 
             for (std::thread& thr : vec)
@@ -187,7 +187,7 @@ namespace GPT
             VecXd vec(this->params);
             simplex.emplace_back(vec, (ptr->*weight)(vec));
 
-            for (uint32_t k = 0; k < numParams; k++)
+            for (uint64_t k = 0; k < numParams; k++)
             {
                 vec(k) += step;
                 if (k > 0)
@@ -196,7 +196,7 @@ namespace GPT
             } // loop-vertex
 
             // Starting on the simplex method
-            uint32_t counter = 0;
+            uint64_t counter = 0;
             while ((counter++ < maxIterations) && running)
             {
                 // Determine simplex size
@@ -215,7 +215,7 @@ namespace GPT
                 VecXd CM(numParams);
                 CM.fill(0);
 
-                for (uint32_t k = 0; k < numParams; k++)
+                for (uint64_t k = 0; k < numParams; k++)
                     CM += simplex.at(k).pos;
 
                 CM /= double(numParams); // Norma
@@ -248,7 +248,7 @@ namespace GPT
                     {
                         // Shrink
                         Vertex vx0 = simplex.at(0);
-                        for (uint32_t k = 1; k <= numParams; k++)
+                        for (uint64_t k = 1; k <= numParams; k++)
                             simplex.at(k).pos = vx0.pos + sigma * (simplex.at(k).pos - vx0.pos);
                     }
 

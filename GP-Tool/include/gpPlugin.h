@@ -23,14 +23,14 @@ private:
     struct
     {
         bool show = false;
-        uint32_t gpID, trajID;
+        uint64_t gpID = 0, trajID = 0;
 
     } avgView;
 
     struct
     {
         bool show = false;
-        uint32_t gpID;
+        uint64_t gpID = 0;
     } subPlotView, subView, distribView;
 
     void winAvgView(void);

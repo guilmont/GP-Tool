@@ -20,7 +20,7 @@ namespace GPT
         GP_API const Metadata &getMetadata(void) const;
         GP_API Metadata &getMetadata(void);
 
-        GP_API const MatXd& getImage(uint32_t channel, uint32_t frame);
+        GP_API const MatXd& getImage(uint64_t channel, uint64_t frame);
 
     private:
         bool success = true;

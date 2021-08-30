@@ -19,3 +19,9 @@
 #include <imgui.h>
 
 #include <json/json.h>
+
+
+static bool SliderU64(const char* label, uint64_t* data, uint64_t min, uint64_t max)
+{
+    return ImGui::SliderScalar(label, ImGuiDataType_U64, data, &min, &max, "%lld");
+}

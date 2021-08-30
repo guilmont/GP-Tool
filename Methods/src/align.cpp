@@ -1,6 +1,6 @@
 #include "align.h"
 
-GPT::TransformData::TransformData(uint32_t width, uint32_t height) : size(width, height)
+GPT::TransformData::TransformData(uint64_t width, uint64_t height) : size(width, height)
 {
     translate = {0.0, 0.0};
     scale = {1.0, 1.0};
@@ -16,20 +16,20 @@ void GPT::TransformData::update(void)
     Mat3d A, B, C, D;
 
     A << scale(0), 0.0f, (1.0f - scale(0)) * 0.5f * size(0),
-        0.0f, scale(1), (1.0f - scale(1)) * 0.5f * size(1),
-        0.0f, 0.0f, 1.0f;
+         0.0f, scale(1), (1.0f - scale(1)) * 0.5f * size(1),
+         0.0f, 0.0f, 1.0f;
 
     B << 1.0, 0.0, translate(0) + rotate(0),
-        0.0, 1.0, translate(1) + rotate(1),
-        0.0, 0.0, 1.0;
+         0.0, 1.0, translate(1) + rotate(1),
+         0.0, 0.0, 1.0;
 
     C << cos(rotate(2)), -sin(rotate(2)), 0.0,
-        sin(rotate(2)), cos(rotate(2)), 0.0,
-        0.0, 0.0, 1.0;
+         sin(rotate(2)), cos(rotate(2)), 0.0,
+         0.0, 0.0, 1.0;
 
     D << 1.0, 0.0, -rotate(0),
-        0.0, 1.0, -rotate(1),
-        0.0, 0.0, 1.0;
+         0.0, 1.0, -rotate(1),
+         0.0, 0.0, 1.0;
 
     // Complete transformation
     trf = A * B * C * D;
@@ -40,12 +40,13 @@ void GPT::TransformData::update(void)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-static MatXd treatImage(MatXd img, int medianSize, double clipLimit, uint32_t tileSizeX, uint32_t tileSizeY)
+static MatXd treatImage(MatXd img, int medianSize, double clipLimit, uint64_t tileSizeX, uint64_t tileSizeY)
 {
 
     // Before anything else, let's correct contrast
-    double top = img.maxCoeff(),
-           bot = img.minCoeff();
+    double 
+        top = img.maxCoeff(),
+        bot = img.minCoeff();
 
     img.array() -= bot;
     img.array() *= 1.0 / (top - bot);
@@ -53,39 +54,39 @@ static MatXd treatImage(MatXd img, int medianSize, double clipLimit, uint32_t ti
     //////////////////////////////////////////////////////////////
     // Creating look-up table
 
-    const uint32_t
-        nCols = uint32_t(img.cols()),
-        nRows = uint32_t(img.rows()),
+    const uint64_t
+        nCols = img.cols(),
+        nRows = img.rows(),
         tileArea = tileSizeX * tileSizeY,
-        TX = uint32_t(std::ceil(nCols / double(tileSizeX))),
-        TY = uint32_t(std::ceil(nRows / double(tileSizeY))),
+        TX = static_cast<uint64_t>(std::ceil(nCols / double(tileSizeX))),
+        TY = static_cast<uint64_t>(std::ceil(nRows / double(tileSizeY))),
         NT = TX * TY;
 
     clipLimit *= tileArea / 256.0;
 
-    std::vector<uint32_t> cdfmin(NT, 0);
+    std::vector<uint64_t> cdfmin(NT, 0);
     MatXd lut = MatXd::Zero(256, NT);
 
-    for (uint32_t k = 0; k < nRows; k++)
-        for (uint32_t l = 0; l < nCols; l++)
+    for (uint64_t k = 0; k < nRows; k++)
+        for (uint64_t l = 0; l < nCols; l++)
         {
-            uint32_t y = uint32_t(k / double(tileSizeX)),
-                     x = uint32_t(l / double(tileSizeY));
+            uint64_t
+                y = static_cast<uint64_t>(k / double(tileSizeX)),
+                x = static_cast<uint64_t>(l / double(tileSizeY)),
+                tid = y * TX + x;
 
-            uint32_t tid = y * TX + x;
-
-            uint32_t id = uint32_t(255.0 * img(k, l));
+            uint64_t id = static_cast<uint64_t>(255.0 * img(k, l));
             lut(id, tid)++;
         }
 
     // Normalization
-    for (uint32_t tid = 0; tid < NT; tid++)
+    for (uint64_t tid = 0; tid < NT; tid++)
     {
         // To avoid contrast differences at borders, let's clip the histogram
         while (true)
         {
             double extra = 0.0;
-            for (uint32_t r = 0; r < 256; r++)
+            for (uint64_t r = 0; r < 256; r++)
                 if (lut(r, tid) > clipLimit)
                 {
                     extra += lut(r, tid) - clipLimit;
@@ -102,7 +103,7 @@ static MatXd treatImage(MatXd img, int medianSize, double clipLimit, uint32_t ti
         double norm = lut.col(tid).sum();
         lut.col(tid).array() /= norm;
 
-        for (uint32_t k = 1; k < 256; k++)
+        for (uint64_t k = 1; k < 256; k++)
             lut(k, tid) += lut(k - 1, tid);
 
         double bot = lut.col(tid).minCoeff();
@@ -116,11 +117,11 @@ static MatXd treatImage(MatXd img, int medianSize, double clipLimit, uint32_t ti
     MatXd mat(nRows, nCols);
     mat.fill(0.0);
 
-    for (uint32_t k = 0; k < nRows; k++)
-        for (uint32_t l = 0; l < nCols; l++)
+    for (uint64_t k = 0; k < nRows; k++)
+        for (uint64_t l = 0; l < nCols; l++)
         {
             // Determining tile
-            uint32_t x = l / tileSizeX, y = k / tileSizeY;
+            uint64_t x = l / tileSizeX, y = k / tileSizeY;
 
             double px = double(l) / tileSizeX - x,
                    py = double(k) / tileSizeY - y;
@@ -145,11 +146,12 @@ static MatXd treatImage(MatXd img, int medianSize, double clipLimit, uint32_t ti
             px = px > 0.5 ? px - 0.5 : 0.5 - px;
             py = py > 0.5 ? py - 0.5 : 0.5 - py;
 
-            uint32_t bin = uint32_t(255.0 * img(k, l)),
-                     tid0 = (y + 0) * TX + (x + 0),
-                     tid1 = (y + 0) * TX + (x + dx),
-                     tid2 = (y + dy) * TX + (x + 0),
-                     tid3 = (y + dy) * TX + (x + dx);
+            uint64_t 
+                bin = static_cast<uint64_t>(255.0 * img(k, l)),
+                tid0 = (y + 0) * TX + (x + 0),
+                tid1 = (y + 0) * TX + (x + dx),
+                tid2 = (y + dy) * TX + (x + 0),
+                tid3 = (y + dy) * TX + (x + dx);
 
             double valx1 = (1.0 - px) * lut(bin, tid0) + px * (lut(bin, tid1));
             double valx2 = (1.0 - px) * lut(bin, tid2) + px * (lut(bin, tid3));
@@ -162,25 +164,27 @@ static MatXd treatImage(MatXd img, int medianSize, double clipLimit, uint32_t ti
 
     if (medianSize > 0)
     {
-        int median_radius = int(0.5f * medianSize);
-        for (uint32_t k = 0; k < nRows; k++)
-            for (uint32_t l = 0; l < nCols; l++)
+        int64_t median_radius = static_cast<int32_t>(0.5 * medianSize);
+        for (uint64_t k = 0; k < nRows; k++)
+            for (uint64_t l = 0; l < nCols; l++)
             {
                 // Getting region
-                uint32_t
-                    xo = std::max<int>(l - median_radius, 0),
-                    yo = std::max<int>(k - median_radius, 0),
-                    xf = std::min<int>(l + median_radius + 1, nCols),
-                    yf = std::min<int>(k + median_radius + 1, nRows);
+                int64_t
+                    xo = std::max<int64_t>(l - median_radius, 0),
+                    yo = std::max<int64_t>(k - median_radius, 0),
+                    xf = std::min<int64_t>(l + median_radius + 1, nCols),
+                    yf = std::min<int64_t>(k + median_radius + 1, nRows);
 
-                std::vector<double> vec;
-                for (uint32_t y = yo; y < yf; y++)
-                    for (uint32_t x = xo; x < xf; x++)
+                int64_t size = (yf - yo) * (xf - xo);
+
+                std::vector<double> vec(size);
+                for (int64_t y = yo; y < yf; y++)
+                    for (int64_t x = xo; x < xf; x++)
                         vec.push_back(mat(y, x));
 
                 std::sort(vec.begin(), vec.end());
 
-                uint32_t pos = uint32_t(0.5f * vec.size());
+                uint64_t pos = static_cast<uint64_t>(0.5 * vec.size());
                 img(k, l) = vec.at(pos);
             } // loop-median
 
@@ -204,17 +208,17 @@ static MatXd treatImage(MatXd img, int medianSize, double clipLimit, uint32_t ti
 /*******************************************************************/
 /*******************************************************************/
 
-GPT::Align::Align(uint32_t nFrames, const MatXd *im1, const MatXd *im2)
+GPT::Align::Align(uint64_t nFrames, const MatXd *im1, const MatXd *im2)
 {
 
     vIm0.resize(nFrames);
     vIm1.resize(nFrames);
-    RT = TransformData(uint32_t(im1[0].cols()), uint32_t(im1[0].rows()));
+    RT = TransformData(im1[0].cols(), im1[0].rows());
 
     // Setup transform properties
-    auto parallel_image_treatment = [&](uint32_t tid, uint32_t nThr) -> void
+    auto parallel_image_treatment = [&](uint64_t tid, uint64_t nThr) -> void
     {
-        for (uint32_t k = tid; k < nFrames; k += nThr)
+        for (uint64_t k = tid; k < nFrames; k += nThr)
         {
             vIm0[k] = (255.0 * treatImage(im1[k], 3, 5.0, 32, 32)).array().round().cast<uint8_t>();
             vIm1[k] = (255.0 * treatImage(im2[k], 3, 5.0, 32, 32)).array().round().cast<uint8_t>();
@@ -222,30 +226,30 @@ GPT::Align::Align(uint32_t nFrames, const MatXd *im1, const MatXd *im2)
     };
 
     std::vector<std::thread> vThr(std::thread::hardware_concurrency());
-    for (uint32_t tid = 0; tid < vThr.size(); tid++)
-        vThr[tid] = std::thread(parallel_image_treatment, tid, uint32_t(vThr.size()));
+    for (uint64_t tid = 0; tid < vThr.size(); tid++)
+        vThr[tid] = std::thread(parallel_image_treatment, tid, vThr.size());
 
     for (auto &thr : vThr)
         thr.join();
 
-} // constructor
+}
 
-void GPT::Align::calcEnergy(const uint32_t id, const uint32_t nThr)
+void GPT::Align::calcEnergy(const uint64_t id, const uint64_t nThr)
 {
     global_energy[id] = 0.0;
 
-    const uint32_t
-        width = uint32_t(vIm0[0].cols()),
-        height = uint32_t(vIm0[0].rows());
+    const int64_t
+        width = vIm0[0].cols(),
+        height = vIm0[0].rows();
 
-    for (uint32_t fr = id; fr < vIm0.size(); fr += nThr)
+    for (uint64_t fr = id; fr < vIm0.size(); fr += nThr)
     {
         // Evaluating transformed img2
-        for (uint32_t y = 0; y < height; y++)
-            for (uint32_t x = 0; x < width; x++)
+        for (int64_t y = 0; y < height; y++)
+            for (int64_t x = 0; x < width; x++)
             {
-                int32_t i = static_cast<int32_t>(itrf(0, 0) * (x + 0.5) + itrf(0, 1) * (y + 0.5) + itrf(0, 2) + 0.5);
-                int32_t j = static_cast<int32_t>(itrf(1, 0) * (x + 0.5) + itrf(1, 1) * (y + 0.5) + itrf(1, 2) + 0.5);
+                int64_t i = static_cast<int64_t>(itrf(0, 0) * (x + 0.5) + itrf(0, 1) * (y + 0.5) + itrf(0, 2) + 0.5);
+                int64_t j = static_cast<int64_t>(itrf(1, 0) * (x + 0.5) + itrf(1, 1) * (y + 0.5) + itrf(1, 2) + 0.5);
 
                 double dr = double(vIm0[fr](y, x));
                 if (i >= 0 && i < int(width) && j >= 0 && j < int(height))
@@ -253,10 +257,8 @@ void GPT::Align::calcEnergy(const uint32_t id, const uint32_t nThr)
 
                 global_energy[id] += dr * dr;
             }
-
-    } // thread-loop
-
-} // calcEnergy
+    }
+}
 
 double GPT::Align::weightTransRot(const VecXd &p)
 {
@@ -284,12 +286,12 @@ double GPT::Align::weightTransRot(const VecXd &p)
     itrf = trf.inverse();
 
     // Splitting log-likelihood calculationg to threads
-    const uint32_t nThr = std::thread::hardware_concurrency();
+    const uint64_t nThr = std::thread::hardware_concurrency();
 
     global_energy.resize(nThr);
     std::vector<std::thread> vThr(nThr);
 
-    for (uint32_t tid = 0; tid < nThr; tid++)
+    for (uint64_t tid = 0; tid < nThr; tid++)
         vThr[tid] = std::thread(&Align::calcEnergy, this, tid, nThr);
 
     for (auto &thr : vThr)
@@ -322,12 +324,12 @@ double GPT::Align::weightScale(const VecXd &p)
     itrf = trf.inverse();
 
     // Splitting log-likelihood calculationg to threads
-    const uint32_t nThr = std::thread::hardware_concurrency();
+    const uint64_t nThr = std::thread::hardware_concurrency();
 
     global_energy.resize(nThr);
     std::vector<std::thread> vThr(nThr);
 
-    for (uint32_t tid = 0; tid < nThr; tid++)
+    for (uint64_t tid = 0; tid < nThr; tid++)
         vThr[tid] = std::thread(&Align::calcEnergy, this, tid, nThr);
 
     for (auto &thr : vThr)

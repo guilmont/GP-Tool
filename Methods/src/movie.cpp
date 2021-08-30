@@ -40,11 +40,11 @@ namespace GPT
         return *meta.get();
     }
 
-    const MatXd &Movie::getImage(uint32_t channel, uint32_t frame)
+    const MatXd &Movie::getImage(uint64_t channel, uint64_t frame)
     {
         assert(channel < meta->SizeC&& frame < meta->SizeT);
 
-        uint32_t id = frame * meta->SizeC + channel;
+        uint32_t id = static_cast<uint32_t>(frame * meta->SizeC + channel);
 
         if (vImg[id])
             return *vImg.at(id).get();
@@ -56,7 +56,7 @@ namespace GPT
                 vImg[id] = std::make_unique<MatXd>(tif->getImage<uint16_t>(id).cast<double>());
 
             else if (meta->SignificantBits == 32)
-                vImg[id] = std::make_unique<MatXd>(tif->getImage<uint32_t>(id).cast<double>());
+                vImg[id] = std::make_unique<MatXd>(tif->getImage<uint64_t>(id).cast<double>());
 
             return *vImg[id].get();
         }

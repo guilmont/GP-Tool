@@ -3,24 +3,24 @@
 #include <thread>
 #include <fstream>
 
-static constexpr uint32_t sample_size = 10000;
+static constexpr uint64_t sample_size = 10000;
 
 static void saveCSV(const fs::path &path, const std::string *header,
                     const MatXd &mat)
 {
 
-    const uint32_t nCols = uint32_t(mat.cols()),
-                   nRows = uint32_t(mat.rows());
+    const uint64_t nCols = uint64_t(mat.cols()),
+                   nRows = uint64_t(mat.rows());
 
     std::ofstream arq(path);
 
     // Header
-    for (uint32_t l = 0; l < nCols; l++)
+    for (uint64_t l = 0; l < nCols; l++)
         arq << header[l] << (l == nCols - 1 ? "\n" : ", ");
 
     // Body
-    for (uint32_t k = 0; k < nRows; k++)
-        for (uint32_t l = 0; l < nCols; l++)
+    for (uint64_t k = 0; k < nRows; k++)
+        for (uint64_t l = 0; l < nCols; l++)
             arq << mat(k, l) << (l == nCols - 1 ? "\n" : ", ");
 
     arq.close();
@@ -65,7 +65,7 @@ static void binOption(int &bins)
 static Json::Value jsonEigen(const MatXd &mat)
 {
     Json::Value array(Json::arrayValue);
-    for (uint32_t k = 0; k < uint32_t(mat.cols()); k++)
+    for (uint64_t k = 0; k < uint64_t(mat.cols()); k++)
         array.append(std::move(jsonArray(mat.col(k).data(), mat.rows())));
 
     return array;
@@ -121,14 +121,14 @@ void GPPlugin::showProperties(void)
         std::vector<MatXd> vTraj;
         std::vector<GPT::GP_FBM::ParticleID> partID;
 
-        const uint32_t nTracks = vTrack->getNumTracks();
-        for (uint32_t tr = 0; tr < nTracks; tr++)
+        const uint64_t nTracks = vTrack->getNumTracks();
+        for (uint64_t tr = 0; tr < nTracks; tr++)
         {
-            const GPT::Track &track = vTrack->getTrack(tr);
-            const uint32_t nTraj = uint32_t(track.traj.size());
+            const GPT::Track_API &track = vTrack->getTrack(tr);
+            const uint64_t nTraj = track.traj.size();
 
             // TODO: Correct trajectory for alignment when necessary
-            uint32_t k = 0;
+            uint64_t k = 0;
             for (auto &[on, cor] : ui[tr])
             {
                 if (on)
@@ -158,7 +158,7 @@ void GPPlugin::showProperties(void)
 
         else
         {
-            const uint32_t nTraj = uint32_t(vTraj.size());
+            const uint64_t nTraj = vTraj.size();
 
             std::thread(&GPPlugin::addNewCell, this, vTraj, partID).detach();
         }
@@ -177,14 +177,14 @@ void GPPlugin::showProperties(void)
     nodeFlags |= ImGuiTreeNodeFlags_SpanAvailWidth;
     nodeFlags |= ImGuiTreeNodeFlags_AllowItemOverlap;
 
-    int32_t gpID = -1,
+    int64_t gpID = -1,
             toRemove = -1; // If we want to remove any cell
 
     for (auto &gp : vecGP)
     {
         const GPT::Movie *movie = reinterpret_cast<MoviePlugin *>(tool->getPlugin("MOVIE"))->getMovie();
 
-        const float
+        const double
             pix2mu = movie->getMetadata().PhysicalSizeXY,
             DCalib = pix2mu * pix2mu;
 
@@ -209,8 +209,8 @@ void GPPlugin::showProperties(void)
         if (ImGui::Button("Select"))
         {
             // Setting everything to false
-            const uint32_t nTracks = uint32_t(vTrack->getNumTracks());
-            for (uint32_t ch = 0; ch < nTracks; ch++)
+            const uint64_t nTracks = uint64_t(vTrack->getNumTracks());
+            for (uint64_t ch = 0; ch < nTracks; ch++)
                 for (auto &[show, color] : ui[ch])
                     show = false;
 
@@ -236,7 +236,7 @@ void GPPlugin::showProperties(void)
 
         if (openTree)
         {
-            const uint32_t nParticles = gp->getNumParticles();
+            const uint64_t nParticles = gp->getNumParticles();
 
             // Creating table
 
@@ -245,12 +245,12 @@ void GPPlugin::showProperties(void)
             if (ImGui::BeginTable("table1", 5, flags))
             {
                 // Header
-                for (uint32_t k = 0; k < 5; k++)
+                for (uint64_t k = 0; k < 5; k++)
                     ImGui::TableSetupColumn(header[k].c_str());
                 ImGui::TableHeadersRow();
 
                 // Mainbody
-                for (uint32_t k = 0; k < nParticles; k++)
+                for (uint64_t k = 0; k < nParticles; k++)
                 {
                     std::string txt = "part" + std::to_string(k);
                     ImGui::PushID(txt.c_str());
@@ -282,7 +282,7 @@ void GPPlugin::showProperties(void)
                     ImGui::TableSetColumnIndex(4);
 
                     if (ImGui::Button("View", {ImGui::GetContentRegionAvailWidth(), 0}))
-                        avgView = {true, uint32_t(gpID), k};
+                        avgView = {true, static_cast<uint64_t>(gpID), k};
 
                     ImGui::PopID();
 
@@ -293,7 +293,7 @@ void GPPlugin::showProperties(void)
 
             if (ImGui::Button("View distribution"))
             {
-                distribView.gpID = uint32_t(gpID);
+                distribView.gpID = static_cast<uint64_t>(gpID);
 
                 std::thread([](GPT::GP_FBM *gp, GRender::Mailbox *mailbox, bool *show) -> void
                             {
@@ -317,7 +317,7 @@ void GPPlugin::showProperties(void)
                 ImGui::SameLine();
                 if (ImGui::Button("Substrate"))
                 {
-                    subView.gpID = uint32_t(gpID);
+                    subView.gpID = uint64_t(gpID);
 
                     std::thread(
                         [](GPT::GP_FBM *gp, GRender::Mailbox *mailbox, bool *show) -> void
@@ -357,7 +357,7 @@ void GPPlugin::update(float deltaTime) {}
 
 bool GPPlugin::saveJSON(Json::Value &json)
 {
-    const uint32_t nCells = uint32_t(vecGP.size());
+    const uint64_t nCells = uint64_t(vecGP.size());
 
     if (nCells == 0)
         return false;
@@ -368,19 +368,19 @@ bool GPPlugin::saveJSON(Json::Value &json)
 
     json["D_units"] = meta.PhysicalSizeXYUnit + "^2/" + meta.TimeIncrementUnit + "^A";
 
-    for (uint32_t id = 0; id < nCells; id++)
+    for (uint64_t id = 0; id < nCells; id++)
     {
         Json::Value cell;
         GPT::GP_FBM *gp = vecGP[id].get();
 
-        const uint32_t nParticles = gp->getNumParticles();
+        const uint64_t nParticles = gp->getNumParticles();
 
         // SINGLE MODEL
         Json::Value &single = cell["single"];
         single["columns"] = "channel, particle_id, D, A, mu_x, mu_y";
 
         single["dynamics"] = Json::arrayValue;
-        for (uint32_t pt = 0; pt < nParticles; pt++)
+        for (uint64_t pt = 0; pt < nParticles; pt++)
         {
             GPT::GP_FBM::DA *da = gp->singleModel(pt);
 
@@ -402,7 +402,7 @@ bool GPPlugin::saveJSON(Json::Value &json)
 
             coupled["dynamics"] = Json::arrayValue;
             GPT::GP_FBM::CDA *cda = gp->coupledModel();
-            for (uint32_t pt = 0; pt < nParticles; pt++)
+            for (uint64_t pt = 0; pt < nParticles; pt++)
             {
                 Json::Value row(Json::arrayValue);
                 row.append(gp->partID[pt].trackID);
@@ -442,7 +442,7 @@ void GPPlugin::winAvgView(void)
 
     // Getting its original trajectory
     const MatXd &orig = traj->getTrack(pid.trackID).traj[pid.trajID];
-    const uint32_t nRows = uint32_t(orig.rows());
+    const uint64_t nRows = uint64_t(orig.rows());
 
     // Preparing data for scatter plot
     VecXd OT = orig.col(GPT::Track::TIME),
@@ -450,11 +450,11 @@ void GPPlugin::winAvgView(void)
           OY = orig.col(GPT::Track::POSY).array() - orig(0, GPT::Track::POSY);
 
     // Calculating most probable trajectory with error
-    const uint32_t nPts = uint32_t(float(orig(nRows - 1, GPT::Track::TIME) - orig(0, GPT::Track::TIME)) / 0.05f);
+    const uint64_t nPts = uint64_t(float(orig(nRows - 1, GPT::Track::TIME) - orig(0, GPT::Track::TIME)) / 0.05f);
 
     VecXd vt(nPts);
-    for (uint32_t k = 0; k < nPts; k++)
-        vt(k) = orig(0, GPT::Track::TIME) + 0.05f * k;
+    for (uint64_t k = 0; k < nPts; k++)
+        vt(k) = orig(0, GPT::Track::TIME) + 0.05 * k;
 
     const MatXd &mat = vecGP[avgView.gpID]->calcAvgTrajectory(vt, avgView.trajID);
 
@@ -473,7 +473,7 @@ void GPPlugin::winAvgView(void)
 
     // Setup title for the plot
     char buf[512] = {0};
-    sprintf(buf, "Cell: %d -- Channel: %d -- ID: %d",
+    sprintf(buf, "Cell: %lld -- Channel: %lld -- ID: %lld",
             avgView.gpID, pid.trackID, pid.trajID);
 
     ///////////////////////////////////////////////////////
@@ -488,14 +488,14 @@ void GPPlugin::winAvgView(void)
     if (ImPlot::BeginPlot(buf, "Time", "Position", size))
     {
         ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.5f);
-        ImPlot::PlotShaded("Average X", vt.data(), lowX.data(), highX.data(), nPts);
-        ImPlot::PlotLine("Average X", vt.data(), X.data(), nPts);
+        ImPlot::PlotShaded("Average X", vt.data(), lowX.data(), highX.data(), static_cast<int32_t>(nPts));
+        ImPlot::PlotLine("Average X", vt.data(), X.data(), static_cast<int32_t>(nPts));
 
-        ImPlot::PlotScatter("Measured X", OT.data(), OX.data(), uint32_t(OT.size()));
+        ImPlot::PlotScatter("Measured X", OT.data(), OX.data(), static_cast<int32_t>(OT.size()));
 
-        ImPlot::PlotShaded("Average Y", vt.data(), lowY.data(), highY.data(), nPts);
-        ImPlot::PlotLine("Average Y", vt.data(), Y.data(), nPts);
-        ImPlot::PlotScatter(" Measured Y", OT.data(), OY.data(), uint32_t(OT.size()));
+        ImPlot::PlotShaded("Average Y", vt.data(), lowY.data(), highY.data(), static_cast<int32_t>(nPts));
+        ImPlot::PlotLine("Average Y", vt.data(), Y.data(), static_cast<int32_t>(nPts));
+        ImPlot::PlotScatter(" Measured Y", OT.data(), OY.data(), static_cast<int32_t>(OT.size()));
 
         ImPlot::PopStyleVar();
 
@@ -510,7 +510,7 @@ void GPPlugin::winSubstrate(void)
     // Gathering some information
     const GPT::Movie *movie = reinterpret_cast<MoviePlugin *>(tool->getPlugin("MOVIE"))->getMovie();
 
-    const float
+    const double
         pix2mu = movie->getMetadata().PhysicalSizeXY,
         DCalib = pix2mu * pix2mu;
 
@@ -522,7 +522,7 @@ void GPPlugin::winSubstrate(void)
     const MatXd &mat = gp->estimateSubstrateMovement();
     const MatXd &distrib = gp->distrib_coupledModel();
 
-    const uint32_t nRows = uint32_t(mat.rows()),
+    const uint64_t nRows = uint64_t(mat.rows()),
                    nParticles = gp->getNumParticles();
 
     // Proceeding to the window
@@ -612,12 +612,12 @@ void GPPlugin::winSubstrate(void)
     if (ImGui::BeginTable("table1", 6, flags))
     {
         // Header
-        for (uint32_t k = 0; k < 6; k++)
+        for (uint64_t k = 0; k < 6; k++)
             ImGui::TableSetupColumn(names[k]);
         ImGui::TableHeadersRow();
 
         // Mainbody
-        for (uint32_t row = 0; row < nRows; row++)
+        for (uint64_t row = 0; row < nRows; row++)
         {
             ImGui::TableNextRow();
 
@@ -626,7 +626,7 @@ void GPPlugin::winSubstrate(void)
             ImGui::Text("%.0f", mat(row, 0));
 
             // remains columns
-            for (uint32_t column = 1; column < 6; column++)
+            for (int32_t column = 1; column < 6; column++)
             {
                 ImGui::TableSetColumnIndex(column);
                 ImGui::Text("%.3f", mat(row, column));
@@ -643,7 +643,7 @@ void GPPlugin::winPlotSubstrate(void)
 {
     // Getting its original trajectory
     const MatXd &mat = vecGP[subPlotView.gpID]->estimateSubstrateMovement();
-    const uint32_t nPts = uint32_t(mat.rows());
+    const uint64_t nPts = uint64_t(mat.rows());
 
     // Preparing data for shaded plot
     VecXd T = mat.col(GPT::Track::TIME),
@@ -661,7 +661,7 @@ void GPPlugin::winPlotSubstrate(void)
 
     // Setup title for the plot
     char buf[128] = {0};
-    sprintf(buf, "Cell: %d", subPlotView.gpID);
+    sprintf(buf, "Cell: %lld", subPlotView.gpID);
 
     ///////////////////////////////////////////////////////
     // Creating ImGui windows
@@ -675,11 +675,11 @@ void GPPlugin::winPlotSubstrate(void)
     if (ImPlot::BeginPlot(buf, "Time", "Position", size))
     {
         ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.5f);
-        ImPlot::PlotShaded("X", T.data(), lowX.data(), highX.data(), nPts);
-        ImPlot::PlotLine("X", T.data(), X.data(), nPts);
+        ImPlot::PlotShaded("X", T.data(), lowX.data(), highX.data(), static_cast<int32_t>(nPts));
+        ImPlot::PlotLine("X", T.data(), X.data(), static_cast<int32_t>(nPts));
 
-        ImPlot::PlotShaded("Y", T.data(), lowY.data(), highY.data(), nPts);
-        ImPlot::PlotLine("Y", T.data(), Y.data(), nPts);
+        ImPlot::PlotShaded("Y", T.data(), lowY.data(), highY.data(), static_cast<int32_t>(nPts));
+        ImPlot::PlotLine("Y", T.data(), Y.data(), static_cast<int32_t>(nPts));
         ImPlot::PopStyleVar();
 
         ImPlot::EndPlot();
@@ -697,11 +697,11 @@ void GPPlugin::winDistributions(void)
 
     // Gathering the data we need
     GPT::GP_FBM *gp = vecGP[distribView.gpID].get();
-    const uint32_t nParticles = gp->getNumParticles();
+    const uint64_t nParticles = gp->getNumParticles();
 
     const GPT::Metadata &meta = reinterpret_cast<MoviePlugin *>(tool->getPlugin("MOVIE"))->getMovie()->getMetadata();
 
-    float Dcalib = meta.PhysicalSizeXY * meta.PhysicalSizeXY;
+    double Dcalib = meta.PhysicalSizeXY * meta.PhysicalSizeXY;
 
     const MatXd *mat = nullptr;
     if (nParticles > 1)
@@ -711,18 +711,17 @@ void GPPlugin::winDistributions(void)
 
     float width = 0.495f * ImGui::GetContentRegionAvailWidth();
 
-    for (uint32_t k = 0; k < nParticles; k++)
+    for (uint64_t k = 0; k < nParticles; k++)
     {
         ImGui::Separator();
 
         char buf[512] = {0};
-        sprintf(buf, "Channel %d :: ID %d ", gp->partID[k].trackID, gp->partID[k].trajID);
+        sprintf(buf, "Channel %lld :: ID %lld ", gp->partID[k].trackID, gp->partID[k].trajID);
 
         ImGui::PushID(buf);
         ImGui::TextUnformatted(buf);
 
-        if (ImPlot::BeginPlot("##Histogram_diffusion", "Diffusion coefficient", "Density",
-                              {width, 0.6f * width}))
+        if (ImPlot::BeginPlot("##Histogram_diffusion", "Diffusion coefficient", "Density", {width, 0.6f * width}))
         {
             memset(buf, 0, 512);
             sprintf(buf, "D / %.4f %s^2", Dcalib, meta.PhysicalSizeXYUnit.c_str());

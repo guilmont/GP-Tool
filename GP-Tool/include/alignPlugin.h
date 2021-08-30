@@ -26,7 +26,7 @@ private:
 
     std::unique_ptr<GPT::Align> m_align = nullptr;
 
-    uint32_t chAlign = 1;
+    uint64_t chAlign = 1;
     bool camera = true,
          chromatic = true;
 

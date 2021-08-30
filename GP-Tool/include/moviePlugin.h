@@ -28,20 +28,20 @@ public:
     MoviePlugin(const fs::path &path, GPTool *ptr);
     ~MoviePlugin(void);
 
-    int32_t current_frame = 0;
+    uint64_t current_frame = 0;
 
     void showProperties(void) override;
     void update(float deltaTime) override;
     bool saveJSON(Json::Value &json) override;
 
-    const glm::vec3 &getColor(uint32_t channel) { return lut.getColor(info[channel].lut_name); }
+    const glm::vec3 &getColor(uint64_t channel) { return lut.getColor(info[channel].lut_name); }
     
     GPT::Movie *getMovie(void) { return movie.get(); }
     bool successful(void) const { return success; }
 
 private:
-    void calcHistogram(uint32_t channel);
-    void updateTexture(uint32_t channel);
+    void calcHistogram(uint64_t channel);
+    void updateTexture(uint64_t channel);
     
     bool firstTime = true;
 

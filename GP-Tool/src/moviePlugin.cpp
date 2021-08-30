@@ -26,7 +26,7 @@ LUT::LUT(void)
 
 const glm::vec3 &LUT::getColor(const std::string &name) const
 {
-    uint32_t pos = 0;
+    uint64_t pos = 0;
     for (auto &vl : names)
     {
         if (name.compare(vl) == 0)
@@ -54,10 +54,7 @@ MoviePlugin::MoviePlugin(const fs::path &movie_path, GPTool *ptr) : tool(ptr), f
     tool->mailbox.createInfo("Movie: " + movie_path.string());
 
     bool running = true;
-    auto prog = tool->mailbox.createProgress(
-        "Loading images...", [](void *running)
-        { *reinterpret_cast<bool *>(running) = false; },
-        &running);
+    auto prog = tool->mailbox.createProgress("Loading images...", [](void *running) { *reinterpret_cast<bool *>(running) = false; }, &running);
 
     // Setup info, histograms and textures
     const GPT::Metadata &meta = movie->getMetadata();
@@ -65,16 +62,16 @@ MoviePlugin::MoviePlugin(const fs::path &movie_path, GPTool *ptr) : tool(ptr), f
     info.resize(meta.SizeC);
     histo.resize(meta.SizeC);
 
-    uint32_t
+    uint64_t
         counter = 0,
         nFrames = meta.SizeC * meta.SizeT;
 
-    for (uint32_t ch = 0; ch < meta.SizeC; ch++)
+    for (uint64_t ch = 0; ch < meta.SizeC; ch++)
     {
         float gl_low = 314159265.0f,
               gl_high = 0.0f;
 
-        for (uint32_t fr = 0; fr < meta.SizeT; fr++)
+        for (uint64_t fr = 0; fr < meta.SizeT; fr++)
         {
             const MatXd &mat = movie->getImage(ch, fr);
             float low = static_cast<float>(mat.minCoeff()),
@@ -94,7 +91,7 @@ MoviePlugin::MoviePlugin(const fs::path &movie_path, GPTool *ptr) : tool(ptr), f
 
         float minValue = 0.8f * gl_low, maxValue = 1.2f * gl_high;
 
-        info[ch].lut_name = lut.names[ch + uint32_t(1)];
+        info[ch].lut_name = lut.names[ch + uint64_t(1)];
         info[ch].contrast = {gl_low, gl_high};
         info[ch].minMaxValue = {minValue, maxValue};
     }
@@ -140,15 +137,15 @@ void MoviePlugin::showProperties(void)
 
     ImGui::Spacing();
     tool->fonts.text("Channels: ", "bold");
-    for (uint32_t ch = 0; ch < meta.SizeC; ch++)
+    for (uint64_t ch = 0; ch < meta.SizeC; ch++)
         ImGui::Text("   :: %s", meta.nameCH[ch].c_str());
 
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();
 
-    if (ImGui::SliderInt("Frame", &current_frame, 0, meta.SizeT - 1))
-        for (uint32_t ch = 0; ch < meta.SizeC; ch++)
+    if (SliderU64("Frame", &current_frame, 0, meta.SizeT - 1))
+        for (uint64_t ch = 0; ch < meta.SizeC; ch++)
             calcHistogram(ch);
 
     ImGui::Spacing();
@@ -157,7 +154,7 @@ void MoviePlugin::showProperties(void)
 
     ImGui::Text("Color map:");
 
-    for (uint32_t ch = 0; ch < meta.SizeC; ch++)
+    for (uint64_t ch = 0; ch < meta.SizeC; ch++)
     {
         std::string txt = "Ch " + std::to_string(ch);
 
@@ -189,7 +186,7 @@ void MoviePlugin::showProperties(void)
             float port = ImGui::GetContentRegionAvail().x;
             if (port != size.x)
             {
-                histo[ch] = std::make_unique<GRender::Framebuffer>(uint32_t(port), uint32_t(size.y));
+                histo[ch] = std::make_unique<GRender::Framebuffer>(uint64_t(port), uint64_t(size.y));
                 updateTexture(ch);
             }
 
@@ -238,9 +235,13 @@ void MoviePlugin::update(float deltaTime)
         tool->texture.reset();
 
         const GPT::Metadata &meta = movie->getMetadata();
-        for (uint32_t ch = 0; ch < meta.SizeC; ch++)
+        for (uint64_t ch = 0; ch < meta.SizeC; ch++)
         {
-            tool->texture.createFloat(std::to_string(ch), meta.SizeX, meta.SizeY);
+            uint32_t
+                height = static_cast<uint32_t>(meta.SizeY),
+                width = static_cast<uint32_t>(meta.SizeX);
+
+            tool->texture.createFloat(std::to_string(ch), width, height);
             calcHistogram(ch);
         }
     }
@@ -251,15 +252,15 @@ void MoviePlugin::update(float deltaTime)
     trf = glm::scale(trf, {1.0f, float(meta.SizeY) / float(meta.SizeX), 1.0f});
 
     tool->shader.setMatrix4f("u_transform", glm::value_ptr(trf));
-    tool->shader.setInteger("u_nChannels", meta.SizeC);
+    tool->shader.setInteger("u_nChannels", static_cast<uint32_t>(meta.SizeC));
 
     float size[2] = {float(meta.SizeX), float(meta.SizeY)};
     tool->shader.setVec2f("u_size", size);
 
     std::array<float, 15> vColor = {0.0f};
-    for (uint32_t ch = 0; ch < meta.SizeC; ch++)
+    for (uint64_t ch = 0; ch < meta.SizeC; ch++)
     {
-        tool->texture.bind(std::to_string(ch), ch);
+        tool->texture.bind(std::to_string(ch), static_cast<uint32_t>(ch));
         const glm::vec3 &cor = lut.getColor(info[ch].lut_name);
         memcpy(vColor.data() + 3 * ch, &cor[0], 3 * sizeof(float));
     }
@@ -273,7 +274,7 @@ void MoviePlugin::update(float deltaTime)
 
 ///////////////////////////////////////////////////////////
 
-void MoviePlugin::calcHistogram(uint32_t channel)
+void MoviePlugin::calcHistogram(uint64_t channel)
 {
 
     Info *loc = &info[channel];
@@ -293,17 +294,17 @@ void MoviePlugin::calcHistogram(uint32_t channel)
         float val = 255.0f * (float(mat.data()[k]) - minValue);
         val /= (maxValue - minValue + 0.01f);
 
-        loc->histogram[uint32_t(val)]++;
+        loc->histogram[uint64_t(val)]++;
     }
 
     float norma = std::accumulate(loc->histogram.begin(), loc->histogram.end(), 0.0f);
-    for (uint32_t k = 0; k < 256; k++)
+    for (uint64_t k = 0; k < 256; k++)
         loc->histogram[k] /= norma;
 
     updateTexture(channel);
 }
 
-void MoviePlugin::updateTexture(uint32_t channel)
+void MoviePlugin::updateTexture(uint64_t channel)
 {
     // Updating histograms
     tool->shader.useProgram("histogram");
@@ -347,7 +348,7 @@ bool MoviePlugin::saveJSON(Json::Value &json)
     json["movie_name"] = meta.movie_name;
     json["numChannels"] = meta.SizeC;
 
-    for (uint32_t k = 0; k < meta.SizeC; k++)
+    for (uint64_t k = 0; k < meta.SizeC; k++)
         json["channels"].append(meta.nameCH[k]);
 
     return true;
