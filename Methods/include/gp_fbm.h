@@ -31,6 +31,7 @@ namespace GPT
     public:
         GP_API GP_FBM(const MatXd &mat);                 // Constructor for single trajectory
         GP_API GP_FBM(const std::vector<MatXd> &vMat);   // Constructor for multiple trajectories
+        GP_API ~GP_FBM(void);
 
         std::vector<ParticleID> partID;
 
@@ -38,11 +39,11 @@ namespace GPT
         GP_API CDA *coupledModel(void);
         GP_API void stop(void);
 
-        GP_API const MatXd &distrib_singleModel(uint64_t sample_size = 10000, uint64_t id = 0);
-        GP_API const MatXd &distrib_coupledModel(uint64_t sample_size = 10000);
+        GP_API MatXd distrib_singleModel(uint64_t sample_size = 10000, uint64_t id = 0);
+        GP_API MatXd distrib_coupledModel(uint64_t sample_size = 10000);
         
-        GP_API const MatXd &calcAvgTrajectory(const VecXd &vTime, uint64_t id = 0, bool redo = false);
-        GP_API const MatXd &estimateSubstrateMovement(bool redo = false);
+        GP_API MatXd calcAvgTrajectory(const VecXd &vTime, uint64_t id = 0);
+        GP_API MatXd estimateSubstrateMovement();
 
         GP_API uint64_t getNumParticles(void) const { return nParticles; }
 
@@ -60,19 +61,13 @@ namespace GPT
 
         std::unique_ptr<GOptimize::NMSimplex> nms = nullptr;
 
-        std::vector<std::unique_ptr<DA>> v_da;
-        std::unique_ptr<CDA> cpl_da = nullptr;
+        // As we will need this in many places, we shall keep a local copy
+        std::vector<DA*> m_da;
+        CDA *m_cda = nullptr;
 
         uint64_t nParticles;
         std::vector<MatXd> route; // Holders all particles's routes
         MatXd cRoute;             // concatenates all routes in one
-
-        // We save these results first time functions are called, after we just return these
-        std::unique_ptr<MatXd> substrate = nullptr;
-        std::vector<std::unique_ptr<MatXd>> average;
-
-        std::unique_ptr<MatXd> distribCoupled = nullptr;
-        std::vector<std::unique_ptr<MatXd>> distribSingle;
 
     };
 

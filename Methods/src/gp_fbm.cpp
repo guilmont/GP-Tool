@@ -70,11 +70,22 @@ namespace GPT
         initialize();
     }
 
-    GP_FBM::DA *GP_FBM::singleModel(uint64_t id)
+    GP_FBM::~GP_FBM(void)
     {
-        // It is already calculated, so just return it
-        if (v_da[id])
-            return v_da[id].get();
+        for (DA* da : m_da)
+            if (da)
+                delete da;
+
+        if (m_cda)
+            delete m_cda;
+    }
+
+ 
+    GP_FBM::DA* GP_FBM::singleModel(uint64_t id)
+    {
+
+        if (m_da[id])
+            return m_da[id];
 
         // Otherwise, calculate accordingly
         runID = id;
@@ -93,26 +104,25 @@ namespace GPT
         nms.release();
 
         double eA = exp(vec(1));
-        v_da[id] = std::make_unique<DA>();
-        v_da[id]->D = exp(vec(0));
-        v_da[id]->A = 2.0 * eA / (eA + 1.0);
-        v_da[id]->mu = {vec[2], vec[3]};
+        m_da[id] = new DA();
+        m_da[id]->D = exp(vec(0));
+        m_da[id]->A = 2.0 * eA / (eA + 1.0);
+        m_da[id]->mu = {vec[2], vec[3]};
 
-        return v_da[id].get();
+        return m_da[id];
     }
 
-    GP_FBM::CDA *GP_FBM::coupledModel(void)
+    GP_FBM::CDA* GP_FBM::coupledModel(void)
     {
+        if (m_cda)
+            return m_cda;
 
         if (nParticles < 2)
         {
             pout("ERROR: (GP_FBM::coupledModel) Cannot run on single trajectory!!");
-            return nullptr;
+            exit(-1);
         }
 
-        // If it is already calculated, just return it
-        if (cpl_da)
-            return cpl_da.get();
 
         // In order to remove substrate movement, we will improve in accuracy if we remove
         // frames that are not common to all trajectories. Because of that, let's make a hard
@@ -196,23 +206,23 @@ namespace GPT
         vec = nms->getResults().array().exp();
         nms.release();
 
-        cpl_da = std::make_unique<CDA>();
+        m_cda = new CDA();
 
         // Substrate
         double *R = vec.data() + 2 * nParticles;
-        cpl_da->DR = R[0];
-        cpl_da->AR = 2.0f * R[1] / (1.0f + R[1]);
+        m_cda->DR = R[0];
+        m_cda->AR = 2.0f * R[1] / (1.0f + R[1]);
 
         // Individual particles
-        cpl_da->da.resize(nParticles);
+        m_cda->da.resize(nParticles);
         for (uint64_t k = 0; k < nParticles; k++)
         {
             double* lda = vec.data() + 2 * k;
-            cpl_da->da[k].D = lda[0];
-            cpl_da->da[k].A = 2.0 * lda[1] / (1.0 + lda[1]);
+            m_cda->da[k].D = lda[0];
+            m_cda->da[k].A = 2.0 * lda[1] / (1.0 + lda[1]);
         }
 
-        return cpl_da.get();
+        return m_cda;
     } // coupledModel
 
     GP_API void GP_FBM::stop(void)
@@ -224,11 +234,9 @@ namespace GPT
     ///////////////////////////////////////////////////////////////////////////////
     // AVERAGE TRAJECTORIES ///////////////////////////////////////////////////////
 
-    const MatXd &GP_FBM::calcAvgTrajectory(const VecXd &vTime, uint64_t id, bool redo)
+    MatXd GP_FBM::calcAvgTrajectory(const VecXd &vTime, uint64_t id)
     {
-        if (average[id] && !redo)
-            return *(average[id].get());
-
+        
         // Create output matrix
         const uint64_t
             nRows = vTime.size(),
@@ -273,17 +281,12 @@ namespace GPT
             traj(0, Track::ERRX + k) = sqrt(route[id](0, Track::ERRX + k));
         }
 
-        average[id] = std::make_unique<MatXd>(traj.block(0, 1, nRows, nCols - 1));
-
-        return *(average[id].get());
+        return traj;
 
     } // dataTreatment
 
-    const MatXd &GP_FBM::estimateSubstrateMovement(bool redo)
+    MatXd GP_FBM::estimateSubstrateMovement(void)
     {
-
-        if (substrate && !redo)
-            return *(substrate.get());
 
         // Let's determine time points which we need to calculate substrate movement
         // Determine maximum number of frames
@@ -308,7 +311,7 @@ namespace GPT
         for (uint64_t k = 0; k < vfr.size(); k++)
             if (vfr[k].first)
             {
-                auxFrame.push_back(static_cast<double>(k));
+                auxFrame.push_back(double(k));
                 auxTime.push_back(vfr[k].second);
             }
 
@@ -323,11 +326,11 @@ namespace GPT
             for (uint8_t k = 0; k < 2; k++)
             {
                 // We will need variance for next steps
-                mat.col(Track::ERRX + k - 1) *= mat.col(Track::ERRX + k - 1);
+                mat.col(Track::ERRX + k) *= mat.col(Track::ERRX + k);
 
                 // We should subtract average position to estimate substrate movement
                 DA *da = singleModel(k);
-                mat.col(Track::POSX + k - 1).array() -= da->mu[k];
+                mat.col(Track::POSX + k).array() -= da->mu[k];
             }
 
             avgRoute.emplace_back(std::move(mat));
@@ -350,9 +353,9 @@ namespace GPT
             nRows = static_cast<uint64_t>(vTime.size()),
             nCols = Track::ERRY + 1;
 
-        substrate = std::make_unique<MatXd>(nRows, nCols);
-        substrate->col(Track::FRAME) = vFrame;
-        substrate->col(Track::TIME) = vTime;
+        MatXd substrate(nRows, nCols);
+        substrate.col(Track::FRAME) = vFrame;
+        substrate.col(Track::TIME) = vTime;
 
         for (uint64_t ch = 0; ch < 2; ch++)
         {
@@ -362,32 +365,28 @@ namespace GPT
             for (uint64_t k = 0; k < nParticles; k++)
             {
                 MatXd iK = vKernel[k];
-                iK.diagonal() += avgRoute[k].col(Track::ERRX + ch - 1);
+                iK.diagonal() += avgRoute[k].col(Track::ERRX + ch);
                 iK = iK.inverse();
 
                 A += iK;
-                vec += iK * avgRoute[k].col(Track::POSX + ch - 1);
+                vec += iK * avgRoute[k].col(Track::POSX + ch);
 
             } // loop-particles
 
             A = A.inverse();
-            substrate->col(Track::POSX + ch) = A * vec;
-            substrate->col(Track::ERRX + ch) = A.diagonal().array().sqrt();
+            substrate.col(Track::POSX + ch) = A * vec;
+            substrate.col(Track::ERRX + ch) = A.diagonal().array().sqrt();
         } // loop-dims
 
-        return *(substrate.get());
+        return substrate;
 
-    } // estimateSubstrateMovement
+    }
 
     ///////////////////////////////////////////////////////////////////////////////
     // RUN DISTRIBUTIONS //////////////////////////////////////////////////////////
 
-    const MatXd &GP_FBM::distrib_singleModel(uint64_t sample_size, uint64_t id)
+    MatXd GP_FBM::distrib_singleModel(uint64_t sample_size, uint64_t id)
     {
-
-        if (distribSingle[id])
-            return *(distribSingle[id].get());
-
         // Loop over all the trajectories
         runID = id;
         DA *da = singleModel(id);
@@ -405,18 +404,11 @@ namespace GPT
             mcmc(k, 1) = 2.0f * eA / (eA + 1.0f);
         }
 
-        // Appending to class variable
-        distribSingle[id] = std::make_unique<MatXd>(std::move(mcmc));
-        return *(distribSingle[id].get());
+        return mcmc;
+    }
 
-    } // distrib_singleModel
-
-    const MatXd &GP_FBM::distrib_coupledModel(uint64_t sample_size)
+    MatXd GP_FBM::distrib_coupledModel(uint64_t sample_size)
     {
-
-        if (distribCoupled)
-            return *(distribCoupled.get());
-
         // Generating vector with values that maximize likelihood
         CDA *cda = coupledModel();
         VecXd vec(2 * nParticles + 2);
@@ -451,22 +443,17 @@ namespace GPT
             double val = exp(mcmc(k, num + 1));
             mcmc(k, num + 1) = 2.0f * val / (1.0f + val); // alpha
 
-        } // loop-rows
+        }
 
-        distribCoupled = std::make_unique<MatXd>(std::move(mcmc));
-
-        return *(distribCoupled.get());
-
-    } // distrib_coupledModel
+        return mcmc;
+    }
 
     ///////////////////////////////////////////////////////////////////////////////
     // PRIVATE FUNCTIONS
 
     void GP_FBM::initialize(void)
     {
-        distribSingle.resize(nParticles);
-        average.resize(nParticles);
-        v_da.resize(nParticles);
+        m_da.resize(nParticles);
 
         // Calculating the smallest timepoint accross all trajectories
         double minTime = INFINITY;

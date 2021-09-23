@@ -97,10 +97,8 @@ MoviePlugin::MoviePlugin(const fs::path &movie_path, GPTool *ptr) : tool(ptr)
         info[ch].minMaxValue = {minValue, maxValue};
     }
 
-   
+}
 
-
-} // constructor
 
 MoviePlugin::~MoviePlugin(void) {}
 

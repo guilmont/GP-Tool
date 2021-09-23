@@ -180,7 +180,7 @@ void GPPlugin::showProperties(void)
     int64_t gpID = -1,
             toRemove = -1; // If we want to remove any cell
 
-    for (auto &gp : vecGP)
+    for (auto &gshow : vecGP)
     {
         const GPT::Movie *movie = reinterpret_cast<MoviePlugin *>(tool->getPlugin("MOVIE"))->getMovie();
 
@@ -215,7 +215,7 @@ void GPPlugin::showProperties(void)
                     show = false;
 
             // Activating only important ones
-            for (auto [ch, pt] : gp->partID)
+            for (auto [ch, pt] : gshow.gp->partID)
                 ui[ch][pt].first = true;
         }
 
@@ -236,7 +236,7 @@ void GPPlugin::showProperties(void)
 
         if (openTree)
         {
-            const uint64_t nParticles = gp->getNumParticles();
+            const uint64_t nParticles = gshow.gp->getNumParticles();
 
             // Creating table
 
@@ -258,20 +258,24 @@ void GPPlugin::showProperties(void)
 
                     //Frame column presents integer values
                     ImGui::TableSetColumnIndex(0);
-                    ImGui::Text("%d", gp->partID[k].trackID);
+                    ImGui::Text("%d", gshow.gp->partID[k].trackID);
                     ImGui::TableSetColumnIndex(1);
-                    ImGui::Text("%d", gp->partID[k].trajID);
+                    ImGui::Text("%d", gshow.gp->partID[k].trajID);
 
                     double D, A;
                     if (nParticles == 1)
                     {
-                        D = DCalib * gp->singleModel(k)->D;
-                        A = gp->singleModel(k)->A;
+                        GPT::GP_FBM::DA* da = gshow.gp->singleModel(k);
+
+                        D = DCalib * da->D;
+                        A = da->A;
                     }
                     else
                     {
-                        D = DCalib * gp->coupledModel()->da[k].D;
-                        A = gp->coupledModel()->da[k].A;
+                        GPT::GP_FBM::CDA* cda = gshow.gp->coupledModel();
+
+                        D = DCalib * cda->da[k].D;
+                        A = cda->da[k].A;
                     }
 
                     ImGui::TableSetColumnIndex(2);
@@ -295,19 +299,33 @@ void GPPlugin::showProperties(void)
             {
                 distribView.gpID = static_cast<uint64_t>(gpID);
 
-                std::thread([](GPT::GP_FBM *gp, GRender::Mailbox *mailbox, bool *show) -> void
+                std::thread([](GP2Show *gshow, GRender::Mailbox *mailbox, bool *show) -> void
                             {
                                 auto msg = mailbox->createTimer("Calculating distributions ...", [](void *) {});
 
-                                if (gp->getNumParticles() == 1)
-                                    gp->distrib_singleModel(sample_size);
+                                if (gshow->gp->getNumParticles() == 1)
+                                {
+                                    if (!gshow->distribSingle)
+                                    {
+                                        MatXd distrib = gshow->gp->distrib_singleModel(sample_size);
+                                        gshow->distribSingle = std::make_unique<MatXd>(std::move(distrib));
+                                    }
+
+                                }
                                 else
-                                    gp->distrib_coupledModel(sample_size);
+                                {
+                                    if (!gshow->distribCouple)
+                                    {
+                                      MatXd distrib = gshow->gp->distrib_coupledModel(sample_size);
+                                      gshow->distribCouple = std::make_unique<MatXd>(std::move(distrib));
+                                    }
+
+                                }
 
                                 *show = true;
                                 msg->stop();
                             },
-                            vecGP[gpID].get(), &(tool->mailbox), &(distribView.show))
+                            &vecGP[gpID], &(tool->mailbox), &(distribView.show))
                     .detach();
 
             } // button-distribution
@@ -320,17 +338,20 @@ void GPPlugin::showProperties(void)
                     subView.gpID = uint64_t(gpID);
 
                     std::thread(
-                        [](GPT::GP_FBM *gp, GRender::Mailbox *mailbox, bool *show) -> void
+                        [](GP2Show *gshow, GRender::Mailbox *mailbox, bool *show) -> void
                         {
                             auto msg = mailbox->createTimer("Calculating substrate data...", [](void *) {});
 
-                            gp->estimateSubstrateMovement();
-                            gp->distrib_coupledModel(sample_size);
-                            *show = true;
+                            if (!gshow->substrate)
+                            {
+                                MatXd subs = gshow->gp->estimateSubstrateMovement();
+                                gshow->substrate = std::make_unique<MatXd>(std::move(subs));
+                            }
 
+                            *show = true;
                             msg->stop();
                         },
-                        vecGP[gpID].get(), &(tool->mailbox), &(subView.show))
+                        &vecGP[gpID], &(tool->mailbox), &(subView.show))
                         .detach();
                 }
             }
@@ -371,7 +392,7 @@ bool GPPlugin::saveJSON(Json::Value &json)
     for (uint64_t id = 0; id < nCells; id++)
     {
         Json::Value cell;
-        GPT::GP_FBM *gp = vecGP[id].get();
+        GPT::GP_FBM *gp = vecGP[id].gp.get();
 
         const uint64_t nParticles = gp->getNumParticles();
 
@@ -436,7 +457,7 @@ bool GPPlugin::saveJSON(Json::Value &json)
 void GPPlugin::winAvgView(void)
 {
     // Getting data from specific particle
-    const GPT::GP_FBM::ParticleID pid = vecGP[avgView.gpID]->partID[avgView.trajID];
+    const GPT::GP_FBM::ParticleID pid = vecGP[avgView.gpID].gp->partID[avgView.trajID];
 
     const GPT::Trajectory *traj = reinterpret_cast<TrajPlugin *>(tool->getPlugin("TRAJECTORY"))->getTrajectory();
 
@@ -450,20 +471,34 @@ void GPPlugin::winAvgView(void)
           OY = orig.col(GPT::Track::POSY).array() - orig(0, GPT::Track::POSY);
 
     // Calculating most probable trajectory with error
-    const uint64_t nPts = uint64_t(float(orig(nRows - 1, GPT::Track::TIME) - orig(0, GPT::Track::TIME)) / 0.05f);
+    GP2Show& gshow = vecGP[avgView.gpID];
 
-    VecXd vt(nPts);
-    for (uint64_t k = 0; k < nPts; k++)
-        vt(k) = orig(0, GPT::Track::TIME) + 0.05 * k;
+    if (!gshow.average[avgView.trajID])
+    {
+        const uint64_t nPts = uint64_t(float(orig(nRows - 1, GPT::Track::TIME) - orig(0, GPT::Track::TIME)) / 0.05f);
 
-    const MatXd &mat = vecGP[avgView.gpID]->calcAvgTrajectory(vt, avgView.trajID);
+        VecXd vt(nPts);
+        for (uint64_t k = 0; k < nPts; k++)
+            vt(k) = orig(0, GPT::Track::TIME) + 0.05 * k;
+
+        MatXd avg = gshow.gp->calcAvgTrajectory(vt, avgView.trajID);
+        gshow.average[avgView.trajID] = std::make_unique<MatXd>(std::move(avg));
+
+    }
+
+    const MatXd *mat = gshow.average[avgView.trajID].get();
+
 
     // Preparing data for shaded plot
-    VecXd X = mat.col(GPT::Track::POSX - 1).array() - mat(0, GPT::Track::POSX - 1),
-          Y = mat.col(GPT::Track::POSY - 1).array() - mat(0, GPT::Track::POSY - 1);
+    int64_t nPts = mat->rows();
 
-    VecXd errx = 1.96 * mat.col(GPT::Track::ERRX - 1),
-          erry = 1.96 * mat.col(GPT::Track::ERRY - 1);
+    VecXd
+        T = mat->col(GPT::Track::TIME),
+        X = mat->col(GPT::Track::POSX).array() - (*mat)(0, GPT::Track::POSX),
+        Y = mat->col(GPT::Track::POSY).array() - (*mat)(0, GPT::Track::POSY);
+
+    VecXd errx = 1.96 * mat->col(GPT::Track::ERRX),
+          erry = 1.96 * mat->col(GPT::Track::ERRY);
 
     VecXd lowX = X - errx, highX = X + errx;
     VecXd lowY = Y - erry, highY = Y + erry;
@@ -473,8 +508,7 @@ void GPPlugin::winAvgView(void)
 
     // Setup title for the plot
     char buf[512] = {0};
-    sprintf(buf, "Cell: %lld -- Channel: %lld -- ID: %lld",
-            avgView.gpID, pid.trackID, pid.trajID);
+    sprintf(buf, "Cell: %lld -- Channel: %lld -- ID: %lld", avgView.gpID, pid.trackID, pid.trajID);
 
     ///////////////////////////////////////////////////////
     // Creating ImGui windows
@@ -483,18 +517,18 @@ void GPPlugin::winAvgView(void)
     const float avail = ImGui::GetContentRegionAvailWidth();
     const ImVec2 size = {0.99f * avail, 0.6f * avail};
 
-    ImPlot::SetNextPlotLimits(vt(0), vt(nPts - 1), ymin, ymax);
+    ImPlot::SetNextPlotLimits(T(0), T(nPts - 1), ymin, ymax);
 
     if (ImPlot::BeginPlot(buf, "Time", "Position", size))
     {
         ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.5f);
-        ImPlot::PlotShaded("Average X", vt.data(), lowX.data(), highX.data(), static_cast<int32_t>(nPts));
-        ImPlot::PlotLine("Average X", vt.data(), X.data(), static_cast<int32_t>(nPts));
+        ImPlot::PlotShaded("Average X", T.data(), lowX.data(), highX.data(), static_cast<int32_t>(nPts));
+        ImPlot::PlotLine("Average X", T.data(), X.data(), static_cast<int32_t>(nPts));
 
         ImPlot::PlotScatter("Measured X", OT.data(), OX.data(), static_cast<int32_t>(OT.size()));
 
-        ImPlot::PlotShaded("Average Y", vt.data(), lowY.data(), highY.data(), static_cast<int32_t>(nPts));
-        ImPlot::PlotLine("Average Y", vt.data(), Y.data(), static_cast<int32_t>(nPts));
+        ImPlot::PlotShaded("Average Y", T.data(), lowY.data(), highY.data(), static_cast<int32_t>(nPts));
+        ImPlot::PlotLine("Average Y", T.data(), Y.data(), static_cast<int32_t>(nPts));
         ImPlot::PlotScatter(" Measured Y", OT.data(), OY.data(), static_cast<int32_t>(OT.size()));
 
         ImPlot::PopStyleVar();
@@ -518,12 +552,12 @@ void GPPlugin::winSubstrate(void)
         *spaceUnit = movie->getMetadata().PhysicalSizeXYUnit.c_str(),
         *timeUnit = movie->getMetadata().TimeIncrementUnit.c_str();
 
-    GPT::GP_FBM *gp = vecGP[subView.gpID].get();
-    const MatXd &mat = gp->estimateSubstrateMovement();
-    const MatXd &distrib = gp->distrib_coupledModel();
-
-    const uint64_t nRows = uint64_t(mat.rows()),
-                   nParticles = gp->getNumParticles();
+    GP2Show &gshow = vecGP[subView.gpID];
+     
+    const MatXd* mat = gshow.substrate.get();
+    
+    const uint64_t nRows = uint64_t(mat->rows()),
+                   nParticles = gshow.gp->getNumParticles();
 
     // Proceeding to the window
     ImGui::Begin("Substrate", &(subView.show));
@@ -531,52 +565,53 @@ void GPPlugin::winSubstrate(void)
     tool->fonts.text("Cell " + std::to_string(subView.gpID) + ":", "bold");
     char buf[512] = {0};
 
+    GPT::GP_FBM::CDA* cda = gshow.gp->coupledModel();
+
     ImGui::Indent();
-    sprintf(buf, "DR = %.3e %s^2/%s^A", DCalib * gp->coupledModel()->DR, spaceUnit, timeUnit);
+    sprintf(buf, "DR = %.3e %s^2/%s^A", DCalib * cda->DR, spaceUnit, timeUnit);
     ImGui::TextUnformatted(buf);
 
     memset(buf, 0, 512);
-    sprintf(buf, "AR = %.3f", gp->coupledModel()->AR);
+    sprintf(buf, "AR = %.3f", cda->AR);
     ImGui::TextUnformatted(buf);
     ImGui::Unindent();
 
     ImGui::Separator();
     ImGui::Spacing();
 
-    ImGui::Text("SUBSTRATE DISTRIBUTIONS");
-    ImGui::Spacing();
-
-    static int bins = 50;
-    binOption(bins);
-
-    float width = 0.495f * ImGui::GetContentRegionAvailWidth();
-
-    if (ImPlot::BeginPlot("##Histogram_diffusion", "Diffusion coefficient", "Density",
-                          {width, 0.6f * width}))
+    if (gshow.distribCouple)
     {
-        memset(buf, 0, 512);
-        sprintf(buf, "DR / %.4f %s^2", DCalib, spaceUnit);
+        ImGui::Text("SUBSTRATE DISTRIBUTIONS");
+        ImGui::Spacing();
 
-        ImPlot::SetNextFillStyle(IMPLOT_AUTO_COL, 0.5f);
-        ImPlot::PlotHistogram(buf, distrib.col(2 * nParticles).data(),
-                              10000, bins, false, true);
-        ImPlot::EndPlot();
+        static int bins = 50;
+        binOption(bins);
+
+        float width = 0.495f * ImGui::GetContentRegionAvailWidth();
+        const MatXd* mat = gshow.distribCouple.get();
+
+        if (ImPlot::BeginPlot("##Histogram_diffusion", "Apparent diffusion", "Density", { width, 0.6f * width }))
+        {
+            memset(buf, 0, 512);
+            sprintf(buf, "DR / %.4f %s^2", DCalib, spaceUnit);
+
+            ImPlot::SetNextFillStyle(IMPLOT_AUTO_COL, 0.5f);
+            ImPlot::PlotHistogram(buf, mat->col(2 * nParticles).data(), 10000, bins, false, true);
+            ImPlot::EndPlot();
+        }
+
+        ImGui::SameLine();
+
+        if (ImPlot::BeginPlot("##Histogram_alpha", "Anomalous coefficient", "Density", { width, 0.6f * width }))
+        {
+            ImPlot::SetNextFillStyle({ 0.85f, 0.25f, 0.18f, 0.8f }, 0.5f);
+            ImPlot::PlotHistogram("Alpha", mat->col(2 * nParticles + 1).data(), 10000, bins, false, true);
+            ImPlot::EndPlot();
+        }
+
+        ImGui::Spacing();
+        ImGui::Separator();
     }
-
-    ImGui::SameLine();
-
-    if (ImPlot::BeginPlot("##Histogram_alpha", "Anomalous coefficient", "Density",
-                          {width, 0.6f * width}))
-    {
-        ImPlot::SetNextFillStyle({0.85f, 0.25f, 0.18f, 0.8f}, 0.5f);
-        ImPlot::PlotHistogram("Alpha", distrib.col(2 * nParticles + 1).data(),
-                              10000, bins, false, true);
-        ImPlot::EndPlot();
-    }
-
-    ImGui::Spacing();
-
-    ImGui::Separator();
 
     ImGui::Text("SUBSTRATE MOVEMENT");
     ImGui::SameLine();
@@ -623,35 +658,41 @@ void GPPlugin::winSubstrate(void)
 
             //Frame column presents integer values
             ImGui::TableSetColumnIndex(0);
-            ImGui::Text("%.0f", mat(row, 0));
+            ImGui::Text("%.0f", (*mat)(row, 0));
 
             // remains columns
             for (int32_t column = 1; column < 6; column++)
             {
                 ImGui::TableSetColumnIndex(column);
-                ImGui::Text("%.3f", mat(row, column));
+                ImGui::Text("%.3f", (*mat)(row, column));
             }
         }
         ImGui::EndTable();
     }
 
     ImGui::End();
-
-} // winSubstrate
+}
 
 void GPPlugin::winPlotSubstrate(void)
 {
     // Getting its original trajectory
-    const MatXd &mat = vecGP[subPlotView.gpID]->estimateSubstrateMovement();
-    const uint64_t nPts = uint64_t(mat.rows());
+    GP2Show& gshow = vecGP[subPlotView.gpID];
+    if (!gshow.substrate)
+    {
+        MatXd subs = gshow.gp->estimateSubstrateMovement();
+        gshow.substrate = std::make_unique<MatXd>(std::move(subs));
+    }
+
+    const MatXd* mat = gshow.substrate.get();
+    const uint64_t nPts = uint64_t(mat->rows());
 
     // Preparing data for shaded plot
-    VecXd T = mat.col(GPT::Track::TIME),
-          X = mat.col(GPT::Track::POSX).array() - mat(0, GPT::Track::POSX),
-          Y = mat.col(GPT::Track::POSY).array() - mat(0, GPT::Track::POSY);
+    VecXd T = mat->col(GPT::Track::TIME),
+          X = mat->col(GPT::Track::POSX).array() - (*mat)(0, GPT::Track::POSX),
+          Y = mat->col(GPT::Track::POSY).array() - (*mat)(0, GPT::Track::POSY);
 
-    VecXd errx = 1.96 * mat.col(GPT::Track::ERRX),
-          erry = 1.96 * mat.col(GPT::Track::ERRY);
+    VecXd errx = 1.96 * mat->col(GPT::Track::ERRX),
+          erry = 1.96 * mat->col(GPT::Track::ERRY);
 
     VecXd lowX = X - errx, highX = X + errx;
     VecXd lowY = Y - erry, highY = Y + erry;
@@ -686,7 +727,7 @@ void GPPlugin::winPlotSubstrate(void)
     }
 
     ImGui::End();
-} // winSubstrate
+} 
 
 void GPPlugin::winDistributions(void)
 {
@@ -696,8 +737,9 @@ void GPPlugin::winDistributions(void)
     binOption(bins); // helper function
 
     // Gathering the data we need
-    GPT::GP_FBM *gp = vecGP[distribView.gpID].get();
-    const uint64_t nParticles = gp->getNumParticles();
+    GP2Show& gshow = vecGP[distribView.gpID];
+
+    const uint64_t nParticles = gshow.gp->getNumParticles();
 
     const GPT::Metadata &meta = reinterpret_cast<MoviePlugin *>(tool->getPlugin("MOVIE"))->getMovie()->getMetadata();
 
@@ -705,9 +747,9 @@ void GPPlugin::winDistributions(void)
 
     const MatXd *mat = nullptr;
     if (nParticles > 1)
-        mat = &(gp->distrib_coupledModel());
+        mat = gshow.distribCouple.get();
     else
-        mat = &(gp->distrib_singleModel());
+        mat = gshow.distribSingle.get();
 
     float width = 0.495f * ImGui::GetContentRegionAvailWidth();
 
@@ -716,12 +758,12 @@ void GPPlugin::winDistributions(void)
         ImGui::Separator();
 
         char buf[512] = {0};
-        sprintf(buf, "Channel %lld :: ID %lld ", gp->partID[k].trackID, gp->partID[k].trajID);
+        sprintf(buf, "Channel %lld :: ID %lld ", gshow.gp->partID[k].trackID, gshow.gp->partID[k].trajID);
 
         ImGui::PushID(buf);
         ImGui::TextUnformatted(buf);
 
-        if (ImPlot::BeginPlot("##Histogram_diffusion", "Diffusion coefficient", "Density", {width, 0.6f * width}))
+        if (ImPlot::BeginPlot("##Histogram_diffusion", "Apparent diffusion", "Density", {width, 0.6f * width}))
         {
             memset(buf, 0, 512);
             sprintf(buf, "D / %.4f %s^2", Dcalib, meta.PhysicalSizeXYUnit.c_str());
@@ -733,8 +775,7 @@ void GPPlugin::winDistributions(void)
 
         ImGui::SameLine();
 
-        if (ImPlot::BeginPlot("##Histogram_alpha", "Anomalous coefficient", "Density",
-                              {width, 0.6f * width}))
+        if (ImPlot::BeginPlot("##Histogram_alpha", "Anomalous coefficient", "Density", {width, 0.6f * width}))
         {
             ImPlot::SetNextFillStyle({0.85f, 0.25f, 0.18f, 0.8f}, 0.5f);
             ImPlot::PlotHistogram("Alpha", mat->col(2 * k + 1).data(), 10000, bins, false, true);
@@ -750,17 +791,16 @@ void GPPlugin::winDistributions(void)
 void GPPlugin::addNewCell(const std::vector<MatXd> &vTraj, const std::vector<GPT::GP_FBM::ParticleID> &partID)
 {
 
-    GPT::GP_FBM *gp = new GPT::GP_FBM(vTraj);
-    gp->partID = partID;
-
-    auto msg = tool->mailbox.createTimer(
-        "Optimizing cell's parameters", [](void *gp)
-        { reinterpret_cast<GPT::GP_FBM *>(gp)->stop(); },
-        gp);
+    GP2Show loc;
+    loc.gp = std::make_unique<GPT::GP_FBM>(vTraj);
+    loc.gp->partID = partID;
+    loc.average.resize(vTraj.size());
+    
+    auto msg = tool->mailbox.createTimer("Optimizing cell's parameters", [](void *gp) { reinterpret_cast<GPT::GP_FBM *>(gp)->stop(); }, loc.gp.get());
 
     if (vTraj.size() == 1)
     {
-        if (!gp->singleModel())
+        if (!loc.gp->singleModel())
         {
             tool->mailbox.createWarn("GP-FBM :: single model didn't converge!");
             return;
@@ -768,14 +808,14 @@ void GPPlugin::addNewCell(const std::vector<MatXd> &vTraj, const std::vector<GPT
     }
     else
     {
-        if (!gp->coupledModel())
+        if (!loc.gp->coupledModel())
         {
             tool->mailbox.createWarn("GP-FBM :: coupled model didn't converge!");
             return;
         }
     }
 
-    vecGP.emplace_back(std::move(gp));
+    vecGP.emplace_back(std::move(loc));
 
     msg->stop();
 }

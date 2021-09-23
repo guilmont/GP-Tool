@@ -70,7 +70,11 @@ void TrajPlugin::showProperties(void)
         if (ImGui::Button("Re-load"))
             enhanceTracks();
 
+        ImGui::Spacing();
+        ImGui::Spacing();
+
         /////////////////////
+        tool->fonts.text("Display:", "bold");
 
         ImGui::Text("Max spots: ");
         ImGui::SameLine();
@@ -81,8 +85,7 @@ void TrajPlugin::showProperties(void)
 
         ImGui::PopItemWidth();
 
-        /////////////////////
-
+        
         ImGui::Text("Thickness: ");
         ImGui::SameLine();
         ImGui::PushItemWidth(0.5f * widthAvail);
@@ -91,6 +94,12 @@ void TrajPlugin::showProperties(void)
             m_circle->setThickness(float(thickness));
 
         ImGui::PopItemWidth();
+
+        /////////////////////
+        ImGui::Spacing();
+        ImGui::Spacing();
+        tool->fonts.text("ROI:", "bold");
+
 
         /////////////////////
 

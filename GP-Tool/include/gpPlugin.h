@@ -6,6 +6,20 @@
 #include "gptool.h"
 class GPTool;
 
+
+struct GP2Show
+{
+    std::unique_ptr<GPT::GP_FBM> gp = nullptr;
+
+    std::vector<std::unique_ptr<MatXd>> average;
+    
+    std::unique_ptr<MatXd> distribSingle = nullptr;
+    std::unique_ptr<MatXd> distribCouple = nullptr;
+    std::unique_ptr<MatXd> substrate = nullptr;
+};
+
+
+
 class GPPlugin : public Plugin
 {
 public:
@@ -33,6 +47,8 @@ private:
         uint64_t gpID = 0;
     } subPlotView, subView, distribView;
 
+ 
+
     void winAvgView(void);
     void winSubstrate(void);
     void winPlotSubstrate(void);
@@ -43,5 +59,5 @@ private:
 private:
     GPTool *tool = nullptr;
 
-    std::vector<std::unique_ptr<GPT::GP_FBM>> vecGP;
+    std::vector<GP2Show> vecGP;
 };
