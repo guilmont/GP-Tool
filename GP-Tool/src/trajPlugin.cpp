@@ -1,7 +1,5 @@
 #include "trajPlugin.h"
 
-
-
 static void saveCSV(const fs::path &path, const std::string *header, const MatXd &mat)
 {
 
@@ -71,6 +69,31 @@ void TrajPlugin::showProperties(void)
         ImGui::SameLine();
         if (ImGui::Button("Re-load"))
             enhanceTracks();
+
+        /////////////////////
+
+        ImGui::Text("Max spots: ");
+        ImGui::SameLine();
+        ImGui::PushItemWidth(0.5f * widthAvail);
+        
+        if (SliderU64("##maxspot", &maxSpots, 1, 1024))
+            m_circle = std::make_unique<Circle>(uint32_t(maxSpots), uint32_t(resolution));
+
+        ImGui::PopItemWidth();
+
+        /////////////////////
+
+        ImGui::Text("Thickness: ");
+        ImGui::SameLine();
+        ImGui::PushItemWidth(0.5f * widthAvail);
+        
+        if (SliderU64("##thickspot", &thickness, 1, 10))
+            m_circle->setThickness(float(thickness));
+
+        ImGui::PopItemWidth();
+
+        /////////////////////
+
 
         ImGui::Spacing();
         ImGui::Spacing();
@@ -160,23 +183,29 @@ void TrajPlugin::showProperties(void)
 void TrajPlugin::update(float deltaTime)
 {
     if (m_traj == nullptr)
-    {
-        tool->shader.setInteger("u_nPoints", 0);
         return;
+
+    static bool firstTime = true;
+    if (firstTime)
+    {
+        firstTime = false;
+        // Setup GPU side of story only works when opengl is fully setup
+        m_circle = std::make_unique<Circle>(uint32_t(maxSpots), uint32_t(resolution));
+        m_circle->setThickness(float(thickness));
     }
 
     MoviePlugin *mov = reinterpret_cast<MoviePlugin *>(tool->getPlugin("MOVIE"));
 
     const GPT::Metadata &meta = movie->getMetadata();
 
-    const uint64_t frame = mov->current_frame,
-                   nChannels = movie->getMetadata().SizeC;
+    const uint64_t 
+        frame = mov->current_frame,
+        nChannels = movie->getMetadata().SizeC;
 
-    const glm::vec2 size = {float(meta.SizeY), float(meta.SizeX)};
+    const glm::vec2 size = {float(meta.SizeX), float(meta.SizeY)};
     Mat3d trf = Mat3d::Identity();
 
     uint64_t nPts = 0;
-    std::array<glm::vec3, 128> vCor, vPos;
     for (uint64_t ch = 0; ch < nChannels; ch++)
     {
         int32_t ct = -1;
@@ -203,29 +232,32 @@ void TrajPlugin::update(float deltaTime)
                         y = mat(k, GPT::Track::POSY),
                         rx = mat(k, GPT::Track::SIZEX) / size.x,
                         ry = mat(k, GPT::Track::SIZEY) / size.y,
-                        r = 0.5f * std::sqrt(rx * rx + ry * ry),
+                        r = 0.5 * std::sqrt(rx * rx + ry * ry),
                         nx = trf(0, 0) * x + trf(0, 1) * y + trf(0, 2),
                         ny = trf(1, 0) * x + trf(1, 1) * y + trf(1, 2);
 
-                    vPos[nPts] = {nx, ny, r};
-                    vCor[nPts] = cor;
 
-                    if (++nPts == uint64_t(vPos.size()))
+                    float
+                        px = -0.5f + float(nx) / float(size.x),
+                        py = -0.5f + float(ny) / float(size.y);
+
+                    m_circle->draw({px, py, 0.01f}, float(r), cor);
+
+                    if (++nPts == maxSpots)
                         goto excess;
-
-                    continue;
                 }
+        }
+    }
 
-        } // loop-traj
+excess: 
+    glm::mat4 trans = tool->camera.getViewMatrix();
+    trans = glm::scale(trans, {1.0f, float(meta.SizeY) / float(meta.SizeX), 1.0f});
 
-    } // loop-tracks
-
-excess:
-
-    // TODO: Use uniform block buffers
-    tool->shader.setInteger("u_nPoints", static_cast<int32_t>(nPts));
-    tool->shader.setVec3fArray("u_ptPos", &vPos[0][0], static_cast<int32_t>(nPts));
-    tool->shader.setVec3fArray("u_ptColor", &vCor[0][0], static_cast<int32_t>(nPts));
+    tool->viewBuf->bind();
+    tool->shader.useProgram("circles");
+    tool->shader.setMatrix4f("u_transform", glm::value_ptr(trans));
+    m_circle->submit();
+    tool->viewBuf->unbind();
 
 } // update
 
@@ -307,7 +339,7 @@ void TrajPlugin::enhanceTracks(void)
 
                 uitraj[ch].resize(NT);
                 for (uint64_t t = 0; t < NT; t++)
-                    uitraj[ch].at(t) = {true, {unif(eng), unif(eng), unif(eng)}};
+                    uitraj[ch].at(t) = {true, {unif(eng), unif(eng), unif(eng), 1.0f}};
 
             } // loop-channels
         },

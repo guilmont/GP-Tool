@@ -31,7 +31,6 @@ public:
     void openMovie(const fs::path &path);
     void saveJSON(const fs::path &path);
 
-    std::unique_ptr<GRender::Quad> quad = nullptr;
     std::unique_ptr<GRender::Framebuffer> viewBuf = nullptr; // Histograms and viewport
 
 private:

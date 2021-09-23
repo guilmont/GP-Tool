@@ -43,7 +43,8 @@ private:
     void calcHistogram(uint64_t channel);
     void updateTexture(uint64_t channel);
     
-    bool firstTime = true;
+    std::unique_ptr<GRender::Quad> quad = nullptr;
+
 
 private:
     struct Info

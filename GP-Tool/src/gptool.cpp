@@ -5,15 +5,13 @@ GPTool::GPTool(void)
     fs::current_path(INSTALL_PATH);
 
     initialize("GP-Tool", 1200, 800, "assets/GP-Tool/layout.ini");
-
-    uint32_t cor = 0x999999ff;
-    quad = std::make_unique<GRender::Quad>(1);
-    viewBuf = std::make_unique<GRender::Framebuffer>(1, 1);
+    viewBuf = std::make_unique<GRender::Framebuffer>(1,1);
 
     // Initializing shaders
     fs::path shaderPath("assets/GP-Tool/shaders");
     shader.loadShader("histogram", (shaderPath / "basic.vtx.glsl").string(), (shaderPath / "histogram.frag.glsl").string());
     shader.loadShader("viewport", (shaderPath / "basic.vtx.glsl").string(), (shaderPath / "viewport.frag.glsl").string());
+    shader.loadShader("circles", (shaderPath / "spot.vtx.glsl").string(), (shaderPath / "spot.frag.glsl").string());
 
     // initializing plugins
     plugins["ALIGNMENT"] = nullptr;
@@ -106,9 +104,15 @@ void GPTool::showProperties(void)
 
 void GPTool::updateAll(float deltaTime)
 {
-    for (auto &[name, ptr] : plugins)
-        if (ptr)
-            ptr->update(deltaTime);
+    if (plugins["MOVIE"])
+        plugins["MOVIE"]->update(deltaTime);  // The alignment plugin will be called from within
+    
+    if (plugins["TRAJECTORY"])
+        plugins["TRAJECTORY"]->update(deltaTime);
+
+    // if (plugins["GPROCESS"])
+    //     plugins["GPROCESS"]->update(deltaTime);
+
 }
 
 void GPTool::addPlugin(const std::string &name, Plugin *plugin) { plugins[name].reset(plugin); }
@@ -164,18 +168,15 @@ void GPTool::onUserUpdate(float deltaTime)
     ///////////////////////////////////////////////////////
     // Renderering
 
-    viewBuf->bind();
-
     // Clearing buffer
+    viewBuf->bind();
     glad_glClear(GL_COLOR_BUFFER_BIT);
     glad_glClearColor(0.6f, 0.6f, 0.6f, 1.0f);
-
-    shader.useProgram("viewport"); // chooseing rendering program
-    updateAll(deltaTime);          // Updateing all plugins
-    quad->draw({0.0f, 0.0f, 0.0f}, {1.0f, 1.0f}, 0.0f, 0.0f);
-    quad->submit(); // rendering final image
     viewBuf->unbind();
 
+    // Updating all plugins
+    updateAll(deltaTime);
+    
 } // function
 
 void GPTool::ImGuiLayer(void)

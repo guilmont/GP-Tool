@@ -1,5 +1,6 @@
 #include "moviePlugin.h"
 
+
 LUT::LUT(void)
 {
     names.emplace_back("None");
@@ -40,7 +41,7 @@ const glm::vec3 &LUT::getColor(const std::string &name) const
 
 ///////////////////////////////////////////////////////////
 
-MoviePlugin::MoviePlugin(const fs::path &movie_path, GPTool *ptr) : tool(ptr), firstTime(true)
+MoviePlugin::MoviePlugin(const fs::path &movie_path, GPTool *ptr) : tool(ptr)
 {
     // Importing movies
     movie = std::make_unique<GPT::Movie>(movie_path);
@@ -95,6 +96,9 @@ MoviePlugin::MoviePlugin(const fs::path &movie_path, GPTool *ptr) : tool(ptr), f
         info[ch].contrast = {gl_low, gl_high};
         info[ch].minMaxValue = {minValue, maxValue};
     }
+
+   
+
 
 } // constructor
 
@@ -186,7 +190,7 @@ void MoviePlugin::showProperties(void)
             float port = ImGui::GetContentRegionAvail().x;
             if (port != size.x)
             {
-                histo[ch] = std::make_unique<GRender::Framebuffer>(uint64_t(port), uint64_t(size.y));
+                histo[ch] = std::make_unique<GRender::Framebuffer>(uint32_t(port), uint32_t(size.y));
                 updateTexture(ch);
             }
 
@@ -227,9 +231,14 @@ void MoviePlugin::showProperties(void)
 void MoviePlugin::update(float deltaTime)
 {
     // Creating textures
+    static bool firstTime = true;
     if (firstTime)
     {
         firstTime = false;
+        // OpenGL on the GPU side only works after everything is setup
+
+        // Creating quad for rendering
+        quad = std::make_unique<GRender::Quad>(1);
 
         // To liberate already allocated textures if they exist
         tool->texture.reset();
@@ -246,13 +255,17 @@ void MoviePlugin::update(float deltaTime)
         }
     }
 
-    const GPT::Metadata &meta = movie->getMetadata();
+    /////////////////////////
+    // Rendring image to viewport
 
+    const GPT::Metadata &meta = movie->getMetadata();
     glm::mat4 trf = tool->camera.getViewMatrix();
     trf = glm::scale(trf, {1.0f, float(meta.SizeY) / float(meta.SizeX), 1.0f});
 
+    tool->viewBuf->bind();
+    tool->shader.useProgram("viewport");
     tool->shader.setMatrix4f("u_transform", glm::value_ptr(trf));
-    tool->shader.setInteger("u_nChannels", static_cast<uint32_t>(meta.SizeC));
+    tool->shader.setInteger("u_nChannels", uint32_t(meta.SizeC));
 
     float size[2] = {float(meta.SizeX), float(meta.SizeY)};
     tool->shader.setVec2f("u_size", size);
@@ -260,7 +273,7 @@ void MoviePlugin::update(float deltaTime)
     std::array<float, 15> vColor = {0.0f};
     for (uint64_t ch = 0; ch < meta.SizeC; ch++)
     {
-        tool->texture.bind(std::to_string(ch), static_cast<uint32_t>(ch));
+        tool->texture.bind(std::to_string(ch), uint32_t(ch));
         const glm::vec3 &cor = lut.getColor(info[ch].lut_name);
         memcpy(vColor.data() + 3 * ch, &cor[0], 3 * sizeof(float));
     }
@@ -269,6 +282,15 @@ void MoviePlugin::update(float deltaTime)
 
     int vTex[5] = {0, 1, 2, 3, 4};
     tool->shader.setIntArray("u_texture", vTex, 5);
+
+    Plugin *plg = tool->getPlugin("ALIGNMENT");
+    if (plg)
+        plg->update(deltaTime);
+
+    quad->draw({0.0f, 0.0f, 0.0f}, {1.0f, 1.0f}, 0.0f, 0.0f);
+    quad->submit(); // rendering final image
+
+    tool->viewBuf->unbind();
 
 } // update
 
@@ -327,8 +349,8 @@ void MoviePlugin::updateTexture(uint64_t channel)
         histo[channel] = std::make_unique<GRender::Framebuffer>(162 * DPI_FACTOR, 100 * DPI_FACTOR);
 
     histo[channel]->bind();
-    tool->quad->draw({0.0f, 0.0f, 0.0f}, {1.0f, 1.0f}, 0.0f, 0.0f);
-    tool->quad->submit();
+    quad->draw({0.0f, 0.0f, 0.0f}, {1.0f, 1.0f}, 0.0f, 0.0f);
+    quad->submit();
     histo[channel]->unbind();
 
     // Updating textures

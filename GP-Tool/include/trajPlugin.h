@@ -3,10 +3,12 @@
 #include "plugin.h"
 #include "trajectory.h"
 
+#include "circle.h"
 #include "gptool.h"
 class GPTool;
 
-using UITraj = std::vector<std::pair<bool, glm::vec3>>;
+using UITraj = std::vector<std::pair<bool, glm::vec4>>;
+
 
 class TrajPlugin : public Plugin
 {
@@ -54,6 +56,13 @@ private:
     GPTool *tool = nullptr;
 
     std::unique_ptr<GPT::Trajectory> m_traj = nullptr;
+
+    uint64_t 
+        maxSpots = 512, // I don't think we need more than that per frame
+        resolution = 30,  // Number of points per spot
+        thickness = 3; // how thick the line is 
+
+    std::unique_ptr<Circle> m_circle = nullptr;
 
     UITraj *uitraj = nullptr;
 

@@ -9,11 +9,6 @@ uniform sampler2D u_texture[5];
 // Align plugin 
 uniform mat3 u_align[5];
 
-// Trajectory plugin // TODO: use uniform block buffers
-uniform int u_nPoints;
-uniform vec3 u_ptPos[128];
-uniform vec3 u_ptColor[128];
-
 // Input from vertex shader
 in vec2 fragCoord;
 out vec4 fragColor;
@@ -26,9 +21,8 @@ void main()
     fragColor = vec4(0.0,0.0,0.0,1.0);
 
     if (u_nChannels == 1)
-    {
         fragColor.rgb = u_color[0] * texture(u_texture[0], fragCoord).x;
-    }
+
     else
     {
         for (int ch = 0; ch < u_nChannels; ch++)
@@ -37,22 +31,5 @@ void main()
             fragColor.rgb += u_color[ch] * texture(u_texture[ch], nCoord).x;
         }
     }
-
-    ///////////////////////////////////////////////////////
-    // Spots
-
-    float dr = 0.0007; // rim thickness           
-    for (int pt = 0; pt < u_nPoints; pt++)
-    {
-        float rad = u_ptPos[pt].z;
-        float r = length(fragCoord - u_ptPos[pt].xy/u_size);
-        float w = smoothstep(rad+dr+0.0001,rad+dr, r)
-                - smoothstep(rad-dr, rad - dr-0.0001, r);
-
-        fragColor.rgb = mix(fragColor.rgb, u_ptColor[pt], w);
-    }
-   
-    ///////////////////////////////////////////////////////
-    // ROI
 
 } // main
