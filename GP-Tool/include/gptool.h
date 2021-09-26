@@ -46,4 +46,6 @@ private:
     // flow variables
     bool viewport_hover = false;
 
+    glm::vec2 getClickPosition(void);
+
 };

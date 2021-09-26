@@ -4,6 +4,8 @@
 #include "trajectory.h"
 
 #include "circle.h"
+#include "roi.h"
+
 #include "gptool.h"
 class GPTool;
 
@@ -20,12 +22,15 @@ public:
     void showProperties(void) override;
     void update(float deltaTime) override;
     bool saveJSON(Json::Value &json) override;
+    bool isActive(void) override { return m_traj != nullptr; }
 
     void loadTracks(void) { trackInfo.show = true; }
 
     const GPT::Trajectory *getTrajectory(void) { return m_traj.get(); }
     UITraj *getUITrajectory(void) { return uitraj; }
 
+    Roi roi;
+    
 private:
     struct
     {
@@ -63,6 +68,7 @@ private:
         thickness = 3; // how thick the line is 
 
     std::unique_ptr<Circle> m_circle = nullptr;
+    std::unique_ptr<GRender::Quad> m_quad= nullptr;
 
     UITraj *uitraj = nullptr;
 

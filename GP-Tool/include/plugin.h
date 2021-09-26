@@ -9,6 +9,7 @@ struct Plugin
 
     virtual void update(float deltaTime) = 0;
     virtual void showProperties(void) = 0;
+    virtual bool isActive(void) { return false;  }
     virtual void showWindows(void) {}
 
     virtual bool saveJSON(Json::Value &json) { return false; }

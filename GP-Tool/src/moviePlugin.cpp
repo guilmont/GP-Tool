@@ -107,7 +107,26 @@ void MoviePlugin::showProperties(void)
 
     ImGui::Begin("Properties");
 
-    const GPT::Metadata &meta = movie->getMetadata();
+    const glm::vec2& pos = tool->viewBuf->getPosition();
+    const glm::vec2& size = tool->viewBuf->getSize();
+    glm::vec2 mpos = { 2.0f * (tool->mouse.position.x - pos.x) / size.x - 1.0f,
+                       2.0f * (tool->mouse.position.y - pos.y) / size.y - 1.0f };
+
+    const GPT::Metadata& meta = movie->getMetadata();
+    float ratio = float(meta.SizeY) / float(meta.SizeX);
+    const glm::vec3& cpos = tool->camera.position;
+
+    mpos = { mpos.x * cpos.z + cpos.x, (mpos.y * cpos.z + cpos.y) / ratio }; // viewport reference
+    mpos = { (0.5f + mpos.x) * meta.SizeX, (0.5f + mpos.y) * meta.SizeY }; // movie reference
+
+   
+    tool->fonts.text("Mouse coordinates: ", "bold");
+    ImGui::SameLine();
+    ImGui::Text("%.2f x %.2f", mpos.x, mpos.y);
+    ImGui::Spacing();
+    ImGui::Spacing();
+
+    //const GPT::Metadata &meta = movie->getMetadata();
 
     tool->fonts.text("Name: ", "bold");
     ImGui::SameLine();

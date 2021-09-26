@@ -1,12 +1,12 @@
 #version 410 core
 
-uniform vec4 color;
+uniform vec4 roiColor;
 uniform int nPoints;
-uniform vec2 u_points[20];
+uniform vec2 vecRoi[20];
 
 // Input :: Output
-in vec2 fTexCoord;
-out vec4 frag_color;
+in vec2 fragCoord;
+out vec4 fragColor;
 
 
 int drawLine (vec2 p1, vec2 p2, vec2 pos, float a)
@@ -34,7 +34,7 @@ int crossLine(vec2 p1, vec2 p2, vec2 pos)
     else
         return 0;
 
-} // crossLine
+}
 
 void main()
 {
@@ -43,18 +43,18 @@ void main()
     {
         int p2 = (k+1) % nPoints;
 
-        dots += int(distance(u_points[k], fTexCoord) < 0.002);
-        lines += drawLine(u_points[k], u_points[p2], fTexCoord, 0.0005);
-        inner += crossLine(u_points[k], u_points[p2], fTexCoord);
+        dots += int(distance(vecRoi[k], fragCoord) < 0.005);
+         lines += drawLine(vecRoi[k], vecRoi[p2], fragCoord, 0.0005);
+         inner += crossLine(vecRoi[k], vecRoi[p2], fragCoord);
     }
 
-    if (dots> 0)
-        frag_color = vec4(color.rgb, 1.0);
-   else if (lines>0)
-        frag_color = vec4(0.7*color.rgb, 1.0);
+    if (dots > 0)
+        fragColor = vec4(roiColor.rgb, 1.0);
+    else if (lines>0)
+        fragColor = vec4(0.7*roiColor.rgb, 1.0);
     else if (inner % 2  == 0)
-        frag_color = vec4(0.0);
+        fragColor = vec4(0.0);
     else
-        frag_color = color;
+        fragColor = roiColor;
 
-} // main
+}

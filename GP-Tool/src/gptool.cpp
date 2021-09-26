@@ -1,5 +1,6 @@
 #include "gptool.h"
 
+
 GPTool::GPTool(void)
 {
     fs::current_path(INSTALL_PATH);
@@ -12,6 +13,7 @@ GPTool::GPTool(void)
     shader.loadShader("histogram", (shaderPath / "basic.vtx.glsl").string(), (shaderPath / "histogram.frag.glsl").string());
     shader.loadShader("viewport", (shaderPath / "basic.vtx.glsl").string(), (shaderPath / "viewport.frag.glsl").string());
     shader.loadShader("circles", (shaderPath / "spot.vtx.glsl").string(), (shaderPath / "spot.frag.glsl").string());
+    shader.loadShader("roi", (shaderPath / "basic.vtx.glsl").string(), (shaderPath / "roi.frag.glsl").string());
 
     // initializing plugins
     plugins["ALIGNMENT"] = nullptr;
@@ -110,9 +112,8 @@ void GPTool::updateAll(float deltaTime)
     if (plugins["TRAJECTORY"])
         plugins["TRAJECTORY"]->update(deltaTime);
 
-    // if (plugins["GPROCESS"])
-    //     plugins["GPROCESS"]->update(deltaTime);
-
+    if (plugins["GPROCESS"])
+        plugins["GPROCESS"]->update(deltaTime);
 }
 
 void GPTool::addPlugin(const std::string &name, Plugin *plugin) { plugins[name].reset(plugin); }
@@ -124,10 +125,11 @@ void GPTool::setActive(const std::string &name) { pActive = plugins[name].get();
 void GPTool::onUserUpdate(float deltaTime)
 {
     bool 
-      ctrl = keyboard[GKey::LEFT_CONTROL] == GEvent::PRESS || keyboard[GKey::RIGHT_CONTROL] == GEvent::PRESS,
-      O = keyboard['O'] == GEvent::RELEASE,
-      S = keyboard['S'] == GEvent::RELEASE,
-      T = keyboard['T'] == GEvent::RELEASE;
+        ctrl = keyboard[GKey::LEFT_CONTROL] == GEvent::PRESS || keyboard[GKey::RIGHT_CONTROL] == GEvent::PRESS,
+        ctrlRep = keyboard[GKey::LEFT_CONTROL] == GEvent::REPEAT || keyboard[GKey::RIGHT_CONTROL] == GEvent::REPEAT,
+        O = keyboard['O'] == GEvent::RELEASE,
+        S = keyboard['S'] == GEvent::RELEASE,
+        T = keyboard['T'] == GEvent::RELEASE;
 
     // key combination for opening movie
     if (ctrl & O)
@@ -155,6 +157,38 @@ void GPTool::onUserUpdate(float deltaTime)
             glm::vec2 dr = mouse.offset * deltaTime;
             camera.moveHorizontal(dr.x);
             camera.moveVertical(dr.y);
+        }
+
+        // Trajectory roi stuff
+        
+        if (plugins["TRAJECTORY"] && (ctrlRep | ctrl))
+        {
+                bool active = plugins["TRAJECTORY"]->isActive(); // if trajectories are loaded
+
+                // Adding vertex to roi
+                if ((mouse[GMouse::LEFT] == GEvent::RELEASE) & active)
+                {
+                    glm::vec2 click = getClickPosition();  // Reference to viewport
+                    click = { click.x + 0.5f, click.y + 0.5f }; // Converting to image coordinates
+                    reinterpret_cast<TrajPlugin*>(plugins["TRAJECTORY"].get())->roi.addPosition(click);
+                }
+
+                // Removing vertex from roi
+                else if ((mouse[GMouse::RIGHT] == GEvent::RELEASE) & active)
+                {
+                    glm::vec2 click = getClickPosition();
+                    click = { click.x + 0.5f, click.y + 0.5f };
+
+                    reinterpret_cast<TrajPlugin*>(plugins["TRAJECTORY"].get())->roi.removePosition(click);
+                }
+
+                // Moving roi vertex
+                else if (mouse[GMouse::MIDDLE] == GEvent::PRESS || mouse[GMouse::MIDDLE] == GEvent::REPEAT)
+                {
+                    glm::vec2 click = getClickPosition();
+                    click = { click.x + 0.5f, click.y + 0.5f };
+                    reinterpret_cast<TrajPlugin*>(plugins["TRAJECTORY"].get())->roi.movePosition(click);
+                }
         }
 
         // zoom
@@ -338,3 +372,18 @@ void GPTool::saveJSON(const fs::path &path)
     mailbox.createInfo("File saved to '" + path.string() + "'");
 
 } // saveJSON
+
+glm::vec2 GPTool::getClickPosition(void)
+{
+    const glm::vec2& pos = viewBuf->getPosition();
+    const glm::vec2& size = viewBuf->getSize();
+    glm::vec2 click = { 2.0f * (mouse.position.x - pos.x) / size.x - 1.0f,
+                       2.0f * (mouse.position.y - pos.y) / size.y - 1.0f };
+
+
+    const GPT::Metadata& meta = reinterpret_cast<MoviePlugin*>(plugins["MOVIE"].get())->getMovie()->getMetadata();
+    float iratio = float(meta.SizeX) / float(meta.SizeY);
+    const glm::vec3& cpos = camera.position;
+
+    return glm::vec2{ click.x * cpos.z + cpos.x, (click.y * cpos.z + cpos.y) * iratio };
+}

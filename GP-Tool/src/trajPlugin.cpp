@@ -100,6 +100,33 @@ void TrajPlugin::showProperties(void)
         ImGui::Spacing();
         tool->fonts.text("ROI:", "bold");
 
+        ImGui::Text("Color:");
+        ImGui::SameLine();
+        ImGui::ColorEdit4("##colorRoi", glm::value_ptr(roi.getColor()));
+
+        ImGui::Spacing();
+
+        if (ImGui::Button("Select") && (roi.getNumPoints() >= 3))
+        { 
+            const GPT::Metadata& meta = movie->getMetadata();
+            for (uint64_t ch = 0; ch < meta.SizeC; ch++)
+            {
+                uint64_t nTracks = m_traj->getTrack(ch).traj.size();
+                for (uint64_t k = 0; k < nTracks; k++)
+                {
+                    const MatXd& mat = m_traj->getTrack(ch).traj[k];
+                    glm::vec2 pos = { mat(0,GPT::Track::POSX) / float(meta.SizeX),
+                                      mat(0,GPT::Track::POSY) / float(meta.SizeY) };
+
+                    uitraj[ch][k].first = roi.contains(pos);
+                }
+            }
+                
+        }
+
+        ImGui::SameLine();
+        if (ImGui::Button("Clear"))
+            roi.clear();
 
         /////////////////////
 
@@ -201,6 +228,9 @@ void TrajPlugin::update(float deltaTime)
         // Setup GPU side of story only works when opengl is fully setup
         m_circle = std::make_unique<Circle>(uint32_t(maxSpots), uint32_t(resolution));
         m_circle->setThickness(float(thickness));
+
+
+        m_quad = std::make_unique<GRender::Quad>(1); // For drawing roi
     }
 
     MoviePlugin *mov = reinterpret_cast<MoviePlugin *>(tool->getPlugin("MOVIE"));
@@ -263,9 +293,31 @@ excess:
     trans = glm::scale(trans, {1.0f, float(meta.SizeY) / float(meta.SizeX), 1.0f});
 
     tool->viewBuf->bind();
+
     tool->shader.useProgram("circles");
     tool->shader.setMatrix4f("u_transform", glm::value_ptr(trans));
     m_circle->submit();
+
+
+    int32_t nPoints = int32_t(roi.getNumPoints());
+    if (nPoints > 0)
+    {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        tool->shader.useProgram("roi");
+        tool->shader.setMatrix4f("u_transform", glm::value_ptr(trans));
+
+        tool->shader.setInteger("nPoints", nPoints);
+        tool->shader.setVec4f("roiColor", glm::value_ptr(roi.getColor()));
+        tool->shader.setVec2fArray("vecRoi", roi.getData(), nPoints);
+
+        m_quad->draw({ 0.0f, 0.0f, 0.005f }, { 1.0f, 1.0f }, 0.0f, glm::vec4(1.0));
+        m_quad->submit();
+
+        glDisable(GL_BLEND);
+
+    }
     tool->viewBuf->unbind();
 
 } // update

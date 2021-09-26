@@ -13,6 +13,7 @@ add_executable(${PROJECT_NAME}
 	"include/alignPlugin.h"  "src/alignPlugin.cpp" 
 	"include/trajPlugin.h"   "src/trajPlugin.cpp" 
 	"include/circle.h"       "src/circle.cpp"
+	"include/roi.h"          "src/roi.cpp"
 	"include/gpPlugin.h"     "src/gpPlugin.cpp"
 	"src/app.cpp"
 )
