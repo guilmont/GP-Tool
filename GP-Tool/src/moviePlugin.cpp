@@ -102,6 +102,13 @@ MoviePlugin::MoviePlugin(const fs::path &movie_path, GPTool *ptr) : tool(ptr)
 
 MoviePlugin::~MoviePlugin(void) {}
 
+void MoviePlugin::updateDisplay(void)
+{
+    uint64_t nChannels = movie->getMetadata().SizeC;
+    for (uint64_t ch = 0; ch < nChannels; ch++)
+        calcHistogram(ch);
+}
+
 void MoviePlugin::showProperties(void)
 {
 
@@ -166,8 +173,7 @@ void MoviePlugin::showProperties(void)
     ImGui::Spacing();
 
     if (SliderU64("Frame", &current_frame, 0, meta.SizeT - 1))
-        for (uint64_t ch = 0; ch < meta.SizeC; ch++)
-            calcHistogram(ch);
+        updateDisplay();
 
     ImGui::Spacing();
     ImGui::Separator();

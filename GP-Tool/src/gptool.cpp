@@ -159,6 +159,38 @@ void GPTool::onUserUpdate(float deltaTime)
             camera.moveVertical(dr.y);
         }
 
+        // Moving frames
+        if (plugins["MOVIE"])
+        {
+            MoviePlugin* mov = reinterpret_cast<MoviePlugin*>(plugins["MOVIE"].get());
+            uint64_t nFrames = mov->getMovie()->getMetadata().SizeT;
+
+            if (keyboard[GKey::RIGHT] == GEvent::PRESS)
+            {
+                mov->current_frame += (mov->current_frame + 1 == nFrames) ? 0 : 1;
+                mov->updateDisplay();
+            }
+
+            else if (keyboard[GKey::LEFT] == GEvent::PRESS)
+            {
+                mov->current_frame -= (mov->current_frame == 0) ? 0 : 1;
+                mov->updateDisplay();
+            }
+
+            else if (keyboard[GKey::UP] == GEvent::PRESS)
+            {
+                mov->current_frame = 0;
+                mov->updateDisplay();
+            }
+
+            else if (keyboard[GKey::DOWN] == GEvent::PRESS)
+            {
+                mov->current_frame = nFrames - 1;
+                mov->updateDisplay();
+            }
+        }
+
+
         // Trajectory roi stuff
         
         if (plugins["TRAJECTORY"] && (ctrlRep | ctrl))

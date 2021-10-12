@@ -29,6 +29,7 @@ public:
     ~MoviePlugin(void);
 
     uint64_t current_frame = 0;
+    void updateDisplay(void);
 
     void showProperties(void) override;
     void update(float deltaTime) override;
