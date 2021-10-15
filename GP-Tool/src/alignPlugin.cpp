@@ -170,6 +170,21 @@ void AlignPlugin::update(float deltaTime)
 ///////////////////////////////////////////////////////////
 // Private functions
 
+static MatXd changeContrast(const MatXd& img, const glm::vec2& ct)
+{
+    MatXd mat = (img.array() - double(ct.x)) / (double(ct.y) - double(ct.x));
+
+    for (int64_t k = 0; k < mat.size(); k++)
+    {
+        double val = mat.data()[k];
+        val = val < 0.0 ? 0.0 : val;
+        val = val > 1.0 ? 1.0 : val;
+        mat.data()[k] = val;
+    }
+
+    return mat;
+}
+
 void AlignPlugin::runAlignment(void)
 {
     working = true;
@@ -179,11 +194,22 @@ void AlignPlugin::runAlignment(void)
     uint64_t nFrames = movie->getMetadata().SizeT;
     nFrames = std::min<uint64_t>(5, nFrames);
 
+    MoviePlugin *movPlg = reinterpret_cast<MoviePlugin*>(tool->getPlugin("MOVIE"));
+
     std::vector<MatXd> vi1, vi2;
     for (uint64_t k = 0; k < nFrames; k++)
     {
-        vi1.push_back(movie->getImage(0, k));
-        vi2.push_back(movie->getImage(chAlign, k));
+        // Correct constrast as set on the movie plugin
+        const glm::vec2& ct1 = movPlg->getContrast(0);
+        const MatXd& img1 = movie->getImage(0, k);
+
+        vi1.emplace_back(changeContrast(img1, ct1));
+
+        // Same, but for the selected channel
+        const glm::vec2& ct2 = movPlg->getContrast(chAlign);
+        const MatXd& img2 = movie->getImage(chAlign, k);
+
+        vi2.emplace_back(changeContrast(img2, ct2));
     }
 
     m_align = std::make_unique<GPT::Align>(nFrames, vi1.data(), vi2.data());

@@ -36,6 +36,7 @@ public:
     bool saveJSON(Json::Value &json) override;
 
     const glm::vec3 &getColor(uint64_t channel) { return lut.getColor(info[channel].lut_name); }
+    const glm::vec2& getContrast(uint64_t channel) { return info[channel].contrast; }
     
     GPT::Movie *getMovie(void) { return movie.get(); }
     bool successful(void) const { return success; }
@@ -64,5 +65,8 @@ private:
     GPTool *tool = nullptr;
     std::unique_ptr<GPT::Movie> movie = nullptr;
 
-    bool success = true;
+    bool 
+        success = true,
+        firstTime = true;
+
 };
