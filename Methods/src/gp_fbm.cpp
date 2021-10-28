@@ -236,13 +236,11 @@ namespace GPT
 
     MatXd GP_FBM::calcAvgTrajectory(const VecXd &vTime, uint64_t id)
     {
-        
-        // Create output matrix
         const uint64_t
             nRows = vTime.size(),
             nCols = route[id].cols();
 
-        MatXd traj(nRows, nCols);
+        MatXd traj(nRows, nCols);         // Output matrix
         traj.col(Track::TIME) = vTime;
 
         // Getting particle's dynamical parameters
@@ -262,7 +260,7 @@ namespace GPT
 
         VecXd diagK = K.diagonal();
 
-        for (uint8_t k = 0; k < 2; k++)
+        for (uint64_t k = 0; k < 2; k++)
         {
             K.diagonal() = diagK + route[id].col(Track::ERRX + k);
 
@@ -282,8 +280,7 @@ namespace GPT
         }
 
         return traj;
-
-    } // dataTreatment
+    }
 
     MatXd GP_FBM::estimateSubstrateMovement(void)
     {

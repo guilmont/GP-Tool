@@ -11,9 +11,7 @@ namespace GPT
     {
         fs::path path;
         std::string description = "No description";
-
         std::vector<MatXd> traj;
-              
     };
 
     class Trajectory

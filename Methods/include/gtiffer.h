@@ -135,7 +135,7 @@ namespace GPT
 
         auto [width, height, buf] = getImageData(id);
 
-        size_t check = buf.size() / (width * height);
+        size_t check = buf.size() / (size_t(width) * size_t(height));
         if (check != sizeof(T))
         {
             pout("ERROR(GPT::Tiffer::Read::getImage) : Movie expects ", check, " bytes!!");

@@ -21,7 +21,7 @@ GPTool::GPTool(void)
     plugins["MOVIE"] = nullptr;
     plugins["TRAJECTORY"] = nullptr;
 
-} // function
+}
 
 GPTool::~GPTool(void)
 {

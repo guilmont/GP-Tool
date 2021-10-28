@@ -7,7 +7,6 @@
 
 namespace GPT
 {
-
     class Movie
     {
 
@@ -29,9 +28,7 @@ namespace GPT
 
         // We are going to setup for lazy loading
         std::unique_ptr<Tiffer::Read> tif = nullptr;
-        std::vector<std::unique_ptr<MatXd>> vImg;
+        std::vector<MatXd> vImg;
 
-    }; // class Trajectory
-
-
+    };
 }

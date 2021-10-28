@@ -37,7 +37,6 @@ namespace GPT
 
         GP_API DA *singleModel(uint64_t id = 0);
         GP_API CDA *coupledModel(void);
-        GP_API void stop(void);
 
         GP_API MatXd distrib_singleModel(uint64_t sample_size = 10000, uint64_t id = 0);
         GP_API MatXd distrib_coupledModel(uint64_t sample_size = 10000);
@@ -46,10 +45,10 @@ namespace GPT
         GP_API MatXd estimateSubstrateMovement();
 
         GP_API uint64_t getNumParticles(void) const { return nParticles; }
+        GP_API void stop(void);
 
 
     private:
-
         void initialize(void);
         double weightSingle(const VecXd &DA);
         double weightCoupled(const VecXd &DA);
@@ -66,8 +65,8 @@ namespace GPT
         CDA *m_cda = nullptr;
 
         uint64_t nParticles;
-        std::vector<MatXd> route; // Holders all particles's routes
-        MatXd cRoute;             // concatenates all routes in one
+        std::vector<MatXd> route; // Holds trajectories of all particles
+        MatXd cRoute;             // concatenates all trajectories in one
 
     };
 

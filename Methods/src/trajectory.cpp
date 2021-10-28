@@ -237,7 +237,7 @@ namespace GPT
         // calculating total number of tracks to enhance
         float dp = 0.0f;
         for (uint64_t ch = 0; ch < m_vTrack.size(); ch++)
-        dp += m_vTrack[ch].traj.size();
+            dp += m_vTrack[ch].traj.size();
 
 
         dp = 1.0f / dp;
@@ -365,33 +365,21 @@ namespace GPT
             return;
 
         Vec2d
-          thresSX = thresOutliers(route.col(Track::SIZEX)),
-          thresSY = thresOutliers(route.col(Track::SIZEY)),
-          thresEX = thresOutliers(route.col(Track::ERRX)),
-          thresEY = thresOutliers(route.col(Track::ERRY)),
-          thresSig = thresOutliers(route.col(Track::SIGNAL)),
-          thresBG = thresOutliers(route.col(Track::BG));
+          thresSX = thresOutliers(route.col(Track::SIZEX)),   thresSY = thresOutliers(route.col(Track::SIZEY)),
+          thresEX = thresOutliers(route.col(Track::ERRX)),    thresEY = thresOutliers(route.col(Track::ERRY)),
+          thresSig = thresOutliers(route.col(Track::SIGNAL)), thresBG = thresOutliers(route.col(Track::BG));
 
         for (int64_t k = nRows - 1; k >= 0; k--)
         {
             bool check = true;
-            check &= route(k, Track::SIZEX) < thresSX(1);
-            check &= route(k, Track::SIZEX) > thresSX(0);
+            check &= route(k, Track::SIZEX) > thresSX(0) && route(k, Track::SIZEX) < thresSX(1);
+            check &= route(k, Track::SIZEY) > thresSY(0) && route(k, Track::SIZEY) < thresSY(1);
 
-            check &= route(k, Track::SIZEY) < thresSY(1);
-            check &= route(k, Track::SIZEY) > thresSY(0);
+            check &= route(k, Track::ERRX) > thresEX(0) && route(k, Track::ERRX) < thresEX(1);
+            check &= route(k, Track::ERRY) < thresEY(1) && route(k, Track::ERRY) > thresEY(0);
 
-            check &= route(k, Track::ERRX) < thresEX(1);
-            check &= route(k, Track::ERRX) > thresEX(0);
-
-            check &= route(k, Track::ERRY) < thresEY(1);
-            check &= route(k, Track::ERRY) > thresEY(0);
-
-            check &= route(k, Track::BG) < thresBG(1);
-            check &= route(k, Track::BG) > thresBG(0);
-
-            check &= route(k, Track::SIGNAL) < thresSig(1);
-            check &= route(k, Track::SIGNAL) > thresSig(0);
+            check &= route(k, Track::BG) > thresBG(0) && route(k, Track::BG) < thresBG(1);
+            check &= route(k, Track::SIGNAL) > thresSig(0) && route(k, Track::SIGNAL) < thresSig(1);
 
             if (!check)
                 removeRow(route, k);

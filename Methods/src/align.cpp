@@ -304,7 +304,7 @@ double GPT::Align::weightTransRot(const VecXd &p)
     // We want to minimize, therefore the negative of the maximize
     return 0.5 * RT.size(0) * RT.size(1) * log(energy);
 
-} // weightFunc
+} 
 
 double GPT::Align::weightScale(const VecXd &p)
 {
@@ -341,7 +341,7 @@ double GPT::Align::weightScale(const VecXd &p)
 
     // We want to minimize, therefore the negative of the maximize
     return 0.5 * width * height * log(energy);
-}; // weightFunc
+}
 
 bool GPT::Align::alignCameras(void)
 {
@@ -376,4 +376,10 @@ bool GPT::Align::correctAberrations(void)
     RT.update();
 
     return true;
+}
+
+void GPT::Align::stop(void)
+{
+    if (nms)
+        nms->stop();
 }

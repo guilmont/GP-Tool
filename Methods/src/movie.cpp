@@ -25,7 +25,9 @@ namespace GPT
             return;
         }
 
-        vImg.resize(tif->getNumDirectories());
+        // Emplacing empty matrices
+        for (uint64_t k =0; k < tif->getNumDirectories(); k++)
+            vImg.emplace_back(0,0);
     }
 
     const Metadata &Movie::getMetadata(void) const
@@ -42,23 +44,23 @@ namespace GPT
 
     const MatXd &Movie::getImage(uint64_t channel, uint64_t frame)
     {
-        assert(channel < meta->SizeC&& frame < meta->SizeT);
+        assert(channel < meta->SizeC && frame < meta->SizeT);
 
         uint32_t id = static_cast<uint32_t>(frame * meta->SizeC + channel);
 
-        if (vImg[id])
-            return *vImg.at(id).get();
+        if (vImg[id].size() > 0)
+            return vImg.at(id);
         else {
             if (meta->SignificantBits == 8)
-                vImg[id] = std::make_unique<MatXd>(tif->getImage<uint8_t>(id).cast<double>());
+                vImg[id] = tif->getImage<uint8_t>(id).cast<double>();
 
             else if (meta->SignificantBits == 16)
-                vImg[id] = std::make_unique<MatXd>(tif->getImage<uint16_t>(id).cast<double>());
+                vImg[id] = tif->getImage<uint16_t>(id).cast<double>();
 
             else if (meta->SignificantBits == 32)
-                vImg[id] = std::make_unique<MatXd>(tif->getImage<uint64_t>(id).cast<double>());
+                vImg[id] = tif->getImage<uint32_t>(id).cast<double>();
 
-            return *vImg[id].get();
+            return vImg[id];
         }
     }
 

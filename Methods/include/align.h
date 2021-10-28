@@ -14,8 +14,8 @@ namespace GPT
         Vec2d translate, scale;
         Vec3d rotate;
 
-        Mat3d trf;  // Transform matrix 0 to x
-        Mat3d itrf; // Transform matrix x to 0
+        Mat3d trf;  // Transform matrix
+        Mat3d itrf; // Inverse transform
 
         GP_API void update(void);
     };
@@ -28,14 +28,10 @@ namespace GPT
 
         GP_API bool alignCameras(void);
         GP_API bool correctAberrations(void);
+        GP_API void stop(void);
 
         GP_API const TransformData &getTransformData(void) const { return RT; }
 
-        void stop(void)
-        {
-            if (nms)
-                nms->stop();
-        }
 
     private:
         TransformData RT;                       // Transformation parameters
@@ -51,6 +47,6 @@ namespace GPT
         double weightTransRot(const VecXd &p);
         double weightScale(const VecXd &p);
 
-    }; // class-Align
+    };
 
 }
