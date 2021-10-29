@@ -172,7 +172,7 @@ void AlignPlugin::update(float deltaTime)
 
 static MatXd changeContrast(const MatXd& img, const glm::vec2& ct)
 {
-    MatXd mat = (img.array() - double(ct.x)) / (double(ct.y) - double(ct.x));
+    MatXd mat = (img.array() - double(ct.x) + 1e-5) / (double(ct.y) - double(ct.x) + 1e-5);
 
     for (int64_t k = 0; k < mat.size(); k++)
     {

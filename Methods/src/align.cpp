@@ -39,27 +39,64 @@ void GPT::TransformData::update(void)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+static void autoContrast(MatXd& img)
+{
+    double bot = img.minCoeff(), top = img.maxCoeff();
+    img.array() = (img.array() - bot) / (top - bot);
+}
+
+static MatXd medianFilter(const MatXd& mat, int64_t medianSize)
+{
+    MatXd img(mat.rows(), mat.cols());
+
+    int64_t median_radius = static_cast<int64_t>(0.5 * double(medianSize));
+    for (int64_t k = 0; k < mat.rows(); k++)
+        for (int64_t l = 0; l < mat.cols(); l++)
+        {
+            // Getting region
+            int64_t
+                xo = std::max<int64_t>(l - median_radius, 0),
+                yo = std::max<int64_t>(k - median_radius, 0),
+                xf = std::min<int64_t>(l + median_radius + 1, mat.cols()),
+                yf = std::min<int64_t>(k + median_radius + 1, mat.rows());
+
+            int64_t size = (yf - yo) * (xf - xo);
+
+            std::vector<double> vec;
+            vec.reserve(size);
+
+            for (int64_t y = yo; y < yf; y++)
+                for (int64_t x = xo; x < xf; x++)
+                    vec.push_back(mat(y, x));
+
+            std::sort(vec.begin(), vec.end());
+
+            int64_t pos = static_cast<int64_t>(0.5 * double(vec.size()));
+            img(k, l) = vec.at(pos);
+        }
+
+    return img;
+}
+
 
 static MatXd treatImage(MatXd img, int medianSize, double clipLimit, uint64_t tileSizeX, uint64_t tileSizeY)
 {
+    // Removing as much noise as possible
+    MatXd mat = medianFilter(img, medianSize);
+
 
     // Before anything else, let's correct contrast
-    double 
-        top = img.maxCoeff(),
-        bot = img.minCoeff();
-
-    img.array() -= bot;
-    img.array() *= 1.0 / (top - bot);
+    autoContrast(mat);
 
     //////////////////////////////////////////////////////////////
     // Creating look-up table
 
-    const uint64_t
-        nCols = img.cols(),
-        nRows = img.rows(),
+    const int64_t
+        nCols = mat.cols(),
+        nRows = mat.rows(),
         tileArea = tileSizeX * tileSizeY,
-        TX = static_cast<uint64_t>(std::ceil(nCols / double(tileSizeX))),
-        TY = static_cast<uint64_t>(std::ceil(nRows / double(tileSizeY))),
+        TX = static_cast<int64_t>(std::ceil(double(nCols) / double(tileSizeX))),
+        TY = static_cast<int64_t>(std::ceil(double(nRows) / double(tileSizeY))),
         NT = TX * TY;
 
     clipLimit *= tileArea / 256.0;
@@ -75,7 +112,7 @@ static MatXd treatImage(MatXd img, int medianSize, double clipLimit, uint64_t ti
                 x = static_cast<uint64_t>(l / double(tileSizeY)),
                 tid = y * TX + x;
 
-            uint64_t id = static_cast<uint64_t>(255.0 * img(k, l));
+            uint64_t id = static_cast<uint64_t>(255.0 * mat(k, l));
             lut(id, tid)++;
         }
 
@@ -114,8 +151,7 @@ static MatXd treatImage(MatXd img, int medianSize, double clipLimit, uint64_t ti
     /////////////////////////////////////////////////////////////////////
     // Applying clahe algorithm
 
-    MatXd mat(nRows, nCols);
-    mat.fill(0.0);
+    img.fill(0.0);
 
     for (uint64_t k = 0; k < nRows; k++)
         for (uint64_t l = 0; l < nCols; l++)
@@ -147,7 +183,7 @@ static MatXd treatImage(MatXd img, int medianSize, double clipLimit, uint64_t ti
             py = py > 0.5 ? py - 0.5 : 0.5 - py;
 
             uint64_t 
-                bin = static_cast<uint64_t>(255.0 * img(k, l)),
+                bin = static_cast<uint64_t>(255.0 * mat(k, l)),
                 tid0 = (y + 0) * TX + (x + 0),
                 tid1 = (y + 0) * TX + (x + dx),
                 tid2 = (y + dy) * TX + (x + 0),
@@ -156,53 +192,14 @@ static MatXd treatImage(MatXd img, int medianSize, double clipLimit, uint64_t ti
             double valx1 = (1.0 - px) * lut(bin, tid0) + px * (lut(bin, tid1));
             double valx2 = (1.0 - px) * lut(bin, tid2) + px * (lut(bin, tid3));
 
-            mat(k, l) = (1.0 - py) * valx1 + py * valx2;
+            img(k, l) = (1.0 - py) * valx1 + py * valx2;
         }
 
     //////////////////////////////////////////
-    // Let's apply some final treatment
+    // Apply some final auto-contrast to make all images of similar sinal
 
-    if (medianSize > 0)
-    {
-        int64_t median_radius = static_cast<int32_t>(0.5 * medianSize);
-        for (uint64_t k = 0; k < nRows; k++)
-            for (uint64_t l = 0; l < nCols; l++)
-            {
-                // Getting region
-                int64_t
-                    xo = std::max<int64_t>(l - median_radius, 0),
-                    yo = std::max<int64_t>(k - median_radius, 0),
-                    xf = std::min<int64_t>(l + median_radius + 1, nCols),
-                    yf = std::min<int64_t>(k + median_radius + 1, nRows);
-
-                int64_t size = (yf - yo) * (xf - xo);
-
-                std::vector<double> vec(size);
-                for (int64_t y = yo; y < yf; y++)
-                    for (int64_t x = xo; x < xf; x++)
-                        vec.push_back(mat(y, x));
-
-                std::sort(vec.begin(), vec.end());
-
-                uint64_t pos = static_cast<uint64_t>(0.5 * vec.size());
-                img(k, l) = vec.at(pos);
-            } // loop-median
-
-        // And some autocontrast
-        bot = img.minCoeff();
-        top = img.maxCoeff();
-        img.array() = (img.array() - bot) / (top - bot);
-
-        return img;
-    } // if-median-filter
-    else
-    {
-        bot = mat.minCoeff();
-        top = mat.maxCoeff();
-        mat.array() = (mat.array() - bot) / (top - bot);
-
-        return mat;
-    }
+    autoContrast(img);
+    return img;
 }
 
 /*******************************************************************/
@@ -220,8 +217,8 @@ GPT::Align::Align(uint64_t nFrames, const MatXd *im1, const MatXd *im2)
     {
         for (uint64_t k = tid; k < nFrames; k += nThr)
         {
-            vIm0[k] = (255.0 * treatImage(im1[k], 3, 5.0, 32, 32)).array().round().cast<uint8_t>();
-            vIm1[k] = (255.0 * treatImage(im2[k], 3, 5.0, 32, 32)).array().round().cast<uint8_t>();
+            vIm0[k] = (255.0 * treatImage(im1[k], 9, 5.0, 32, 32)).array().round().cast<uint8_t>();
+            vIm1[k] = (255.0 * treatImage(im2[k], 9, 5.0, 32, 32)).array().round().cast<uint8_t>();
         }
     };
 
