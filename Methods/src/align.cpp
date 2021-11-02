@@ -104,26 +104,26 @@ static MatXd treatImage(MatXd img, int medianSize, double clipLimit, uint64_t ti
     std::vector<uint64_t> cdfmin(NT, 0);
     MatXd lut = MatXd::Zero(256, NT);
 
-    for (uint64_t k = 0; k < nRows; k++)
-        for (uint64_t l = 0; l < nCols; l++)
+    for (int64_t k = 0; k < nRows; k++)
+        for (int64_t l = 0; l < nCols; l++)
         {
-            uint64_t
-                y = static_cast<uint64_t>(k / double(tileSizeX)),
-                x = static_cast<uint64_t>(l / double(tileSizeY)),
+            int64_t
+                y = static_cast<int64_t>(k / double(tileSizeX)),
+                x = static_cast<int64_t>(l / double(tileSizeY)),
                 tid = y * TX + x;
 
-            uint64_t id = static_cast<uint64_t>(255.0 * mat(k, l));
+            int64_t id = static_cast<int64_t>(255.0 * mat(k, l));
             lut(id, tid)++;
         }
 
     // Normalization
-    for (uint64_t tid = 0; tid < NT; tid++)
+    for (int64_t tid = 0; tid < NT; tid++)
     {
         // To avoid contrast differences at borders, let's clip the histogram
         while (true)
         {
             double extra = 0.0;
-            for (uint64_t r = 0; r < 256; r++)
+            for (int64_t r = 0; r < 256; r++)
                 if (lut(r, tid) > clipLimit)
                 {
                     extra += lut(r, tid) - clipLimit;
@@ -140,7 +140,7 @@ static MatXd treatImage(MatXd img, int medianSize, double clipLimit, uint64_t ti
         double norm = lut.col(tid).sum();
         lut.col(tid).array() /= norm;
 
-        for (uint64_t k = 1; k < 256; k++)
+        for (int64_t k = 1; k < 256; k++)
             lut(k, tid) += lut(k - 1, tid);
 
         double bot = lut.col(tid).minCoeff();
@@ -153,11 +153,11 @@ static MatXd treatImage(MatXd img, int medianSize, double clipLimit, uint64_t ti
 
     img.fill(0.0);
 
-    for (uint64_t k = 0; k < nRows; k++)
-        for (uint64_t l = 0; l < nCols; l++)
+    for (int64_t k = 0; k < nRows; k++)
+        for (int64_t l = 0; l < nCols; l++)
         {
             // Determining tile
-            uint64_t x = l / tileSizeX, y = k / tileSizeY;
+            int64_t x = l / tileSizeX, y = k / tileSizeY;
 
             double px = double(l) / tileSizeX - x,
                    py = double(k) / tileSizeY - y;

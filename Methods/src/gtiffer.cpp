@@ -192,10 +192,7 @@ namespace GPT::Tiffer
         return arr;
     }
 
-    uint8_t Read::get_uint8(const uint32_t pos)
-    {
-        return buffer.at(pos);
-    } // get_uint8
+    uint8_t Read::get_uint8(const uint32_t pos) { return buffer.at(pos); }
 
     uint16_t Read::get_uint16(const uint32_t pos)
     {
@@ -206,7 +203,7 @@ namespace GPT::Tiffer
         else
             return val;
 
-    } // get_uint16
+    }
 
     uint32_t Read::get_uint32(const uint32_t pos)
     {
@@ -220,7 +217,7 @@ namespace GPT::Tiffer
         else
             return val;
 
-    } // get_uint32
+    }
 
 }
 
@@ -276,6 +273,13 @@ GPT::Tiffer::Read::Read(const fs::path &movie_path) : movie_path(movie_path)
 
             uint16_t tag = get_uint16(ct),
                      type = get_uint16(ct + 2);
+
+            if (type > RATIONAL)
+            {
+                success = false;
+                pout("ERROR (GPT::Tiffer::Read) ==> Tiff file might be corrupted:", movie_path);
+                return;
+            }
 
             uint32_t count = get_uint32(ct + 4);
 
