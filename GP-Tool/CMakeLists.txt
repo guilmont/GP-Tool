@@ -18,19 +18,18 @@ add_executable(${PROJECT_NAME}
 	"src/app.cpp"
 )
 
-if(NOT MSVC)
-	set(CMAKE_INSTALL_RPATH "lib")
-endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE "include")
 target_link_libraries(${PROJECT_NAME} PUBLIC GRender jsoncpp GPMethods)
 target_compile_definitions(${PROJECT_NAME} PRIVATE ASSETS="${ASSETS_DIR}" _CRT_SECURE_NO_WARNINGS)
+set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "../lib")
 
 if (GP_PRECOMPILED_HEADERS)
 	target_precompile_headers(${PROJECT_NAME} PRIVATE "include/gpch.h")
 endif()
 
 file(COPY ${PROJECT_SOURCE_DIR}/assets/ DESTINATION ${CMAKE_SOURCE_DIR}/${ASSETS_DIR})
+
 
 install(TARGETS ${PROJECT_NAME} 
 	CONFIGURATIONS Release

@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.10.0)
 project(GPMethods)
 
-set(GP_FBM_INC "include/GP_FBM")
 set(GP_EXPORT "${PROJECT_NAME}Config")
 
 
@@ -30,7 +29,7 @@ endif()
 target_compile_definitions(${PROJECT_NAME} PRIVATE GBUILD_DLL)
 target_include_directories(${PROJECT_NAME} PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include> 
-    $<INSTALL_INTERFACE:${GP_FBM_INC}>
+    $<INSTALL_INTERFACE:"include"}>
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -42,7 +41,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 target_link_libraries(${PROJECT_NAME} PUBLIC eigen pugixml Threads::Threads)
 
 file(GLOB INC_FILES "include/*.h")
-install(FILES ${INC_FILES} DESTINATION ${GP_FBM_INC})
+install(FILES ${INC_FILES} DESTINATION "include")
 
 install(TARGETS ${PROJECT_NAME}
     EXPORT ${GP_EXPORT}
