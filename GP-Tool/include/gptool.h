@@ -31,6 +31,11 @@ public:
     void openMovie(const fs::path &path);
     void saveJSON(const fs::path &path);
 
+public:
+    GRender::Texture texture;
+    GRender::Shader shader;
+    GRender::Camera2D camera;
+
     std::unique_ptr<GRender::Framebuffer> viewBuf = nullptr; // Histograms and viewport
 
 private:

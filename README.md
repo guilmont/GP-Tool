@@ -45,19 +45,22 @@ link: https://doi.org/10.1038/s41467-021-26466-7
 
 <!-- GETTING STARTED -->
 ## Getting Started
+### Binary packages
 
-1. Clone the repo. As I include several sub-modules as vendors, recursive clone is needed.
+Binary packages in Release mode for Windows and Linux are provided in directory packages. Unzip to desired path and you are good to go.
+
+### Source code
+
+1. Clone the repo. As I include several sub-modules as vendors, recursive clone is needed
    ```
    git clone --recurse-submodules -j4 https://github.com/guilmont/GP-Tool.git
    ```
 
-2. Building from source code allows these following options:
-  - GRENDER_DPI_FACTOR: Scales GUI by a factor of 2 for HIDPI screens (default OFF);
-  - GP_TOOL: Compiles graphical user interface (default ON);
+2. To build (or not) the GUI, check the option GP_TOOL. It is set to 'ON' by default
 
-3. Build it with CMake setting CMAKE_BUILD_TYPE (usually Release) and CMAKE_INSTALL_PREFIX. Compile and install.
+3. Build it with CMake setting CMAKE_BUILD_TYPE (usually Release) and CMAKE_INSTALL_PREFIX. Compile and install
 
-Upon installation, a shared library with all backend methods will be generated under the name 'GPMethods', from which the user can link to any other C++ project using said tools using CMake and generate 'CMakeLists.txt'. For convenience and debugging purposes, I also recommend installation in 'Debug' and 'RelWithDevInfo' configurations. GP-Tool will be installed only in 'Release', though. For more details, considered the pdf documentation provided.
+Upon installation, a shared library with all backend methods will be generated under the name 'GPMethods', from which the user can link to any other C++ project. For convenience and debugging purposes, I also recommend installation in 'Debug' and 'RelWithDevInfo' configurations. A 'CMakeLists.txt' is also provided for all built configurations. GP-Tool will be installed only in 'Release' configuration, though. 
 
 <!-- todo -->
 ## Todo
@@ -65,6 +68,7 @@ Upon installation, a shared library with all backend methods will be generated u
 - GP-Tool: API for saving interpolated trajectories
 - GP-Tool: Using single trajectory interpolation to match timesteps between trajectories with temporal delay
 - GPMethods: Importing other popular file formats containing tracked trajectories
+- GPMethods: Provided testing API with Google Tests
 - GPMethods: Wrapper bindings for python (if popularly requested)
 - GP-Tool + GPMethods: Improve documentation
 
@@ -72,7 +76,7 @@ Upon installation, a shared library with all backend methods will be generated u
 <!-- LICENSE -->
 ## License
 
-Distributed under the Apache2 license. See `LICENSE` for more information.
+Distributed under the Apache2 license. See `License.txt` for more information.
 
 
 <br/>

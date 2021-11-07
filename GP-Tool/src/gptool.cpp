@@ -3,13 +3,13 @@
 
 GPTool::GPTool(void)
 {
-    fs::current_path(INSTALL_PATH);
+    fs::path assets(ASSETS);
 
-    initialize("GP-Tool", 1200, 800, "assets/GP-Tool/layout.ini");
+    initialize("GP-Tool", 1200, 800, assets / "layout.ini");
     viewBuf = std::make_unique<GRender::Framebuffer>(1,1);
 
     // Initializing shaders
-    fs::path shaderPath("assets/GP-Tool/shaders");
+    fs::path shaderPath(assets / "shaders");
     shader.loadShader("histogram", (shaderPath / "basic.vtx.glsl").string(), (shaderPath / "histogram.frag.glsl").string());
     shader.loadShader("viewport", (shaderPath / "basic.vtx.glsl").string(), (shaderPath / "viewport.frag.glsl").string());
     shader.loadShader("circles", (shaderPath / "spot.vtx.glsl").string(), (shaderPath / "spot.frag.glsl").string());
@@ -41,7 +41,7 @@ void GPTool::showHeader(void)
     ImGui::Begin("Plugins");
 
     float width = ImGui::GetContentRegionAvailWidth();
-    ImVec2 buttonSize{width, 40 * DPI_FACTOR};
+    ImVec2 buttonSize{width, 40 * GRender::DPI_FACTOR};
 
     ImVec4
         deactivated{0.13f, 0.16f, 0.3f, 1.f},
@@ -309,11 +309,29 @@ void GPTool::ImGuiMenuLayer(void)
 
     if (ImGui::BeginMenu("About"))
     {
+
         if (ImGui::MenuItem("Show mailbox"))
             mailbox.setActive();
 
+        if (GRender::DPI_FACTOR == 1)
+        {
+            if (ImGui::MenuItem("Set HIDPI"))
+            {
+                GRender::DPI_FACTOR = 2.0f;
+                scaleSizes();
+            }
+        }
+        else
+        {
+            if (ImGui::MenuItem("Unset HIDPI"))
+            {
+                GRender::DPI_FACTOR = 1.0f;
+                scaleSizes();
+            }
+        }
+
         if (ImGui::MenuItem("How to cite"))
-            mailbox.createInfo("Refer to paper at https://doi.org/10.1101/2021.03.16.435699");
+            mailbox.createInfo("Refer to paper at https://doi.org/10.1038/s41467-021-26466-7");
 
         if (ImGui::MenuItem("Documentation"))
             mailbox.createInfo("View complete documentation at https://github.com/guilmont/GP-Tool");
@@ -326,7 +344,6 @@ void GPTool::ImGuiMenuLayer(void)
 
 void GPTool::openMovie(const fs::path &path)
 {
-
     std::thread(
         [](GPTool *tool, const fs::path &path) -> void
         {
@@ -334,8 +351,8 @@ void GPTool::openMovie(const fs::path &path)
 
             if (movpl->successful())
             {
-                tool->camera.reset();
-
+                tool->camera.getPosition() = { 0.0f, 0.0f, 0.8f };
+                
                 // Including movie plugin into the manager
                 tool->addPlugin("MOVIE", movpl);
                 tool->setActive("MOVIE");
@@ -415,7 +432,7 @@ glm::vec2 GPTool::getClickPosition(void)
 
     const GPT::Metadata& meta = reinterpret_cast<MoviePlugin*>(plugins["MOVIE"].get())->getMovie()->getMetadata();
     float iratio = float(meta.SizeX) / float(meta.SizeY);
-    const glm::vec3& cpos = camera.position;
+    const glm::vec3& cpos = camera.getPosition();
 
     return glm::vec2{ click.x * cpos.z + cpos.x, (click.y * cpos.z + cpos.y) * iratio };
 }

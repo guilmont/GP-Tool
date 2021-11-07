@@ -2,6 +2,9 @@
 
 int main(int argc, char *argv[])
 {
+	fs::path exe(argv[0]);
+	fs::current_path(exe.parent_path().parent_path());
+
 	GPTool *app = new GPTool();
 
 	if (argc > 1)

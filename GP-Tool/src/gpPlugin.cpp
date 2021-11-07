@@ -507,8 +507,7 @@ void GPPlugin::winAvgView(void)
                  ymax = std::max(highX.maxCoeff(), highY.maxCoeff());
 
     // Setup title for the plot
-    char buf[512] = {0};
-    sprintf(buf, "Cell: %lld -- Channel: %lld -- ID: %lld", avgView.gpID, pid.trackID, pid.trajID);
+    std::string buf = "Cell: " + std::to_string(avgView.gpID) + " -- Channel: " + std::to_string(pid.trackID) + " -- ID: " + std::to_string(pid.trajID);
 
     ///////////////////////////////////////////////////////
     // Creating ImGui windows
@@ -519,7 +518,7 @@ void GPPlugin::winAvgView(void)
 
     ImPlot::SetNextPlotLimits(T(0), T(nPts - 1), ymin, ymax);
 
-    if (ImPlot::BeginPlot(buf, "Time", "Position", size))
+    if (ImPlot::BeginPlot(buf.c_str(), "Time", "Position", size))
     {
         ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.5f);
         ImPlot::PlotShaded("Average X", T.data(), lowX.data(), highX.data(), static_cast<int32_t>(nPts));
@@ -563,17 +562,12 @@ void GPPlugin::winSubstrate(void)
     ImGui::Begin("Substrate", &(subView.show));
 
     tool->fonts.text("Cell " + std::to_string(subView.gpID) + ":", "bold");
-    char buf[512] = {0};
 
     GPT::GP_FBM::CDA* cda = gshow.gp->coupledModel();
 
     ImGui::Indent();
-    sprintf(buf, "DR = %.3e %s^2/%s^A", DCalib * cda->DR, spaceUnit, timeUnit);
-    ImGui::TextUnformatted(buf);
-
-    memset(buf, 0, 512);
-    sprintf(buf, "AR = %.3f", cda->AR);
-    ImGui::TextUnformatted(buf);
+    ImGui::Text("DR = %.3e %s^2/%s^A", DCalib * cda->DR, spaceUnit, timeUnit);
+    ImGui::Text("AR = %.3f", cda->AR);
     ImGui::Unindent();
 
     ImGui::Separator();
@@ -592,11 +586,10 @@ void GPPlugin::winSubstrate(void)
 
         if (ImPlot::BeginPlot("##Histogram_diffusion", "Apparent diffusion", "Density", { width, 0.6f * width }))
         {
-            memset(buf, 0, 512);
-            sprintf(buf, "DR / %.4f %s^2", DCalib, spaceUnit);
+            std::string buf = "DR / " + std::to_string(DCalib) + " " + spaceUnit + "^2";
 
             ImPlot::SetNextFillStyle(IMPLOT_AUTO_COL, 0.5f);
-            ImPlot::PlotHistogram(buf, mat->col(2 * nParticles).data(), 10000, bins, false, true);
+            ImPlot::PlotHistogram(buf.c_str(), mat->col(2 * nParticles).data(), 10000, bins, false, true);
             ImPlot::EndPlot();
         }
 
@@ -701,8 +694,6 @@ void GPPlugin::winPlotSubstrate(void)
                  ymax = std::max(highX.maxCoeff(), highY.maxCoeff());
 
     // Setup title for the plot
-    char buf[128] = {0};
-    sprintf(buf, "Cell: %lld", subPlotView.gpID);
 
     ///////////////////////////////////////////////////////
     // Creating ImGui windows
@@ -713,7 +704,8 @@ void GPPlugin::winPlotSubstrate(void)
 
     ImPlot::SetNextPlotLimits(T(0), T(nPts - 1), ymin, ymax);
 
-    if (ImPlot::BeginPlot(buf, "Time", "Position", size))
+    std::string buf = "Cell: " + std::to_string(subPlotView.gpID);
+    if (ImPlot::BeginPlot(buf.c_str(), "Time", "Position", size))
     {
         ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.5f);
         ImPlot::PlotShaded("X", T.data(), lowX.data(), highX.data(), static_cast<int32_t>(nPts));
@@ -757,19 +749,17 @@ void GPPlugin::winDistributions(void)
     {
         ImGui::Separator();
 
-        char buf[512] = {0};
-        sprintf(buf, "Channel %lld :: ID %lld ", gshow.gp->partID[k].trackID, gshow.gp->partID[k].trajID);
+        std::string buf = "Channel " + std::to_string(gshow.gp->partID[k].trackID) + " ::ID " + std::to_string(gshow.gp->partID[k].trajID);
 
-        ImGui::PushID(buf);
-        ImGui::TextUnformatted(buf);
+        ImGui::PushID(buf.c_str());
+        ImGui::TextUnformatted(buf.c_str());
 
         if (ImPlot::BeginPlot("##Histogram_diffusion", "Apparent diffusion", "Density", {width, 0.6f * width}))
         {
-            memset(buf, 0, 512);
-            sprintf(buf, "D / %.4f %s^2", Dcalib, meta.PhysicalSizeXYUnit.c_str());
+            buf = "D / " + std::to_string(Dcalib) + " " + meta.PhysicalSizeXYUnit + "^2";
 
             ImPlot::SetNextFillStyle(IMPLOT_AUTO_COL, 0.5f);
-            ImPlot::PlotHistogram(buf, mat->col(2 * k).data(), 10000, bins, false, true);
+            ImPlot::PlotHistogram(buf.c_str(), mat->col(2 * k).data(), 10000, bins, false, true);
             ImPlot::EndPlot();
         }
 

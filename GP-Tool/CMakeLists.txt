@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10.0)
 
 # Including vendors
-set(ASSETS_DIR "assets/GP-Tool")
+set(ASSETS_DIR "assets")
 add_subdirectory(vendor)
 
 project(GP-Tool)
@@ -19,28 +19,22 @@ add_executable(${PROJECT_NAME}
 )
 
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/include)
+target_include_directories(${PROJECT_NAME} PRIVATE "include")
 target_link_libraries(${PROJECT_NAME} PUBLIC GRender jsoncpp GPMethods)
-set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
+target_compile_definitions(${PROJECT_NAME} PRIVATE ASSETS="${ASSETS_DIR}" _CRT_SECURE_NO_WARNINGS)
 
 if (GP_PRECOMPILED_HEADERS)
 	target_precompile_headers(${PROJECT_NAME} PRIVATE "include/gpch.h")
 endif()
 
-target_compile_definitions(${PROJECT_NAME} PRIVATE
-	_CRT_SECURE_NO_WARNINGS
-	INSTALL_PATH="${CMAKE_INSTALL_PREFIX}"
-	ASSETS="${ASSETS_DIR}"
-)
-
 file(COPY ${PROJECT_SOURCE_DIR}/assets/ DESTINATION ${CMAKE_SOURCE_DIR}/${ASSETS_DIR})
 
 install(TARGETS ${PROJECT_NAME} 
 	CONFIGURATIONS Release
-		DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
+		DESTINATION "bin"
 )
 
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/assets 
 	CONFIGURATIONS Release 
-		DESTINATION ${CMAKE_INSTALL_PREFIX}
+		DESTINATION "."
 )

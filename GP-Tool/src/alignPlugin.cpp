@@ -16,15 +16,14 @@ void AlignPlugin::showProperties(void)
 
     const uint64_t nChannels = movie->getMetadata().SizeC;
 
-    char txt[128] = {0};
-    sprintf(txt, "Channel %lld", chAlign);
+    std::string txt = "Channel " + std::to_string(chAlign);
 
-    if (ImGui::BeginCombo("To align", txt))
+    if (ImGui::BeginCombo("To align", txt.c_str()))
     {
         for (uint64_t ch = 1; ch < nChannels; ch++)
         {
-            sprintf(txt, "Channel %lld", ch);
-            if (ImGui::Selectable(txt))
+            txt = "Channel " + std::to_string(ch);
+            if (ImGui::Selectable(txt.c_str()))
             {
                 chAlign = ch;
                 ImGui::SetItemDefaultFocus();

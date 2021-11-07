@@ -60,7 +60,7 @@ private:
 
     LUT lut;
     std::vector<Info> info;
-    std::vector<std::unique_ptr<GRender::Framebuffer>> histo;
+    std::vector<GRender::Framebuffer> histo;
 
     GPTool *tool = nullptr;
     std::unique_ptr<GPT::Movie> movie = nullptr;

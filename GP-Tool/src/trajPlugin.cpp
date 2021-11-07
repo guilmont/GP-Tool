@@ -433,11 +433,12 @@ void TrajPlugin::winLoadTracks(void)
         std::string txt = "Channel " + std::to_string(ch);
         ImGui::PushID(txt.c_str());
 
-        char buf[1024] = {0};
+        
         ImGui::TextUnformatted(txt.c_str());
         ImGui::SameLine();
 
-        strcpy(buf, trackInfo.path[ch].string().c_str());
+        char buf[1024] = { 0 };
+        sprintf(buf, "%s", trackInfo.path[ch].string().c_str());
 
         ImGui::SetNextItemWidth(width);
         ImGui::InputText("##input", buf, 1024, ImGuiInputTextFlags_ReadOnly);
