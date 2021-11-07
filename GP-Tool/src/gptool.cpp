@@ -316,18 +316,12 @@ void GPTool::ImGuiMenuLayer(void)
         if (GRender::DPI_FACTOR == 1)
         {
             if (ImGui::MenuItem("Set HIDPI"))
-            {
-                GRender::DPI_FACTOR = 2.0f;
-                scaleSizes();
-            }
+                scaleSizes(2.0f);
         }
         else
         {
             if (ImGui::MenuItem("Unset HIDPI"))
-            {
-                GRender::DPI_FACTOR = 1.0f;
-                scaleSizes();
-            }
+                scaleSizes(1.0f);
         }
 
         if (ImGui::MenuItem("How to cite"))

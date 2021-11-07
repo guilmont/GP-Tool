@@ -157,7 +157,7 @@ namespace GPT
                 } // loop-mcs
             }; 
 
-            const uint64_t nThreads = std::thread::hardware_concurrency();
+            const uint64_t nThreads = uint64_t(0.5 * std::thread::hardware_concurrency());
             std::vector<std::thread> vec(nThreads);
 
             for (uint64_t k = 0; k < nThreads; k++)

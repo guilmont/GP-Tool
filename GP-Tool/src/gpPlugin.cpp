@@ -25,7 +25,7 @@ static void saveCSV(const fs::path &path, const std::string *header,
 
     arq.close();
 
-} // saveCSV
+}
 
 static void binOption(int &bins)
 {
@@ -60,7 +60,7 @@ static void binOption(int &bins)
 
     ImGui::Spacing();
     ImGui::Spacing();
-} // binOption
+}
 
 static Json::Value jsonEigen(const MatXd &mat)
 {
@@ -300,33 +300,32 @@ void GPPlugin::showProperties(void)
                 distribView.gpID = static_cast<uint64_t>(gpID);
 
                 std::thread([](GP2Show *gshow, GRender::Mailbox *mailbox, bool *show) -> void
-                            {
-                                auto msg = mailbox->createTimer("Calculating distributions ...", [](void *) {});
+                {
+                    auto msg = mailbox->createTimer("Calculating distributions ...", [](void *) {});
 
-                                if (gshow->gp->getNumParticles() == 1)
-                                {
-                                    if (!gshow->distribSingle)
-                                    {
-                                        MatXd distrib = gshow->gp->distrib_singleModel(sample_size);
-                                        gshow->distribSingle = std::make_unique<MatXd>(std::move(distrib));
-                                    }
+                    if (gshow->gp->getNumParticles() == 1)
+                    {
+                        if (!gshow->distribSingle)
+                        {
+                            MatXd distrib = gshow->gp->distrib_singleModel(sample_size);
+                            gshow->distribSingle = std::make_unique<MatXd>(std::move(distrib));
+                        }
 
-                                }
-                                else
-                                {
-                                    if (!gshow->distribCouple)
-                                    {
-                                      MatXd distrib = gshow->gp->distrib_coupledModel(sample_size);
-                                      gshow->distribCouple = std::make_unique<MatXd>(std::move(distrib));
-                                    }
+                    }
+                    else
+                    {
+                        if (!gshow->distribCouple)
+                        {
+                            MatXd distrib = gshow->gp->distrib_coupledModel(sample_size);
+                            gshow->distribCouple = std::make_unique<MatXd>(std::move(distrib));
+                        }
 
-                                }
+                    }
 
-                                *show = true;
-                                msg->stop();
-                            },
-                            &vecGP[gpID], &(tool->mailbox), &(distribView.show))
-                    .detach();
+                    *show = true;
+                    msg->stop();
+
+                }, &vecGP[gpID], &(tool->mailbox), &(distribView.show)).detach();
 
             } // button-distribution
 
@@ -513,8 +512,10 @@ void GPPlugin::winAvgView(void)
     // Creating ImGui windows
     ImGui::Begin("Avg trajectory", &(avgView.show));
 
-    const float avail = ImGui::GetContentRegionAvailWidth();
-    const ImVec2 size = {0.99f * avail, 0.6f * avail};
+    ImGui::SetWindowSize({ 890.0f * GRender::DPI_FACTOR, 500.0f * GRender::DPI_FACTOR });
+
+    const ImVec2 avail = ImGui::GetContentRegionAvail();
+    const ImVec2 size = {0.99f * avail.x, 0.99f * avail.y};
 
     ImPlot::SetNextPlotLimits(T(0), T(nPts - 1), ymin, ymax);
 
@@ -560,6 +561,7 @@ void GPPlugin::winSubstrate(void)
 
     // Proceeding to the window
     ImGui::Begin("Substrate", &(subView.show));
+    ImGui::SetWindowSize({ 800.0f * GRender::DPI_FACTOR, 800.0f * GRender::DPI_FACTOR });
 
     tool->fonts.text("Cell " + std::to_string(subView.gpID) + ":", "bold");
 
@@ -698,6 +700,7 @@ void GPPlugin::winPlotSubstrate(void)
     ///////////////////////////////////////////////////////
     // Creating ImGui windows
     ImGui::Begin("Substrate movement", &(subPlotView.show));
+    ImGui::SetWindowSize({ 890.0f * GRender::DPI_FACTOR, 500.0f * GRender::DPI_FACTOR });
 
     const float avail = ImGui::GetContentRegionAvailWidth();
     const ImVec2 size = {0.99f * avail, 0.6f * avail};
@@ -724,6 +727,7 @@ void GPPlugin::winPlotSubstrate(void)
 void GPPlugin::winDistributions(void)
 {
     ImGui::Begin("Distributions", &(distribView.show));
+    ImGui::SetWindowSize({ 900.0f * GRender::DPI_FACTOR, 600.0f * GRender::DPI_FACTOR });
 
     static int bins = 50;
     binOption(bins); // helper function

@@ -416,6 +416,8 @@ void TrajPlugin::winLoadTracks(void)
 {
     ImGui::Begin("Tracks");
 
+    ImGui::SetWindowSize({ 800.0f * GRender::DPI_FACTOR, 200.0f * GRender::DPI_FACTOR });
+
     ImGui::Text("Spot size: ");
     ImGui::SameLine();
     SliderU64("##spotsize", &(trackInfo.spotSize), 2, 10);
@@ -426,7 +428,7 @@ void TrajPlugin::winLoadTracks(void)
     ImGui::Spacing();
 
     const uint64_t SC = movie->getMetadata().SizeC;
-    float width = 0.75f * ImGui::GetContentRegionAvailWidth();
+    float width = 0.80f * ImGui::GetContentRegionAvailWidth();
 
     for (uint64_t ch = 0; ch < SC; ch++)
     {

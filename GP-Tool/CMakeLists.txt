@@ -18,6 +18,9 @@ add_executable(${PROJECT_NAME}
 	"src/app.cpp"
 )
 
+if(NOT MSVC)
+	set(CMAKE_INSTALL_RPATH "lib")
+endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE "include")
 target_link_libraries(${PROJECT_NAME} PUBLIC GRender jsoncpp GPMethods)

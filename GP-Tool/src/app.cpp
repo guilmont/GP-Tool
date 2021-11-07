@@ -2,8 +2,13 @@
 
 int main(int argc, char *argv[])
 {
+	std::cout << argv[0] << std::endl;
 	fs::path exe(argv[0]);
-	fs::current_path(exe.parent_path().parent_path());
+	fs::path curr = exe.parent_path().parent_path();
+	
+	fs::current_path(curr);
+
+
 
 	GPTool *app = new GPTool();
 
