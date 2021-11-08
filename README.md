@@ -3,7 +3,7 @@
 <h1 align="center">GP-Tool</h1>
 <img src="./screenshots/screenshot.png" alt="gptool_demo" width="98%"">
   <p align="center">
-    GP-Tool: A user-friendly graphical interface to apply GP-FBM
+    GP-Tool: An user-friendly graphical interface to apply GP-FBM
 </p>
 
 
@@ -62,6 +62,9 @@ Binary packages in Release mode for Windows and Linux are provided in directory 
 
 Upon installation, a shared library with all backend methods will be generated under the name 'GPMethods', from which the user can link to any other C++ project. For convenience and debugging purposes, I also recommend installation in 'Debug' and 'RelWithDevInfo' configurations. A 'CMakeLists.txt' is also provided for all built configurations. GP-Tool will be installed only in 'Release' configuration, though. 
 
+### Batching movies
+I provide a quick C++ template for running many movies in a batch format. To build using CMake, refer to the cmake config within the installed lib/cmake folder. On Windows, you might need to copy related dll libraries into batching binary folder.
+                                                                                              
 <!-- todo -->
 ## Todo
 - GP-Tool: Display movies metadata
