@@ -67,13 +67,17 @@ I provide a quick C++ template for running many movies in a batch format. To bui
                                                                                               
 <!-- todo -->
 ## Todo
-- GP-Tool: Display movies metadata
+In order of execution (approx):
+
+- GP-Tool: Batching interface
 - GP-Tool: API for saving interpolated trajectories
 - GP-Tool: Using single trajectory interpolation to match timesteps between trajectories with temporal delay
-- GPMethods: Importing other popular file formats containing tracked trajectories
-- GPMethods: Provided testing API with Google Tests
-- GPMethods: Wrapper bindings for python (if popularly requested)
+- GP-Tool: Display movies metadata
 - GP-Tool + GPMethods: Improve documentation
+- GPMethods: Provided testing API with Google Tests
+- GPMethods: Importing other popular file formats containing tracked trajectories
+- GPMethods: Wrapper bindings for python (if popularly requested)
+
 
 
 <!-- LICENSE -->
