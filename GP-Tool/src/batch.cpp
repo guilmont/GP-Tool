@@ -76,7 +76,7 @@ void Batching::imguiLayer(void)
     ImGui::SameLine();
     ImGui::SetNextItemWidth(width);
     ImGui::SetCursorPosX(pos);
-    ImGui::DragInt("##numThreads", &numThreads, 0.5f, 1, 8);
+    ImGui::DragInt("##numThreads", &numThreads, 0.5f, 1, std::thread::hardware_concurrency());
 
     ImGui::Dummy({ -1, 5 });
     tool->fonts.text("Plugins", "bold");
@@ -131,13 +131,13 @@ void Batching::imguiLayer(void)
             ImGui::Checkbox("Interpolate trajectories", &checkInterpol);
         }
 
-      /*  ImGui::Checkbox("Substrate correction", &checkCoupled);
+        ImGui::Checkbox("Substrate correction", &checkCoupled);
 
         if (checkCoupled)
         {
             ImGui::Dummy({ 2.0f, -1 }); ImGui::SameLine();
             ImGui::Checkbox("Estimate substrate movement", &checkSubstrate);
-        }*/
+        }
 
         ImGui::TreePop();
     }
@@ -480,8 +480,41 @@ void Batching::runSamples(const int32_t threadId)
 
                 if (checkCoupled)
                 {
+                    double loc[6];
+                    jsonGP["Corrected"]["dynamics_columns"] = "channel, particle_id, D, A";
 
-                } 
+                    GPT::GP_FBM::CDA* cda = gp.coupledModel();
+                    for (uint64_t k = 0; k < vTraj.size(); k++)
+                    {
+                        loc[0] = double(vecID[k].trackID);
+                        loc[1] = double(vecID[k].trajID);
+                        loc[2] = CONV * cda->da[k].D;
+                        loc[3] = cda->da[k].A;
+
+                        jsonGP["Corrected"]["dynamics"].append(jsonArray(loc, 4));
+                    }
+
+                    jsonGP["Corrected"]["Substrate"]["DR"] = cda->DR;
+                    jsonGP["Corrected"]["Substrate"]["AR"] = cda->AR;
+
+                    if (checkSubstrate)
+                    {
+                        MatXd subs = gp.estimateSubstrateMovement();
+
+                        jsonGP["Corrected"]["Substrate"]["trajectory_rows"] = "frame, time, pos_x, pos_y, error_x, error_y";
+                        for (int64_t k = 0; k < subs.rows(); k++)
+                        {
+                            loc[0] = subs(k, 0);
+                            loc[1] = subs(k, 1);
+                            loc[2] = subs(k, 2);
+                            loc[3] = subs(k, 3);
+                            loc[4] = subs(k, 4);
+                            loc[5] = subs(k, 5);
+
+                            jsonGP["Corrected"]["Substrate"]["trajectory"].append(jsonArray(loc, 6));
+                        }
+                    }
+                } // checkCoupled
 
             } // runGPFBM
 
