@@ -21,6 +21,10 @@ GPTool::GPTool(void)
     plugins["MOVIE"] = nullptr;
     plugins["TRAJECTORY"] = nullptr;
 
+
+    // Setting up batching
+    batch = Batching(this);
+        
 }
 
 GPTool::~GPTool(void)
@@ -129,7 +133,9 @@ void GPTool::onUserUpdate(float deltaTime)
         ctrlRep = keyboard[GKey::LEFT_CONTROL] == GEvent::REPEAT || keyboard[GKey::RIGHT_CONTROL] == GEvent::REPEAT,
         O = keyboard['O'] == GEvent::RELEASE,
         S = keyboard['S'] == GEvent::RELEASE,
-        T = keyboard['T'] == GEvent::RELEASE;
+        T = keyboard['T'] == GEvent::RELEASE,
+        M = keyboard['M'] == GEvent::RELEASE,
+        B = keyboard['B'] == GEvent::RELEASE;
 
     // key combination for opening movie
     if (ctrl & O)
@@ -143,6 +149,14 @@ void GPTool::onUserUpdate(float deltaTime)
                             {
                                 std::thread([](GPTool *tool, const fs::path &path) -> void{ tool->saveJSON(path); }, reinterpret_cast<GPTool *>(ptr), path).detach();
                             });
+
+    // combination to open mailbox
+    if (ctrl & M)
+        mailbox.setActive();
+
+    // combination to open batching tool
+    if (ctrl & B)
+        batch.setActive();
 
     ///////////////////////////////////////////////////////
     // key combination open trajectory
@@ -252,6 +266,8 @@ void GPTool::ImGuiLayer(void)
     showProperties();
     showWindows();
 
+    batch.imguiLayer();
+
     /////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////
 
@@ -307,11 +323,13 @@ void GPTool::ImGuiMenuLayer(void)
         ImGui::EndMenu();
     }
 
-    if (ImGui::BeginMenu("About"))
+    if (ImGui::BeginMenu("Tools"))
     {
-
-        if (ImGui::MenuItem("Show mailbox"))
+        if (ImGui::MenuItem("Show mailbox", "Ctrl+M"))
             mailbox.setActive();
+
+        if (ImGui::MenuItem("Batching", "Ctrl+B"))
+            batch.setActive();
 
         if (GRender::DPI_FACTOR == 1)
         {
@@ -324,6 +342,11 @@ void GPTool::ImGuiMenuLayer(void)
                 scaleSizes(1.0f);
         }
 
+        ImGui::EndMenu();
+    }
+
+    if (ImGui::BeginMenu("About"))
+    {
         if (ImGui::MenuItem("How to cite"))
             mailbox.createInfo("Refer to paper at https://doi.org/10.1038/s41467-021-26466-7");
 
@@ -415,6 +438,9 @@ void GPTool::saveJSON(const fs::path &path)
     mailbox.createInfo("File saved to '" + path.string() + "'");
 
 } // saveJSON
+
+
+///////////////////////////////////////
 
 glm::vec2 GPTool::getClickPosition(void)
 {

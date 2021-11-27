@@ -15,6 +15,7 @@ add_executable(${PROJECT_NAME}
 	"include/circle.h"       "src/circle.cpp"
 	"include/roi.h"          "src/roi.cpp"
 	"include/gpPlugin.h"     "src/gpPlugin.cpp"
+	"include/batch.h"        "src/batch.cpp"
 	"src/app.cpp"
 )
 

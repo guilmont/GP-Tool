@@ -7,6 +7,8 @@
 #include "trajPlugin.h"
 #include "gpPlugin.h"
 
+#include "batch.h"
+
 class GPTool : public GRender::Application
 {
 public:
@@ -37,6 +39,8 @@ public:
     GRender::Camera2D camera;
 
     std::unique_ptr<GRender::Framebuffer> viewBuf = nullptr; // Histograms and viewport
+    
+    Batching batch;
 
 private:
     // Layout used for first time ever
