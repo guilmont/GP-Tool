@@ -1,5 +1,5 @@
 #include "gp_fbm.h"
-
+#include <set>
 
 namespace GPT
 {
@@ -124,62 +124,33 @@ namespace GPT
         }
 
 
-        // In order to remove substrate movement, we will improve in accuracy if we remove
-        // frames that are not common to all trajectories. Because of that, let's make a hard
-        // copy of original trajectories
-
-        std::vector<MatXd> lRoute(route);
-
-        // get maximum number of frames
-        uint64_t maxFrames = 0;
-        for (MatXd &mat : lRoute)
+        // In order to remove substrate movement, we need to have position for all particle at the same time point
+        // In order to solve this problem, we are going to interpolate any missing position
+        std::set<double> setFrame, setTime;
+        for (const MatXd& mat : route)
         {
-            uint64_t lRow = mat.rows() - 1;
-            uint64_t fr = static_cast<uint64_t>(mat(lRow, Track::FRAME)) + 1; // Starts at zero, so +1
-
-            maxFrames = std::max(maxFrames, fr);
+            setFrame.insert(mat.col(Track::FRAME).data(), mat.col(Track::FRAME).data() + mat.rows());
+            setTime.insert(mat.col(Track::TIME).data(), mat.col(Track::TIME).data() + mat.rows());
+        }
+      
+        VecXd vTime(setTime.size()), vFrame(setFrame.size());
+        auto itt = setTime.begin(), itf = setFrame.begin();
+        for (int64_t k = 0; k < vTime.size(); k++)
+        {
+            vTime(k) = *itt;
+            vFrame(k) = *itf;
+            itt++;
+            itf++;
         }
 
-        // check if frame is in all movies
-        std::vector<uint64_t> vCount(maxFrames, 0);
-        for (MatXd &mat : lRoute)
-            for (uint64_t k = 0; k < uint64_t(mat.rows()); k++)
-                vCount[static_cast<uint64_t>(mat(k, Track::FRAME))]++;
 
-        // Removing frames that are not present in all particles
-        for (MatXd &mat : lRoute)
-        {
-            for (int64_t k = mat.rows() - 1; k >= 0; k--)
-            {
-                uint64_t fr = static_cast<uint64_t>(mat(k, Track::FRAME));
-                if (vCount[fr] != nParticles)
-                    removeRow(mat, k);
-            }
+        // Build concatenated matrix
+        cRoute = MatXd(nParticles * vTime.size(), route[0].cols());
 
-            if (mat.rows() < minSizePerTraj)
-            {
-                pout("WARN: (GP_FBM::coupledModel) Not all trajectories intersect!!");
-                return nullptr;
-            }
-
-        } // loop-trajectories
-
-        // Generate concatenated matrix
-        uint64_t ct = 0;
-        for (MatXd &mat : lRoute)
-            ct += mat.rows();
-
-        const uint64_t
-            nCols = lRoute[0].cols(),
-            nRows = lRoute[0].rows();
-
-        cRoute = MatXd(ct, nCols);
-
-        ct = 0;
+        
         VecXd vec(2 * (nParticles + 1)); // Last two for substrate
-
-        vec(2 * nParticles) = 0.0;     // DR
-        vec(2 * nParticles + 1) = 1.0; // AR
+        vec(2 * nParticles) = 0.0;       // DR
+        vec(2 * nParticles + 1) = 1.0;   // AR
 
         for (uint64_t k = 0; k < nParticles; k++)
         {
@@ -187,11 +158,17 @@ namespace GPT
             vec(2 * k) = log(da->D);
             vec(2 * k + 1) = -log(2.0 / da->A - 1.0);
 
-            lRoute[k].col(Track::POSX).array() -= da->mu(0);
-            lRoute[k].col(Track::POSY).array() -= da->mu(1);
+            MatXd avg = calcAvgTrajectory(vTime, k);
+            avg.col(Track::FRAME) = vFrame;
 
-            cRoute.block(ct, 0, nRows, nCols) = lRoute[k];
-            ct += nRows;
+
+            avg.col(Track::POSX).array() -= da->mu[0];
+            avg.col(Track::POSY).array() -= da->mu[1];
+            
+            avg.col(Track::ERRX) *= avg.col(Track::ERRX);
+            avg.col(Track::ERRY) *= avg.col(Track::ERRY);
+
+            cRoute.block(k*avg.rows(), 0, avg.rows(), avg.cols()) = avg;
         }
 
         // Optimizing dynamics parameters
@@ -223,7 +200,7 @@ namespace GPT
         }
 
         return m_cda;
-    } // coupledModel
+    } 
 
     GP_API void GP_FBM::stop(void)
     {
@@ -467,9 +444,8 @@ namespace GPT
                 mat(k, Track::ERRY) *= mat(k, Track::ERRY);
             }
 
-        } // loop-routes
-
-    } // function
+        } 
+    }
 
     double GP_FBM::weightSingle(const VecXd &DA)
     {
@@ -547,7 +523,7 @@ namespace GPT
 
             sizeRow += nRows;
             sizeCol = sizeRow;
-        } // loop-particles
+        }
 
         /////////////////////////////////////////////////////////////////
         // LIKELIHOOD
