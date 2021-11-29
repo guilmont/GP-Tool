@@ -15,6 +15,7 @@ project(GP_FBM_LIBRARY VERSION 0.3.0)
 
 option(GP_TOOL "Build graphical interface" ON)
 option(GP_PRECOMPILED_HEADERS "Builds precompiled headers for whole project" OFF)
+option(BUILD_GOOGLETESTS "Builds GPMethods tests interface using GoogleTests (won't be installed)" ON)
 
 # We always build the methods project
 add_subdirectory(Methods)

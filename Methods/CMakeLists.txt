@@ -51,3 +51,10 @@ install(TARGETS ${PROJECT_NAME}
 )
 
 install(EXPORT ${GP_EXPORT} FILE ${GP_EXPORT}.cmake DESTINATION lib/cmake)
+
+###############################################################################
+###############################################################################
+
+if (BUILD_GOOGLETESTS)
+    add_subdirectory("tests")
+endif()

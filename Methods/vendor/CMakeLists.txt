@@ -35,6 +35,20 @@ set_target_properties(pugixml PROPERTIES POSITION_INDEPENDENT_CODE ON)
 install(FILES "pugixml/pugiconfig.hpp" "pugixml/pugixml.hpp" 
         DESTINATION "include/pugixml")
 
+
+
+#########################################################
+## GoogleTests #########################################
+
+if (BUILD_GOOGLETESTS)
+    set(BUILD_GMOCK OFF CACHE BOOL "We want to install only GTest")
+    set(INSTALL_GTEST OFF CACHE BOOL "No need to install GTest")
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)  # This is necessary to runtime shared library
+
+    enable_testing()
+    add_subdirectory("GoogleTests")
+endif()
+
 ###########################################################
 
 install(TARGETS eigen pugixml EXPORT ${GP_EXPORT})

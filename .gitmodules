@@ -7,3 +7,6 @@
 [submodule "GP-Tool/vendor/jsoncpp"]
 	path = GP-Tool/vendor/jsoncpp
 	url = https://github.com/open-source-parsers/jsoncpp.git
+[submodule "Methods/vendor/GoogleTests"]
+	path = Methods/vendor/GoogleTests
+	url = https://github.com/google/googletest.git
