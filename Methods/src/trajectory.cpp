@@ -121,8 +121,26 @@ namespace GPT
 
     Trajectory::Trajectory(Movie *mov) : movie(mov)
     {
-        uint64_t SC = movie->getMetadata().SizeC;
-        m_vTrack.resize(SC); // one track per channel
+        const GPT::Metadata& meta = mov->getMetadata();
+
+        uint64_t
+            SC = meta.SizeC,
+            FR = meta.SizeT;
+
+        // one track per channel
+        m_vTrack.resize(SC);
+     
+        for (uint64_t ch = 0; ch < SC; ch++)
+        {
+            vImages.push_back(std::vector<MatXd>(FR));
+            for (uint64_t fr = 0; fr < FR; fr++)
+                vImages[ch][fr] = mov->getImage(ch, fr);
+        }
+    }
+
+    Trajectory::Trajectory(const std::vector<std::vector<MatXd>>& vecImages) : vImages(vecImages)
+    {
+        m_vTrack.resize(vecImages.size()); 
     }
 
 
@@ -227,7 +245,24 @@ namespace GPT
         m_vTrack[ch] = std::move(track);
 
         return true;
-    } 
+    }
+
+    bool Trajectory::useRaw(const std::vector<MatXd>& vTracks, uint64_t ch)
+    {
+        Track_API track;
+        track.path = "no path";
+
+        for (const MatXd& mat : vTracks)
+        {
+            MatXd loc(mat.rows(), uint64_t(Track::NCOLS));
+            loc.block(0, 0, loc.rows(), mat.cols()) = mat;
+            track.traj.emplace_back(std::move(loc));
+        }
+
+        m_vTrack[ch] = std::move(track);
+        return true;
+    }
+
 
     void Trajectory::enhanceTracks(void)
     {
@@ -262,7 +297,6 @@ namespace GPT
     } 
 
 
-
     ///////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////
     // PRIVATE FUNCTIONS
@@ -286,7 +320,7 @@ namespace GPT
                 py = static_cast<int64_t>(route(pt, Track::POSY));
 
             // Loading a pointer to image
-            const MatXd& img = movie->getImage(trackID, frame);
+            const MatXd& img = vImages[trackID][frame];
 
             // Let's check if all ROI pixels are within the image
             int64_t 

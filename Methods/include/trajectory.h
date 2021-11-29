@@ -18,11 +18,13 @@ namespace GPT
     {
     public:
         GP_API Trajectory(Movie *mov);
+        GP_API Trajectory(const std::vector<std::vector<MatXd>>& vecImages);
         GP_API ~Trajectory(void) = default;
 
         uint64_t spotSize = 3;
-        GP_API  bool useICY(const fs::path &xmlTrack, uint64_t ch = 0);
+        GP_API bool useICY(const fs::path &xmlTrack, uint64_t ch = 0);
         GP_API bool useCSV(const fs::path &csvTrack, uint64_t ch = 0);
+        GP_API bool useRaw(const std::vector<MatXd>& tracks, uint64_t ch = 0);
         GP_API void enhanceTracks(void);
         
         GP_API float getProgress(void) const { return progress;  }
@@ -38,8 +40,10 @@ namespace GPT
         void enhanceTrajectory(uint64_t trackID, uint64_t trajID);
 
     private:
-        Movie *movie = nullptr;
+        GPT::Movie* movie = nullptr;
         std::vector<Track_API> m_vTrack;
+
+        std::vector<std::vector<MatXd>> vImages;
 
         bool running = false;
         float progress = 0.0f;
