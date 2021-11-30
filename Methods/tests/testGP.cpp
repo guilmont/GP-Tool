@@ -1,64 +1,4 @@
-#include <gtest/gtest.h>
-#include <fstream>
-
-#include "GPMethods.h"
-#include "json/json.h"
-
-
-static void removeRow(MatXd& mat, uint64_t row)
-{
-    uint64_t
-        nRows = mat.rows() - 1,
-        nCols = mat.cols();
-
-    if (row < nRows)
-        mat.block(row, 0, nRows - row, nCols) = mat.block(row + 1, 0, nRows - row, nCols);
-
-    mat.conservativeResize(nRows, nCols);
-}
-
-static MatXd genKernel(double D, double A, const VecXd& vt)
-{
-    VecXd vta = vt.array().pow(A);
-    MatXd K(vt.size(), vt.size());
-
-    for (int64_t k = 0; k < vt.size(); k++)
-        for (int64_t l = k; l < vt.size(); l++)
-        {
-             double val = vta(k) + vta(l) - pow(abs(vt(k) - vt(l)), A);
-            K(k, l) = K(l, k) = D * val;
-        }
-
-    return K;
-}
-
-static MatXd genTrajectory(const MatXd& kernel, const VecXd& vframe, const VecXd& vtime, double error)
-{
-    std::random_device dev;
-    std::default_random_engine ran(dev());
-    std::normal_distribution<double> normal(0.0, 1.0);
-
-    int64_t N = vtime.size();
-
-    MatXd unit(N, 2);
-    for (int64_t k = 0; k < unit.size(); k++)
-        unit.data()[k] = normal(ran);
-
-
-    Eigen::LLT<MatXd> cholesky(kernel); // waste of energy, but whatever
-
-    MatXd out(N, 6);
-    out.col(0) = vframe;
-    out.col(1) = vtime;
-    out.block(0, 2, N, 2) = cholesky.matrixL() * unit;
-    out.block(0, 4, N, 2).array() = error;
-
-    return out;
-}
-
-///////////////////////////////////////////////////////////
-// Main tests
-
+#include "testHeader.h"
 
 TEST(GP_FBM, parameterInference_Single)
 {
@@ -101,29 +41,24 @@ TEST(GP_FBM, parameterInference_Single)
     for (std::thread& thr : vThr)
         thr.join();
 
+    // Running tests on percents
+    single.col(0).array() = (single.col(0).array() - D) / D;
+    single.col(1).array() = (single.col(1).array() - A) / A;
+
     // Runnning some tests
-    double mu, dev, score;
-    mu = single.col(0).mean();
-    dev = sqrt((single.col(0).array() - mu).square().mean() / double(sampleSize));
-    score = abs(mu - D);
-    EXPECT_LE(score, 0.1) << "GP_FBM :: single D is incorrect";
+    double mu;
+    mu = abs(single.col(0).mean());
+    EXPECT_LE(mu, 0.05) << "GP_FBM :: single D is incorrect";
 
-    mu = single.col(1).mean();
-    dev = sqrt((single.col(1).array() - mu).square().mean() / double(sampleSize));
-    score = abs(mu - A);
-    EXPECT_LE(score, 0.1) << "GP_FBM :: single A is incorrect";
+    mu = abs(single.col(1).mean());
+    EXPECT_LE(mu, 0.05) << "GP_FBM :: single A is incorrect";
 
-
-    single.col(0).array() -= D;
-    single.col(1).array() -= A;
 
     // Saving results
     std::ofstream arq(fs::path(GTEST_PATH) / "singleGP.txt");
     arq << single;
     arq.close();
 }
-
-
 
 TEST(GP_FBM, parameterInference_Coupled)
 {
@@ -181,47 +116,32 @@ TEST(GP_FBM, parameterInference_Coupled)
         thr.join();
 
 
-    double mu, dev, score;
-    // Running some simple tests :: Diffusion coefficient
-    mu = sample.col(0).mean();
-    dev = sqrt((sample.col(0).array() - mu).square().mean() / double(sampleSize));
-    score = abs(mu - D1);
-    EXPECT_LE(score, 0.1) << "GP_FBM :: coupled D1 is incorrect";
+    // Let's convert into percents
+    sample.col(0).array() = (sample.col(0).array() - D1) / D1;
+    sample.col(1).array() = (sample.col(1).array() - D2) / D2;
+    sample.col(2).array() = (sample.col(2).array() - DR) / DR;
 
-    mu = sample.col(1).mean();
-    dev = sqrt((sample.col(1).array() - mu).square().mean() / double(sampleSize));
-    score = abs(mu - D2);
-    EXPECT_LE(score, 0.1) << "GP_FBM :: coupled D2 is incorrect";
-
-    mu = sample.col(2).mean();
-    dev = sqrt((sample.col(2).array() - mu).square().mean() / double(sampleSize));
-    score = abs(mu - DR);
-    EXPECT_LE(score, 0.1) << "GP_FBM :: coupled DR is incorrect";
-
-    // Running some simple tests :: Anomalous coefficent
-    mu = sample.col(3).mean();
-    dev = sqrt((sample.col(3).array() - mu).square().mean() / double(sampleSize));
-    score = abs(mu - A1);
-    EXPECT_LE(score, 0.1) << "GP_FBM :: coupled A1 is incorrect";
-
-    mu = sample.col(4).mean();
-    dev = sqrt((sample.col(4).array() - mu).square().mean() / double(sampleSize));
-    score = abs(mu - A2);
-    EXPECT_LE(score, 0.1) << "GP_FBM :: coupled A2 is incorrect";
-
-    mu = sample.col(5).mean();
-    dev = sqrt((sample.col(5).array() - mu).square().mean() / double(sampleSize));
-    score = abs(mu - AR);
-    EXPECT_LE(score, 0.1) << "GP_FBM :: coupled AR is incorrect";
+    sample.col(3).array() = (sample.col(3).array() - A1) / A1;
+    sample.col(4).array() = (sample.col(4).array() - A2) / A2;
+    sample.col(5).array() = (sample.col(5).array() - AR) / AR;
 
 
-    sample.col(0).array() -= D1;
-    sample.col(1).array() -= D2;
-    sample.col(2).array() -= DR;
+    double mu;
+    // Running some simple tests :: Diffusion coefficient :: Average error less than 10%
+    mu = abs(sample.col(0).mean());
+    EXPECT_LE(mu, 0.05) << "GP_FBM :: coupled D1 is incorrect";
+    mu = abs(sample.col(1).mean());
+    EXPECT_LE(mu, 0.05) << "GP_FBM :: coupled D2 is incorrect";
+    mu = abs(sample.col(2).mean());
+    EXPECT_LE(mu, 0.05) << "GP_FBM :: coupled DR is incorrect";
 
-    sample.col(3).array() -= A1;
-    sample.col(4).array() -= A2;
-    sample.col(5).array() -= AR;
+    // Running some simple tests :: Anomalous coefficent :: Average less than 10%
+    mu = abs(sample.col(3).mean());
+    EXPECT_LE(mu, 0.05) << "GP_FBM :: coupled A1 is incorrect";
+    mu = abs(sample.col(4).mean());
+    EXPECT_LE(mu, 0.05) << "GP_FBM :: coupled A2 is incorrect";
+    mu = abs(sample.col(5).mean());
+    EXPECT_LE(mu, 0.05) << "GP_FBM :: coupled AR is incorrect";
 
 
     // Saving some results for ploting
@@ -230,4 +150,31 @@ TEST(GP_FBM, parameterInference_Coupled)
     arq.close();
 }
 
+
+TEST(GP_FBM, trajectoryInterpolation)
+{
+    uint64_t numSteps = 200;
+
+    double
+        timeStep = 0.5,
+        error = 0.05,
+        D = 0.1, A = 0.45;
+
+
+    VecXd
+        vframe = VecXd::LinSpaced(numSteps, 0.0, double(numSteps) - 1.0),
+        vtime = timeStep * vframe;
+
+    MatXd 
+        K1 = genKernel(D, A, vtime) + error * error * MatXd::Identity(numSteps, numSteps),
+        traj = genTrajectory(K1, vframe, vtime, error);
+        
+
+    GPT::GP_FBM gp(traj);
+    MatXd avg = gp.calcAvgTrajectory(vtime);
+
+    MatXd diff = avg.block(0, GPT::Track::POSX, avg.rows(), 2) - traj.block(0, GPT::Track::POSX, traj.rows(), 2);
+
+    EXPECT_LE(abs(diff.mean()), 0.001) << "GP_FBM :: Interpolation differences are too big";
+}
 

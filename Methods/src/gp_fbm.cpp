@@ -165,8 +165,8 @@ namespace GPT
             avg.col(Track::POSX).array() -= da->mu[0];
             avg.col(Track::POSY).array() -= da->mu[1];
             
-            avg.col(Track::ERRX) *= avg.col(Track::ERRX);
-            avg.col(Track::ERRY) *= avg.col(Track::ERRY);
+            avg.col(Track::ERRX).array() *= avg.col(Track::ERRX).array();
+            avg.col(Track::ERRY).array() *= avg.col(Track::ERRY).array();
 
             cRoute.block(k*avg.rows(), 0, avg.rows(), avg.cols()) = avg;
         }

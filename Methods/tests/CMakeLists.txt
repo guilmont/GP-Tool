@@ -7,14 +7,22 @@ enable_testing()
 
 project(GPTests)
 
-add_executable(testAlign testAlign.cpp)
+add_executable(testAlign testAlign.cpp testHeader.h)
 target_link_libraries(testAlign PUBLIC gtest_main GPMethods jsoncpp)
 target_compile_definitions(testAlign PRIVATE GTEST_PATH="${PROJECT_SOURCE_DIR}")
 
-add_executable(testGP testGP.cpp)
+add_executable(testGP testGP.cpp testHeader.h)
 target_link_libraries(testGP PUBLIC gtest_main GPMethods jsoncpp)
 target_compile_definitions(testGP PRIVATE GTEST_PATH="${PROJECT_SOURCE_DIR}")
 
 
+add_executable(testBatch testBatch.cpp testHeader.h)
+target_link_libraries(testBatch PUBLIC gtest_main GPMethods jsoncpp)
+target_compile_definitions(testBatch PRIVATE 
+	GTEST_SINGLE="${PROJECT_SOURCE_DIR}/batchData_Single"
+	GTEST_COUPLED="${PROJECT_SOURCE_DIR}/batchData_Coupled"
+)
+
+
 include(GoogleTest)
-gtest_discover_tests(testAlign testGP)
+gtest_discover_tests(testAlign testGP testBatch)

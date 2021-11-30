@@ -82,18 +82,23 @@ void Batching::imguiLayer(void)
     tool->fonts.text("Plugins", "bold");
 
     runAlignment = false;
-    if (ImGui::TreeNode("Alignment"))
+    if (numChannels > 1)
     {
-        runAlignment = true;
-        ImGui::RadioButton("Individual", &alignID, ALIGN::INDIVIDUAL);
-        ImGui::RadioButton("Bundled", &alignID, ALIGN::BUNDLED);
-        ImGui::Spacing();
-        ImGui::Checkbox("Camera alignment", &checkCamera);
-        ImGui::Checkbox("Correct aberrations", &checkAberration);
-        ImGui::TreePop();
+        if (ImGui::TreeNode("Alignment"))
+        {
+            runAlignment = true;
+            ImGui::RadioButton("Individual", &alignID, ALIGN::INDIVIDUAL);
+            ImGui::RadioButton("Bundled", &alignID, ALIGN::BUNDLED);
+            ImGui::Spacing();
+            ImGui::Checkbox("Camera alignment", &checkCamera);
+            ImGui::Checkbox("Correct aberrations", &checkAberration);
+            ImGui::TreePop();
+        }
+
+        ImGui::Dummy({ -1, 10.0f });
     }
 
-    ImGui::Dummy({ -1, 10.0f });
+
     runTrajectories = false;
     if (ImGui::TreeNode("Trajectories"))
     {
