@@ -19,6 +19,7 @@ add_library(${PROJECT_NAME} SHARED
 	"include/spot.h"        "src/spot.cpp"
 	"include/trajectory.h"  "src/trajectory.cpp"
 	"include/gp_fbm.h"      "src/gp_fbm.cpp"
+	"include/filters.h"     "src/filters.cpp"
 )
 
 if (GP_PRECOMPILED_HEADERS)

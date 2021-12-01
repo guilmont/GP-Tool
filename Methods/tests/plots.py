@@ -6,7 +6,7 @@ from numpy.lib.function_base import corrcoef
 from scipy.stats import ttest_ind
 
 def checkAlignment():
-	with open("testAlignment.json", "r") as f:
+	with open("output/testAlignment.json", "r") as f:
 		data = json.load(f)
 
 	# Importing images and converting to RGB output
@@ -66,7 +66,7 @@ def checkAlignment():
 
 
 def checkEnhancement():
-	with open("enhancement.json", 'r') as f:
+	with open("output/enhancement.json", 'r') as f:
 		data = json.load(f)
 
 	distX = np.asarray(data["errorX"])
@@ -83,8 +83,8 @@ def checkEnhancement():
 	ax.legend()
 
 def checkGPFBM():
-	single = np.genfromtxt("singleGP.txt").transpose()
-	coupled = np.genfromtxt("coupledGP.txt").transpose()
+	single = np.genfromtxt("output/singleGP.txt").transpose()
+	coupled = np.genfromtxt("output/coupledGP.txt").transpose()
 
 	fig, ax = plt.subplots(1,1)
 	ax.hist(single[0], density=True, bins='sturges', edgecolor='black', label='D')
@@ -119,7 +119,7 @@ def checkBatchingSingle():
 	# Set values for simulations
 	_D, _A= 0.1, 0.5
 
-	with open("batchResults_Single.json", 'r') as f:
+	with open("output/batchResults_Single.json", 'r') as f:
 		data = json.load(f)
 
 	vDA = list()
@@ -153,7 +153,7 @@ def checkBatchingCoupled():
 	_D1, _D2, _DR = 0.1, 0.08, 0.5
 	_A1, _A2, _AR = 0.45, 0.5, 1.0
 
-	with open("batchResults_Coupled.json", 'r') as f:
+	with open("output/batchResults_Coupled.json", 'r') as f:
 		data = json.load(f)
 
 	vD, vA = list(), list()
@@ -195,10 +195,10 @@ def checkBatchingCoupled():
 		v.legend(title="Avg")
 
 if __name__ == "__main__":
-	# checkAlignment()
-	# checkEnhancement()
-	# checkGPFBM()
-	# checkBatchingSingle()
+	checkAlignment()
+	checkEnhancement()
+	checkGPFBM()
+	checkBatchingSingle()
 	checkBatchingCoupled()
 
 	
