@@ -10,13 +10,12 @@ class GPTool;
 class FilterPlugin : public Plugin
 {
 public:
-	FilterPlugin(GPTool* ptr);
+	FilterPlugin(GPT::Movie *mov, GPTool* ptr);
 	~FilterPlugin(void);
 
 	void showProperties(void) override;
 	void update(float deltaTime) override;
-
-	void displayWindow(void);
+	void showWindows(void) override;
 
 	void loadImages(void); 
 	void applyFilters(void);
@@ -30,8 +29,8 @@ private:
 	void displaySVD(GPT::Filter::SVD* ptr);
 
 private:
-	GPTool* tool = nullptr;
 	GPT::Movie* mov = nullptr;
+	GPTool* tool = nullptr;
 
 	std::vector<MatXd> vImages;
 	std::map<std::string, GPT::Filter::Filter*> vFilters;
@@ -43,7 +42,7 @@ private:
 	bool
 		cancel = false,
 		updateTexture = true,
-		showWindow = false,
+		viewWindow = false,
 		viewHover = false,
 		first = true;
 

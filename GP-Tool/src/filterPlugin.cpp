@@ -1,10 +1,6 @@
 #include "filterPlugin.h"
 
-FilterPlugin::FilterPlugin(GPTool* ptr) : tool(ptr)
-{
-    mov = reinterpret_cast<MoviePlugin*>(tool->getPlugin("MOVIE"))->getMovie();
-    loadImages();
-}
+FilterPlugin::FilterPlugin(GPT::Movie* movie, GPTool* ptr) : mov(movie), tool(ptr) {}
 
 FilterPlugin::~FilterPlugin(void)
 {
@@ -175,34 +171,33 @@ void FilterPlugin::showProperties(void)
 
         ImGui::SetCursorPosX(pos);
         if (ImGui::Button("View"))
-            showWindow = true;
+            viewWindow = true;
 
 
         ImGui::SameLine();
         if (ImGui::Button("Save"))
-            tool->dialog.createDialog(GDialog::SAVE, "Save images", { ".tif" }, this, [](const fs::path& address, void* ptr) -> void {
-                    reinterpret_cast<FilterPlugin*>(ptr)->saveImages(address);
-                });
+            tool->dialog.createDialog(GDialog::SAVE, "Save TIF file...", { "tif", "ome.tif" }, this,
+                [](const fs::path& path, void* ptr) -> void { std::thread(&FilterPlugin::saveImages, reinterpret_cast<FilterPlugin*>(ptr), path).detach(); });
 
     }
 
     ImGui::End();
 
-    // I'll sneak the call to display window here
-    if (showWindow)
-        displayWindow();
 }
 
-void FilterPlugin::displayWindow(void)
+void FilterPlugin::showWindows(void)
 {
-    ImGui::Begin("Filtered Images", &showWindow);
-    viewHover = ImGui::IsWindowHovered();
+    if (!viewWindow)
+        return;
+
+    ImGui::Begin("Filtered Images", &viewWindow);
 
     // Check if it needs to resize
     ImVec2 port = ImGui::GetContentRegionAvail();
     port.y -= 3.0f*ImGui::GetTextLineHeight();
 
     ImGui::Image((void*)(uintptr_t)fBuffer->getID(), port);
+    viewHover = ImGui::IsItemHovered();
 
     glm::vec2 view = fBuffer->getSize();
     if (port.x != view.x || port.y != view.y)
@@ -235,16 +230,20 @@ void FilterPlugin::update(float deltaTime)
         fBuffer = std::make_unique<GRender::Framebuffer>(1, 1);
         quad = std::make_unique<GRender::Quad>(1);
 
-        // Creating local texture
-        MatXf mat = vImages[0].cast<float>();
+        // Creating texture for plugin
+        const MatXd& mat = mov->getImage(0, 0);
         uint32_t width = uint32_t(mat.cols()), height = uint32_t(mat.rows());
-        tool->texture.createFloat("denoise", width, height, mat.data());
+        tool->texture.createFloat("denoise", width, height);
     }
 
-
-    if (!showWindow)
+    // No point in updating the window if it is not seen
+    if (!viewWindow)
         return;
      
+    // If we are going to use this plugin for real, we load the images
+    if (vImages.empty())
+        loadImages();
+
     if (viewHover)
     {
         ImGuiIO& io = ImGui::GetIO();
@@ -284,10 +283,8 @@ void FilterPlugin::update(float deltaTime)
         updateTexture = false;
 
         MatXf mat = vImages[currentFR].cast<float>();
-        uint32_t width = uint32_t(mat.cols()), height = uint32_t(mat.rows());
-        tool->texture.createFloat("denoise", width, height, mat.data());
+        tool->texture.updateFloat("denoise", mat.data());
     }
-
 
     // Updating frame buffer
     glm::mat4 trf = camera.getViewMatrix();
@@ -310,8 +307,8 @@ void FilterPlugin::update(float deltaTime)
      quad->submit();
 
     fBuffer->unbind();
-}
 
+}
 
 ////////////////////////////////////////////////////////////////////////////
 // UTILITY FUNCTIONS
@@ -339,6 +336,11 @@ void FilterPlugin::loadImages(void)
 
 void FilterPlugin::applyFilters(void)
 {
+    // To avoid loading things we don't need, we only load images for display or running the filters
+    if (vImages.empty())
+        loadImages();
+
+
     int64_t 
         total = vFilters.size() * vImages.size(),
         counter = 0;
@@ -418,6 +420,8 @@ void FilterPlugin::saveImages(const fs::path& address)
     // Saving to input path
     GPT::Tiffer::Write wrt(vec);
     wrt.save(address);
+
+    tool->mailbox.createInfo("Diltered images saved to " + address.string());
 }
 
 ////////////////////////////////////////////////////////////////////////////

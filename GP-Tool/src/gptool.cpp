@@ -87,6 +87,9 @@ void GPTool::showHeader(void)
 
 void GPTool::showWindows(void)
 {
+    if (haltForUpdate)
+        return;
+
     for (auto &[name, ptr] : plugins)
         if (ptr)
             ptr->showWindows();
@@ -94,6 +97,8 @@ void GPTool::showWindows(void)
 
 void GPTool::showProperties(void)
 {
+    if (haltForUpdate)
+        return;
 
     const ImVec2 wp = ImGui::GetMainViewport()->WorkPos;
     const ImVec2 ws = ImGui::GetMainViewport()->WorkSize;
@@ -131,8 +136,15 @@ Plugin *GPTool::getPlugin(const std::string &name) { return plugins[name].get();
 
 void GPTool::setActive(const std::string &name) { pActive = plugins[name].get(); }
 
+
+/////////////////////////////////////
+// Main loop control
+
 void GPTool::onUserUpdate(float deltaTime)
 {
+    if (haltForUpdate)
+        return;
+
     bool 
         ctrl = keyboard[GKey::LEFT_CONTROL] == GEvent::PRESS || keyboard[GKey::RIGHT_CONTROL] == GEvent::PRESS,
         shift = keyboard[GKey::LEFT_SHIFT] == GEvent::PRESS || keyboard[GKey::RIGHT_SHIFT] == GEvent::PRESS,
@@ -272,6 +284,9 @@ void GPTool::onUserUpdate(float deltaTime)
 
 void GPTool::ImGuiLayer(void)
 {
+    if (haltForUpdate)
+        return;
+
     // To avoid problems with images and mouse events
     ImGui::GetIO().ConfigWindowsMoveFromTitleBarOnly = true;
 
@@ -318,6 +333,9 @@ void GPTool::ImGuiLayer(void)
 
 void GPTool::ImGuiMenuLayer(void)
 {
+    if (haltForUpdate)
+        return;
+
     if (ImGui::BeginMenu("File"))
     {
         if (ImGui::MenuItem("Open movie...", "Ctrl+O"))
@@ -385,31 +403,35 @@ void GPTool::openMovie(const fs::path &path)
 
             if (movpl->successful())
             {
-                tool->camera.getPosition() = { 0.0f, 0.0f, 0.8f };
-                
-                // Including movie plugin into the manager
-                tool->addPlugin("MOVIE", movpl);
-                tool->setActive("MOVIE");
+                AlignPlugin* alg = nullptr;
+                TrajPlugin* traj = nullptr;
+                GPPlugin* gp = nullptr;
+                FilterPlugin* filter = nullptr;
 
-                // Determine if we need the alignment plugin
-                GPT::Movie *movie = movpl->getMovie();
+                GPT::Movie* movie = movpl->getMovie();
                 if (movie->getMetadata().SizeC > 1)
-                {
-                    AlignPlugin *alg = new AlignPlugin(movie, tool);
-                    tool->addPlugin("ALIGNMENT", alg);
-                }
+                    alg = new AlignPlugin(movie, tool);
 
-                // trajectory plugin
-                TrajPlugin *traj = new TrajPlugin(movie, tool);
+                traj = new TrajPlugin(movie, tool);
+                gp = new GPPlugin(tool);
+                filter = new FilterPlugin(movie, tool);
+
+                
+                ///////////////////////
+
+                tool->haltForUpdate = true;
+                tool->texture = GRender::Texture();
+                tool->camera.getPosition() = { 0.0f, 0.0f, 0.8f };
+
+                tool->addPlugin("ALIGNMENT", alg);
+                tool->addPlugin("DENOISE", filter);
+                tool->addPlugin("GPROCESS", gp);
+                tool->addPlugin("MOVIE", movpl);
                 tool->addPlugin("TRAJECTORY", traj);
 
-                // Gaussian process plugin
-                GPPlugin *gp = new GPPlugin(tool);
-                tool->addPlugin("GPROCESS", gp);
+                tool->setActive("MOVIE");
 
-                // Denoising
-                FilterPlugin* filter = new FilterPlugin(tool);
-                tool->addPlugin("DENOISE", filter);
+                tool->haltForUpdate = false;
             }
             else
                 delete movpl;

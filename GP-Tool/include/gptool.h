@@ -35,6 +35,8 @@ public:
     void saveJSON(const fs::path &path);
 
 public:
+    bool haltForUpdate = false;
+
     GRender::Texture texture;
     GRender::Shader shader;
     GRender::Camera2D camera;
