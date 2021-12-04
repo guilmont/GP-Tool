@@ -6,6 +6,7 @@
 #include "alignPlugin.h"
 #include "trajPlugin.h"
 #include "gpPlugin.h"
+#include "filterPlugin.h"
 
 #include "batch.h"
 
@@ -38,7 +39,7 @@ public:
     GRender::Shader shader;
     GRender::Camera2D camera;
 
-    std::unique_ptr<GRender::Framebuffer> viewBuf = nullptr; // Histograms and viewport
+    std::unique_ptr<GRender::Framebuffer> viewBuf = nullptr; 
     
     Batching batch;
 
@@ -54,6 +55,7 @@ private:
 
     // flow variables
     bool viewport_hover = false;
+    bool showImGuiDemo = false;
 
     glm::vec2 getClickPosition(void);
 

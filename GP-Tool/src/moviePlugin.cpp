@@ -188,13 +188,13 @@ void MoviePlugin::showProperties(void)
 
         if (info[ch].lut_name.compare("None") != 0)
         {
-            const glm::vec2 &size = histo[ch].getSize();
-            ImGui::Image((void *)(uintptr_t)histo[ch].getID(), {size.x, size.y});
+            const glm::vec2 &size = histo[ch]->getSize();
+            ImGui::Image((void *)(uintptr_t)histo[ch]->getID(), {size.x, size.y});
 
             float port = ImGui::GetContentRegionAvail().x;
             if (port != size.x)
             {
-                histo[ch] = GRender::Framebuffer(uint32_t(port), uint32_t(size.y));
+                histo[ch] = std::make_unique<GRender::Framebuffer>(uint32_t(port), uint32_t(size.y));
                 updateTexture(ch);
             }
 
@@ -254,6 +254,8 @@ void MoviePlugin::update(float deltaTime)
                 width = static_cast<uint32_t>(meta.SizeX);
 
             tool->texture.createFloat(std::to_string(ch), width, height);
+            
+            histo[ch] = std::make_unique<GRender::Framebuffer>(1, 1);
             calcHistogram(ch);
         }
     }
@@ -348,15 +350,15 @@ void MoviePlugin::updateTexture(uint64_t channel)
 
     tool->shader.setFloatArray("histogram", info[channel].histogram.data(), 256);
 
-    const glm::vec2& size = histo[channel].getSize();
+    const glm::vec2& size = histo[channel]->getSize();
 
     if (size.x == 1 || size.y == 1) // for safety
-        histo[channel] = GRender::Framebuffer(uint32_t(162 * GRender::DPI_FACTOR), uint32_t(100 * GRender::DPI_FACTOR));
+        histo[channel] = std::make_unique<GRender::Framebuffer>(uint32_t(162 * GRender::DPI_FACTOR), uint32_t(100 * GRender::DPI_FACTOR));
 
-    histo[channel].bind();
+    histo[channel]->bind();
     quad->draw({0.0f, 0.0f, 0.0f}, {1.0f, 1.0f}, 0.0f, 0.0f);
     quad->submit();
-    histo[channel].unbind();
+    histo[channel]->unbind();
 
     // Updating textures
     float low = info[channel].contrast.x,

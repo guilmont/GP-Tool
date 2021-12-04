@@ -7,15 +7,16 @@ add_subdirectory(vendor)
 project(GP-Tool)
 add_executable(${PROJECT_NAME}
 	"include/gpch.h"
-	"include/gptool.h"      "src/gptool.cpp"
+	"include/gptool.h"        "src/gptool.cpp"
 	"include/plugin.h" 
-	"include/moviePlugin.h"  "src/moviePlugin.cpp" 
-	"include/alignPlugin.h"  "src/alignPlugin.cpp" 
-	"include/trajPlugin.h"   "src/trajPlugin.cpp" 
-	"include/circle.h"       "src/circle.cpp"
-	"include/roi.h"          "src/roi.cpp"
-	"include/gpPlugin.h"     "src/gpPlugin.cpp"
-	"include/batch.h"        "src/batch.cpp"
+	"include/moviePlugin.h"   "src/moviePlugin.cpp" 
+	"include/alignPlugin.h"   "src/alignPlugin.cpp" 
+	"include/trajPlugin.h"    "src/trajPlugin.cpp" 
+	"include/circle.h"        "src/circle.cpp"
+	"include/roi.h"           "src/roi.cpp"
+	"include/gpPlugin.h"      "src/gpPlugin.cpp"
+	"include/filterPlugin.h"  "src/filterPlugin.cpp"
+	"include/batch.h"         "src/batch.cpp"
 	"src/app.cpp"
 )
 

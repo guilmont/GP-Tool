@@ -149,8 +149,8 @@ namespace GPT::Filter
                 px = px > 0.5 ? px - 0.5 : 0.5 - px;
                 py = py > 0.5 ? py - 0.5 : 0.5 - py;
 
-                uint64_t
-                    bin = static_cast<uint64_t>(255.0 * img(k, l)),
+                int64_t
+                    bin = static_cast<int64_t>(255.0 * img(k, l)),
                     tid0 = (y + 0) * TX + (x + 0),
                     tid1 = (y + 0) * TX + (x + dx),
                     tid2 = (y + dy) * TX + (x + 0),
@@ -166,58 +166,66 @@ namespace GPT::Filter
     /**************************************************************************/
     /**************************************************************************/
 
-    void SVD::setFrame(uint64_t frame)
+    void SVD::importImages(const std::vector<MatXd>& vec)
     {
-        assert(frame < vImages.size()); // just in case
-        this->frame = frame; 
+        denoised.resize(vec.size());
+        vImages.resize(vec.size());
+        std::copy(vec.begin(), vec.end(), vImages.begin());
     }
 
-	void SVD::apply(MatXd& img)
+	void SVD::run(bool &trigger)
 	{
-        assert(slice <= vImages.size()); // just in case
-
         int64_t
-            width = img.cols(),
-            height = img.rows(),
+            maxFrames = vImages.size(),
+            width = vImages[0].cols(),
+            height = vImages[0].rows(),
             rows = width * height;
 
-        // Checking on boundary conditions
-        int64_t half = 0.5 * double(slice);
-        int64_t lowID, highID;
+        // We will take the average over every rank approximated image for different slices
+        std::vector<float> counter(maxFrames, 0);
 
-        if (frame < half)
-        {
-            lowID = 0;
-            highID = slice;
-        }
-        else if (frame + half >= vImages.size())
-        {
-            lowID = vImages.size() - 1 - half;
-            highID = vImages.size() - 1;
-        }
-        else
-        {
-            lowID = frame - half;
-            highID = frame + half;
-        }
+        for (int64_t fr = 0; fr < maxFrames; fr++)
+            denoised[fr] = MatXd::Zero(height, width);
 
-
-        // Building input matrix for SVD
         MatXd mat(rows, slice);
-        for (int64_t k = lowID; k <= highID; k++)
-            mat.col(k) = vImages[k].reshaped();
+        for (int64_t fr = 0; fr <= maxFrames - slice; fr++)
+        {
+            for (int64_t k = 0; k < slice; k++)
+                mat.col(k) = vImages[fr + k].reshaped();
 
-        // Calculating the Singular Value Decomposition
-        Eigen::BDCSVD<MatXd> svd(mat, Eigen::ComputeThinU | Eigen::ComputeThinV);
-        MatXd U = svd.matrixU();
-        MatXd V = svd.matrixV().transpose();
-        const VecXd& S = svd.singularValues();
+            Eigen::BDCSVD<MatXd> svd(mat, Eigen::ComputeThinU | Eigen::ComputeThinV);
+            MatXd U = svd.matrixU();
+            MatXd V = svd.matrixV().transpose();
+            const VecXd& S = svd.singularValues();
 
-        // Approximation original image via rank
-        img = S(0) * U.col(0) * V.row(0);
-        
-        for (int64_t k = 1; k < rank; k++)
-            img += S(k) * U.col(k) * V.row(k);
 
-	}
+            mat = S(0) * U.col(0) * V.row(0);
+
+            for (int64_t k = 1; k < rank; k++)
+                mat += S(k) * U.col(k) * V.row(k);
+
+
+            for (int64_t k = 0; k < slice; k++)
+            {
+                denoised[fr + k] += mat.col(k).reshaped();
+                counter[fr + k]++;
+            }
+
+            // In case we want to stop this function from outside
+            if (trigger)
+                return;
+        }
+
+        for (int64_t fr = 0; fr < maxFrames; fr++)
+            denoised[fr] /= counter[fr];
+
+    }
+
+    const MatXd& SVD::getImage(int64_t frame) { return denoised[frame]; }
+    
+    void SVD::updateImages(std::vector<MatXd>& vec)
+    {
+        assert(vec.size() == denoised.size());
+        std::copy(denoised.begin(), denoised.end(), vec.begin());
+    }
 }

@@ -10,18 +10,18 @@ namespace GPT::Filter
 		Filter(void) = default;
 		virtual ~Filter(void) = default;
 
-		virtual void apply(MatXd& img) = 0;
+		virtual void apply(MatXd& img) {}
 	};
 
 	struct Contrast : public Filter
 	{
-		double low = -1.0, high = -1.0;
+		double low = -1.0, high = -1.0; // Negative values mean auto-contrast, otherwise, betweem 0 and 1
 
-		// Negative values mean auto-contrast
-		Contrast(double low = -1, double high = -1) : low(low), high(high) {}
-		~Contrast(void) = default;
+		GP_API Contrast(double lowValue, double highValue) : low(lowValue), high(highValue) {}
+		GP_API Contrast(void) = default;
+		GP_API ~Contrast(void) = default;
 
-		void apply(MatXd& img) override;
+		GP_API void apply(MatXd& img) override;
 	};
 
 
@@ -29,37 +29,46 @@ namespace GPT::Filter
 	{
 		// For now, we are going to shrink the tile around the boundary
 
-		uint64_t sizeX, sizeY;
-		Median(uint64_t sizeX, uint64_t sizeY) : sizeX(sizeX), sizeY(sizeY) {}
-		~Median(void) = default;
+		int64_t sizeX = 5, sizeY = 5;
 
-		void apply(MatXd& img) override;
+		GP_API Median(int64_t tileSizeX, int64_t tileSizeY) : sizeX(tileSizeX), sizeY(tileSizeY) {}
+		GP_API Median(void) = default;
+		GP_API ~Median(void) = default;
+
+		GP_API void apply(MatXd& img) override;
 	};
 
 	struct CLAHE : public Filter
 	{
-		double clipLimit;
-		uint64_t tileSizeX, tileSizeY;
+		double clipLimit = 2.0;
+		int64_t 
+			tileSizeX = 32,
+			tileSizeY = 32;
 
-		CLAHE(double clipLimit, uint64_t tileSizeX, uint64_t tileSizeY) : clipLimit(clipLimit), tileSizeX(tileSizeX), tileSizeY(tileSizeY) {}
-		~CLAHE(void) = default;
+		GP_API CLAHE(double clipLimit, int64_t tileSizeX, int64_t tileSizeY) : clipLimit(clipLimit), tileSizeX(tileSizeX), tileSizeY(tileSizeY) {}
+		GP_API CLAHE(void) = default;
+		GP_API ~CLAHE(void) = default;
 
-		void apply(MatXd& img) override;
+		GP_API void apply(MatXd& img) override;
 	};
 
 
-	struct SVD : public Filter
+	class SVD : public Filter
 	{
-		// We will need to know about all the images in the stack to perform this filter
-		// Because of that, we will need to perform per filter treatment in all images, not one image at the time
+		// I'm not sure I like all the copies happening, but it should do for now
+	public:
+		GP_API SVD(void) = default;
+		GP_API ~SVD(void) = default;
 
-		uint64_t slice, rank, frame = 0;
-		std::vector<MatXd> vImages; 
+		int64_t slice = 1, rank = 1;
 
-		SVD(std::vector<MatXd> vImages, uint64_t slice, uint64_t rank) : vImages(vImages), slice(slice), rank(rank) {}
-		~SVD(void) = default;
+		GP_API void importImages(const std::vector<MatXd>& vec);
+		GP_API void updateImages(std::vector<MatXd>& vec);  // Copies denoised images into vec
+		GP_API const MatXd& getImage(int64_t frame);
 
-		void setFrame(uint64_t frame);
-		void apply(MatXd& img) override;
+		GP_API void run(bool &trigger);
+
+	private:
+		std::vector<MatXd> vImages, denoised;
 	};
 }

@@ -6,26 +6,28 @@ GPTool::GPTool(void)
     fs::path assets(ASSETS);
 
     initialize("GP-Tool", 1200, 800, assets / "layout.ini");
-    viewBuf = std::make_unique<GRender::Framebuffer>(1,1);
+    viewBuf = std::make_unique<GRender::Framebuffer>(1, 1);
 
     // Initializing shaders
     fs::path shaderPath(assets / "shaders");
-    shader.loadShader("histogram", (shaderPath / "basic.vtx.glsl").string(), (shaderPath / "histogram.frag.glsl").string());
-    shader.loadShader("viewport", (shaderPath / "basic.vtx.glsl").string(), (shaderPath / "viewport.frag.glsl").string());
-    shader.loadShader("circles", (shaderPath / "spot.vtx.glsl").string(), (shaderPath / "spot.frag.glsl").string());
-    shader.loadShader("roi", (shaderPath / "basic.vtx.glsl").string(), (shaderPath / "roi.frag.glsl").string());
+    shader.loadShader("histogram", (shaderPath / "basic.vtx.glsl").string(),  (shaderPath / "histogram.frag.glsl").string());
+    shader.loadShader("viewport",  (shaderPath / "basic.vtx.glsl").string(),  (shaderPath / "viewport.frag.glsl").string());
+    shader.loadShader("circles",   (shaderPath / "spot.vtx.glsl").string(),   (shaderPath / "spot.frag.glsl").string());
+    shader.loadShader("roi",       (shaderPath / "basic.vtx.glsl").string(),  (shaderPath / "roi.frag.glsl").string());
+    shader.loadShader("denoise",   (shaderPath / "basic.vtx.glsl").string(),  (shaderPath / "denoise.frag.glsl").string());
 
     // initializing plugins
     plugins["ALIGNMENT"] = nullptr;
     plugins["GPROCESS"] = nullptr;
     plugins["MOVIE"] = nullptr;
     plugins["TRAJECTORY"] = nullptr;
+    plugins["DENOISE"] = nullptr;
 
 
     // Setting up batching
     batch = Batching(this);
         
-}
+    }
 
 GPTool::~GPTool(void)
 {
@@ -118,6 +120,9 @@ void GPTool::updateAll(float deltaTime)
 
     if (plugins["GPROCESS"])
         plugins["GPROCESS"]->update(deltaTime);
+
+    if (plugins["DENOISE"])
+        plugins["DENOISE"]->update(deltaTime);
 }
 
 void GPTool::addPlugin(const std::string &name, Plugin *plugin) { plugins[name].reset(plugin); }
@@ -130,12 +135,18 @@ void GPTool::onUserUpdate(float deltaTime)
 {
     bool 
         ctrl = keyboard[GKey::LEFT_CONTROL] == GEvent::PRESS || keyboard[GKey::RIGHT_CONTROL] == GEvent::PRESS,
+        shift = keyboard[GKey::LEFT_SHIFT] == GEvent::PRESS || keyboard[GKey::RIGHT_SHIFT] == GEvent::PRESS,
         ctrlRep = keyboard[GKey::LEFT_CONTROL] == GEvent::REPEAT || keyboard[GKey::RIGHT_CONTROL] == GEvent::REPEAT,
         O = keyboard['O'] == GEvent::RELEASE,
         S = keyboard['S'] == GEvent::RELEASE,
         T = keyboard['T'] == GEvent::RELEASE,
         M = keyboard['M'] == GEvent::RELEASE,
-        B = keyboard['B'] == GEvent::RELEASE;
+        B = keyboard['B'] == GEvent::RELEASE,
+        I = keyboard['I'] == GEvent::RELEASE;
+
+    // shows imgui demo
+    if (ctrl & shift & I)
+        showImGuiDemo = true;
 
     // key combination for opening movie
     if (ctrl & O)
@@ -206,7 +217,6 @@ void GPTool::onUserUpdate(float deltaTime)
 
 
         // Trajectory roi stuff
-        
         if (plugins["TRAJECTORY"] && (ctrlRep | ctrl))
         {
                 bool active = plugins["TRAJECTORY"]->isActive(); // if trajectories are loaded
@@ -250,9 +260,10 @@ void GPTool::onUserUpdate(float deltaTime)
 
     // Clearing buffer
     viewBuf->bind();
-    glad_glClear(GL_COLOR_BUFFER_BIT);
-    glad_glClearColor(0.6f, 0.6f, 0.6f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glClearColor(0.6f, 0.6f, 0.6f, 1.0f);
     viewBuf->unbind();
+
 
     // Updating all plugins
     updateAll(deltaTime);
@@ -261,12 +272,18 @@ void GPTool::onUserUpdate(float deltaTime)
 
 void GPTool::ImGuiLayer(void)
 {
+    // To avoid problems with images and mouse events
+    ImGui::GetIO().ConfigWindowsMoveFromTitleBarOnly = true;
+
     // Plugin functions
     showHeader();
     showProperties();
     showWindows();
 
     batch.imguiLayer();
+
+    if (showImGuiDemo)
+        ImGui::ShowDemoWindow(&showImGuiDemo);
 
     /////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////
@@ -389,6 +406,10 @@ void GPTool::openMovie(const fs::path &path)
                 // Gaussian process plugin
                 GPPlugin *gp = new GPPlugin(tool);
                 tool->addPlugin("GPROCESS", gp);
+
+                // Denoising
+                FilterPlugin* filter = new FilterPlugin(tool);
+                tool->addPlugin("DENOISE", filter);
             }
             else
                 delete movpl;
