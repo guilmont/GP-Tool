@@ -494,11 +494,11 @@ void TrajPlugin::winDetail(void)
 
     tool->fonts.text("Path: ", "bold");
     ImGui::SameLine();
-    ImGui::TextUnformatted((const char *)track.path.c_str());
+    ImGui::Text("%s", track.path.string().c_str());
 
     tool->fonts.text("Description: ", "bold");
     ImGui::SameLine();
-    ImGui::TextUnformatted(track.description.c_str());
+    ImGui::Text("%s", track.description.c_str());
 
     tool->fonts.text("Channel: ", "bold");
     ImGui::SameLine();

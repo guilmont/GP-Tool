@@ -40,8 +40,9 @@ void Batching::imguiLayer(void)
     ImGui::SameLine();
     if (ImGui::Button("Browse"))
         tool->dialog.createDialog(GDialog::OPEN_DIRECTORY, "Batching :: main path", {}, mainPath, [](const fs::path& path, void* ptr) {
-        const std::string& loc = path.string();
-        std::copy(loc.c_str(), loc.c_str() + loc.size(), (char*)ptr);
+                std::memset(ptr, 0, 1024);
+                const std::string& loc = path.string();
+                std::copy(loc.c_str(), loc.c_str() + loc.size(), (char*)ptr);
             });
     ImGui::PopID();
 
@@ -54,6 +55,7 @@ void Batching::imguiLayer(void)
     ImGui::SameLine();
     if (ImGui::Button("Browse"))
         tool->dialog.createDialog(GDialog::SAVE, "Batching :: output path", { "json" }, outPath, [](const fs::path& path, void* ptr) {
+            std::memset(ptr, 0, 1024);
             const std::string& loc = path.string();
             std::copy(loc.c_str(), loc.c_str() + loc.size(), (char*)ptr);
         });
@@ -153,7 +155,7 @@ void Batching::imguiLayer(void)
         std::thread(&Batching::run, this).detach(); // Submitting to another thread, so it doesn't block GP-Tool
 
     ImGui::SameLine();
-    if (ImGui::Button("Cancel"))
+    if (ImGui::Button("Close"))
     {
         // Reseting everything
         std::memset(mainPath, 0, 1024);
@@ -196,6 +198,7 @@ void Batching::run(void)
 
     // Recursively collecting data for all the tif files present in directory and subdirectories
     bool stopAnalysis = false;
+    vecSamples.clear();
 
     for (fs::directory_entry entry : fs::recursive_directory_iterator(mainPath))
     {
@@ -235,7 +238,6 @@ void Batching::run(void)
             for (int32_t ch = 0; ch < numChannels; ch++)
             {
                 fs::path trajPath = loc.parent_path() / (loc.stem().string() + std::string(suffices[ch].data()));
-                data.trajPath.push_back(trajPath);
 
                 if (trajPath.extension().compare(".xml") == 0)
                 {
@@ -371,8 +373,8 @@ void Batching::runSamples(const int32_t threadId)
     
         const MovData& data = vecSamples[id];
 
-
         const std::string name = data.moviePath.stem().string();
+        
         // Just getting a local reference to faciliate
         Json::Value& local = outputJson["Movies"][name];
 

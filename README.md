@@ -26,8 +26,9 @@ GP-Tool is a set of methods I developed for the analysis of dynamic particles in
 - TRAJECTORY: Import tracks produced by Icy Software in the XML format and CSV files with columns "ParticleID, Frame, Position_X, Position_Y"
 - ALIGNMENT: Tools to align multi-channeled movies recorded with multiple cameras and corrects for chromatic aberrations;
 - GP-FBM: Uses Gaussian processes and Fractional Brownian motion to measure apparent diffusion coefficient, anomalous coefficients and more
+- DENOISE: Implements a few key denoising algorithms I used from time to time
 
-For more information, consider the following journal publication and/or "gp_documentation.pdf".
+For more information, consider the following journal publication and/or "gp_documentation.pdf" (out-dated, TODO: Wiki).
 
 
 <!-- PUBLICATION -->
@@ -47,7 +48,7 @@ link: https://doi.org/10.1038/s41467-021-26466-7
 ## Getting Started
 ### Binary packages
 
-Binary packages in Release mode for Windows and Linux are provided in directory packages. Unzip to desired path and you are good to go.
+Binary packages in Release mode for Windows are provided in directory packages. Unzip to desired path and you are good to go.
 
 ### Source code
 
@@ -72,7 +73,6 @@ In order of execution (approx):
 - GP-Tool: API for saving interpolated trajectories
 - GP-Tool: Display movies metadata
 - GP-Tool + GPMethods: Improve documentation
-- GPMethods: Provided testing API with Google Tests
 - GPMethods: Importing other popular file formats containing tracked trajectories
 - GPMethods: Wrapper bindings for python (if popularly requested)
 

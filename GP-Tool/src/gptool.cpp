@@ -26,8 +26,7 @@ GPTool::GPTool(void)
 
     // Setting up batching
     batch = Batching(this);
-        
-    }
+}
 
 GPTool::~GPTool(void)
 {
@@ -36,6 +35,265 @@ GPTool::~GPTool(void)
         if (ptr)
             ptr.release();
 }
+
+/////////////////////////////////////
+// Main loop control
+
+void GPTool::onUserUpdate(float deltaTime)
+{
+    if (haltForUpdate)
+        return;
+
+    bool
+        ctrl = keyboard[GKey::LEFT_CONTROL] == GEvent::PRESS || keyboard[GKey::RIGHT_CONTROL] == GEvent::PRESS,
+        shift = keyboard[GKey::LEFT_SHIFT] == GEvent::PRESS || keyboard[GKey::RIGHT_SHIFT] == GEvent::PRESS,
+        ctrlRep = keyboard[GKey::LEFT_CONTROL] == GEvent::REPEAT || keyboard[GKey::RIGHT_CONTROL] == GEvent::REPEAT,
+        O = keyboard['O'] == GEvent::RELEASE,
+        S = keyboard['S'] == GEvent::RELEASE,
+        T = keyboard['T'] == GEvent::RELEASE,
+        M = keyboard['M'] == GEvent::RELEASE,
+        B = keyboard['B'] == GEvent::RELEASE,
+        I = keyboard['I'] == GEvent::RELEASE;
+
+    // shows imgui demo
+    if (ctrl & shift & I)
+        showImGuiDemo = true;
+
+    // key combination for opening movie
+    if (ctrl & O)
+        dialog.createDialog(GDialog::OPEN, "Choose TIF file...", { "tif", "ome.tif" }, this,
+            [](const fs::path& path, void* ptr) -> void { reinterpret_cast<GPTool*>(ptr)->openMovie(path); });
+
+    // key combination to save data
+    if (ctrl & S)
+        dialog.createDialog(GDialog::SAVE, "Save data...", { "json" }, this,
+            [](const fs::path& path, void* ptr) -> void
+            {
+                std::thread([](GPTool* tool, const fs::path& path) -> void { tool->saveJSON(path); }, reinterpret_cast<GPTool*>(ptr), path).detach();
+            });
+
+    // combination to open mailbox
+    if (ctrl & M)
+        mailbox.setActive();
+
+    // combination to open batching tool
+    if (ctrl & B)
+        batch.setActive();
+
+    ///////////////////////////////////////////////////////
+    // key combination open trajectory
+    if ((ctrl & T) && plugins["TRAJECTORY"])
+        reinterpret_cast<TrajPlugin*>(plugins["TRAJECTORY"].get())->loadTracks();
+
+    if (viewport_hover)
+    {
+        // move camera
+        if (mouse[GMouse::LEFT] == GEvent::PRESS)
+        {
+            glm::vec2 dr = mouse.offset * deltaTime;
+            camera.moveHorizontal(dr.x);
+            camera.moveVertical(dr.y);
+        }
+
+        // Moving frames
+        if (plugins["MOVIE"])
+        {
+            MoviePlugin* mov = reinterpret_cast<MoviePlugin*>(plugins["MOVIE"].get());
+            uint64_t nFrames = mov->getMovie()->getMetadata().SizeT;
+
+            if (keyboard[GKey::RIGHT] == GEvent::PRESS)
+            {
+                mov->current_frame += (mov->current_frame + 1 == nFrames) ? 0 : 1;
+                mov->updateDisplay();
+            }
+
+            else if (keyboard[GKey::LEFT] == GEvent::PRESS)
+            {
+                mov->current_frame -= (mov->current_frame == 0) ? 0 : 1;
+                mov->updateDisplay();
+            }
+
+            else if (keyboard[GKey::UP] == GEvent::PRESS)
+            {
+                mov->current_frame = 0;
+                mov->updateDisplay();
+            }
+
+            else if (keyboard[GKey::DOWN] == GEvent::PRESS)
+            {
+                mov->current_frame = nFrames - 1;
+                mov->updateDisplay();
+            }
+        }
+
+
+        // Trajectory roi stuff
+        if (plugins["TRAJECTORY"] && (ctrlRep | ctrl))
+        {
+            bool active = plugins["TRAJECTORY"]->isActive(); // if trajectories are loaded
+
+            // Adding vertex to roi
+            if ((mouse[GMouse::LEFT] == GEvent::RELEASE) & active)
+            {
+                glm::vec2 click = getClickPosition();  // Reference to viewport
+                click = { click.x + 0.5f, click.y + 0.5f }; // Converting to image coordinates
+                reinterpret_cast<TrajPlugin*>(plugins["TRAJECTORY"].get())->roi.addPosition(click);
+            }
+
+            // Removing vertex from roi
+            else if ((mouse[GMouse::RIGHT] == GEvent::RELEASE) & active)
+            {
+                glm::vec2 click = getClickPosition();
+                click = { click.x + 0.5f, click.y + 0.5f };
+
+                reinterpret_cast<TrajPlugin*>(plugins["TRAJECTORY"].get())->roi.removePosition(click);
+            }
+
+            // Moving roi vertex
+            else if (mouse[GMouse::MIDDLE] == GEvent::PRESS || mouse[GMouse::MIDDLE] == GEvent::REPEAT)
+            {
+                glm::vec2 click = getClickPosition();
+                click = { click.x + 0.5f, click.y + 0.5f };
+                reinterpret_cast<TrajPlugin*>(plugins["TRAJECTORY"].get())->roi.movePosition(click);
+            }
+        }
+
+        // zoom
+        if (mouse.wheel.y > 0.0f)
+            camera.moveFront(deltaTime);
+
+        if (mouse.wheel.y < 0.0f)
+            camera.moveBack(deltaTime);
+    }
+
+    ///////////////////////////////////////////////////////
+    // Renderering
+
+    // Clearing buffer
+    viewBuf->bind();
+    glClear(GL_COLOR_BUFFER_BIT);
+    glClearColor(0.6f, 0.6f, 0.6f, 1.0f);
+    viewBuf->unbind();
+
+
+    // Updating all plugins
+    updateAll(deltaTime);
+
+} // function
+
+void GPTool::ImGuiLayer(void)
+{
+    if (haltForUpdate)
+        return;
+
+    // To avoid problems with images and mouse events
+    ImGui::GetIO().ConfigWindowsMoveFromTitleBarOnly = true;
+
+    // Plugin functions
+    showHeader();
+    showProperties();
+    showWindows();
+
+    batch.imguiLayer();
+
+    if (showImGuiDemo)
+        ImGui::ShowDemoWindow(&showImGuiDemo);
+
+    /////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////
+
+    const ImVec2 wp = ImGui::GetMainViewport()->WorkPos;
+    const ImVec2 ws = ImGui::GetMainViewport()->WorkSize;
+    ImGui::SetNextWindowPos({ wp.x + ws.x * vwPos.x, wp.y + ws.y * vwPos.y }, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize({ ws.x * vwSize.x, ws.y * vwSize.y }, ImGuiCond_FirstUseEver);
+
+    ImGui::Begin("Viewport", NULL, ImGuiWindowFlags_NoTitleBar);
+
+    // Check if it needs to resize
+    ImVec2 port = ImGui::GetContentRegionAvail();
+    ImGui::Image((void*)(uintptr_t)viewBuf->getID(), port);
+
+    glm::vec2 view = viewBuf->getSize();
+    if (port.x != view.x || port.y != view.y)
+    {
+        viewBuf = std::make_unique<GRender::Framebuffer>(uint32_t(port.x), uint32_t(port.y));
+        camera.setAspectRatio(port.x / port.y);
+    }
+
+    // Checking if anchoring position changed
+    ImVec2 pos = ImGui::GetItemRectMin();
+    viewBuf->setPosition(pos.x - window.position.x, pos.y - window.position.y);
+
+    // Check if mouse is on viewport
+    viewport_hover = ImGui::IsWindowHovered();
+
+    ImGui::End();
+}
+
+void GPTool::ImGuiMenuLayer(void)
+{
+    if (haltForUpdate)
+        return;
+
+    if (ImGui::BeginMenu("File"))
+    {
+        if (ImGui::MenuItem("Open movie...", "Ctrl+O"))
+            dialog.createDialog(GDialog::OPEN, "Choose TIF file...", { "tif", "ome.tif" }, this,
+                [](const fs::path& path, void* ptr) -> void { reinterpret_cast<GPTool*>(ptr)->openMovie(path); });
+
+        if (ImGui::MenuItem("Load trajectories...", "Ctrl+T", nullptr, plugins["TRAJECTORY"] != nullptr))
+            reinterpret_cast<TrajPlugin*>(plugins["TRAJECTORY"].get())->loadTracks();
+
+        if (ImGui::MenuItem("Save as ...", "Ctrl+S"))
+            dialog.createDialog(GDialog::SAVE, "Choose TIF file...", { "json" }, this,
+                [](const fs::path& path, void* ptr) -> void
+                {
+                    std::thread([](GPTool* tool, const fs::path& path) -> void { tool->saveJSON(path); }, reinterpret_cast<GPTool*>(ptr), path).detach();
+                });
+
+        if (ImGui::MenuItem("Exit"))
+            closeApp();
+
+        ImGui::EndMenu();
+    }
+
+    if (ImGui::BeginMenu("Tools"))
+    {
+        if (ImGui::MenuItem("Show mailbox", "Ctrl+M"))
+            mailbox.setActive();
+
+        if (ImGui::MenuItem("Batching", "Ctrl+B"))
+            batch.setActive();
+
+        if (GRender::DPI_FACTOR == 1)
+        {
+            if (ImGui::MenuItem("Set HIDPI"))
+                scaleSizes(2.0f);
+        }
+        else
+        {
+            if (ImGui::MenuItem("Unset HIDPI"))
+                scaleSizes(1.0f);
+        }
+
+        ImGui::EndMenu();
+    }
+
+    if (ImGui::BeginMenu("About"))
+    {
+        if (ImGui::MenuItem("How to cite"))
+            mailbox.createInfo("Refer to paper at https://doi.org/10.1038/s41467-021-26466-7");
+
+        if (ImGui::MenuItem("Documentation"))
+            mailbox.createInfo("View complete documentation at https://github.com/guilmont/GP-Tool");
+
+        ImGui::EndMenu();
+    }
+}
+
+
+/////////////////////////////////////
+// Utility functions
 
 void GPTool::showHeader(void)
 {
@@ -136,263 +394,23 @@ Plugin *GPTool::getPlugin(const std::string &name) { return plugins[name].get();
 
 void GPTool::setActive(const std::string &name) { pActive = plugins[name].get(); }
 
-
-/////////////////////////////////////
-// Main loop control
-
-void GPTool::onUserUpdate(float deltaTime)
+glm::vec2 GPTool::getClickPosition(void)
 {
-    if (haltForUpdate)
-        return;
-
-    bool 
-        ctrl = keyboard[GKey::LEFT_CONTROL] == GEvent::PRESS || keyboard[GKey::RIGHT_CONTROL] == GEvent::PRESS,
-        shift = keyboard[GKey::LEFT_SHIFT] == GEvent::PRESS || keyboard[GKey::RIGHT_SHIFT] == GEvent::PRESS,
-        ctrlRep = keyboard[GKey::LEFT_CONTROL] == GEvent::REPEAT || keyboard[GKey::RIGHT_CONTROL] == GEvent::REPEAT,
-        O = keyboard['O'] == GEvent::RELEASE,
-        S = keyboard['S'] == GEvent::RELEASE,
-        T = keyboard['T'] == GEvent::RELEASE,
-        M = keyboard['M'] == GEvent::RELEASE,
-        B = keyboard['B'] == GEvent::RELEASE,
-        I = keyboard['I'] == GEvent::RELEASE;
-
-    // shows imgui demo
-    if (ctrl & shift & I)
-        showImGuiDemo = true;
-
-    // key combination for opening movie
-    if (ctrl & O)
-        dialog.createDialog(GDialog::OPEN, "Choose TIF file...", {"tif", "ome.tif"}, this,
-                            [](const fs::path &path, void *ptr) -> void { reinterpret_cast<GPTool *>(ptr)->openMovie(path); });
-
-    // key combination to save data
-    if (ctrl & S)
-        dialog.createDialog(GDialog::SAVE, "Save data...", {"json"}, this,
-                            [](const fs::path &path, void *ptr) -> void
-                            {
-                                std::thread([](GPTool *tool, const fs::path &path) -> void{ tool->saveJSON(path); }, reinterpret_cast<GPTool *>(ptr), path).detach();
-                            });
-
-    // combination to open mailbox
-    if (ctrl & M)
-        mailbox.setActive();
-
-    // combination to open batching tool
-    if (ctrl & B)
-        batch.setActive();
-
-    ///////////////////////////////////////////////////////
-    // key combination open trajectory
-    if ((ctrl & T) && plugins["TRAJECTORY"])
-        reinterpret_cast<TrajPlugin *>(plugins["TRAJECTORY"].get())->loadTracks();
-
-    if (viewport_hover)
-    {
-        // move camera
-        if (mouse[GMouse::LEFT] == GEvent::PRESS)
-        {
-            glm::vec2 dr = mouse.offset * deltaTime;
-            camera.moveHorizontal(dr.x);
-            camera.moveVertical(dr.y);
-        }
-
-        // Moving frames
-        if (plugins["MOVIE"])
-        {
-            MoviePlugin* mov = reinterpret_cast<MoviePlugin*>(plugins["MOVIE"].get());
-            uint64_t nFrames = mov->getMovie()->getMetadata().SizeT;
-
-            if (keyboard[GKey::RIGHT] == GEvent::PRESS)
-            {
-                mov->current_frame += (mov->current_frame + 1 == nFrames) ? 0 : 1;
-                mov->updateDisplay();
-            }
-
-            else if (keyboard[GKey::LEFT] == GEvent::PRESS)
-            {
-                mov->current_frame -= (mov->current_frame == 0) ? 0 : 1;
-                mov->updateDisplay();
-            }
-
-            else if (keyboard[GKey::UP] == GEvent::PRESS)
-            {
-                mov->current_frame = 0;
-                mov->updateDisplay();
-            }
-
-            else if (keyboard[GKey::DOWN] == GEvent::PRESS)
-            {
-                mov->current_frame = nFrames - 1;
-                mov->updateDisplay();
-            }
-        }
+    const glm::vec2& pos = viewBuf->getPosition();
+    const glm::vec2& size = viewBuf->getSize();
+    glm::vec2 click = { 2.0f * (mouse.position.x - pos.x) / size.x - 1.0f,
+                       2.0f * (mouse.position.y - pos.y) / size.y - 1.0f };
 
 
-        // Trajectory roi stuff
-        if (plugins["TRAJECTORY"] && (ctrlRep | ctrl))
-        {
-                bool active = plugins["TRAJECTORY"]->isActive(); // if trajectories are loaded
+    const GPT::Metadata& meta = reinterpret_cast<MoviePlugin*>(plugins["MOVIE"].get())->getMovie()->getMetadata();
+    float iratio = float(meta.SizeX) / float(meta.SizeY);
+    const glm::vec3& cpos = camera.getPosition();
 
-                // Adding vertex to roi
-                if ((mouse[GMouse::LEFT] == GEvent::RELEASE) & active)
-                {
-                    glm::vec2 click = getClickPosition();  // Reference to viewport
-                    click = { click.x + 0.5f, click.y + 0.5f }; // Converting to image coordinates
-                    reinterpret_cast<TrajPlugin*>(plugins["TRAJECTORY"].get())->roi.addPosition(click);
-                }
-
-                // Removing vertex from roi
-                else if ((mouse[GMouse::RIGHT] == GEvent::RELEASE) & active)
-                {
-                    glm::vec2 click = getClickPosition();
-                    click = { click.x + 0.5f, click.y + 0.5f };
-
-                    reinterpret_cast<TrajPlugin*>(plugins["TRAJECTORY"].get())->roi.removePosition(click);
-                }
-
-                // Moving roi vertex
-                else if (mouse[GMouse::MIDDLE] == GEvent::PRESS || mouse[GMouse::MIDDLE] == GEvent::REPEAT)
-                {
-                    glm::vec2 click = getClickPosition();
-                    click = { click.x + 0.5f, click.y + 0.5f };
-                    reinterpret_cast<TrajPlugin*>(plugins["TRAJECTORY"].get())->roi.movePosition(click);
-                }
-        }
-
-        // zoom
-        if (mouse.wheel.y > 0.0f)
-            camera.moveFront(deltaTime);
-
-        if (mouse.wheel.y < 0.0f)
-            camera.moveBack(deltaTime);
-    }
-
-    ///////////////////////////////////////////////////////
-    // Renderering
-
-    // Clearing buffer
-    viewBuf->bind();
-    glClear(GL_COLOR_BUFFER_BIT);
-    glClearColor(0.6f, 0.6f, 0.6f, 1.0f);
-    viewBuf->unbind();
-
-
-    // Updating all plugins
-    updateAll(deltaTime);
-    
-} // function
-
-void GPTool::ImGuiLayer(void)
-{
-    if (haltForUpdate)
-        return;
-
-    // To avoid problems with images and mouse events
-    ImGui::GetIO().ConfigWindowsMoveFromTitleBarOnly = true;
-
-    // Plugin functions
-    showHeader();
-    showProperties();
-    showWindows();
-
-    batch.imguiLayer();
-
-    if (showImGuiDemo)
-        ImGui::ShowDemoWindow(&showImGuiDemo);
-
-    /////////////////////////////////////////////////////////
-    /////////////////////////////////////////////////////////
-
-    const ImVec2 wp = ImGui::GetMainViewport()->WorkPos;
-    const ImVec2 ws = ImGui::GetMainViewport()->WorkSize;
-    ImGui::SetNextWindowPos({wp.x + ws.x * vwPos.x, wp.y + ws.y * vwPos.y}, ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize({ws.x * vwSize.x, ws.y * vwSize.y}, ImGuiCond_FirstUseEver);
-
-    ImGui::Begin("Viewport", NULL, ImGuiWindowFlags_NoTitleBar);
-
-    // Check if it needs to resize
-    ImVec2 port = ImGui::GetContentRegionAvail();
-    ImGui::Image((void *)(uintptr_t)viewBuf->getID(), port);
-
-    glm::vec2 view = viewBuf->getSize();
-    if (port.x != view.x || port.y != view.y)
-    {
-        viewBuf = std::make_unique<GRender::Framebuffer>(uint32_t(port.x), uint32_t(port.y));
-        camera.setAspectRatio(port.x / port.y);
-    }
-
-    // Checking if anchoring position changed
-    ImVec2 pos = ImGui::GetItemRectMin();
-    viewBuf->setPosition(pos.x - window.position.x, pos.y - window.position.y);
-
-    // Check if mouse is on viewport
-    viewport_hover = ImGui::IsWindowHovered();
-
-    ImGui::End();
+    return glm::vec2{ click.x * cpos.z + cpos.x, (click.y * cpos.z + cpos.y) * iratio };
 }
 
-void GPTool::ImGuiMenuLayer(void)
-{
-    if (haltForUpdate)
-        return;
-
-    if (ImGui::BeginMenu("File"))
-    {
-        if (ImGui::MenuItem("Open movie...", "Ctrl+O"))
-            dialog.createDialog(GDialog::OPEN, "Choose TIF file...", {"tif", "ome.tif"}, this,
-                                [](const fs::path &path, void *ptr) -> void { reinterpret_cast<GPTool *>(ptr)->openMovie(path); });
-
-        if (ImGui::MenuItem("Load trajectories...", "Ctrl+T", nullptr, plugins["TRAJECTORY"] != nullptr))
-            reinterpret_cast<TrajPlugin *>(plugins["TRAJECTORY"].get())->loadTracks();
-
-        if (ImGui::MenuItem("Save as ...", "Ctrl+S"))
-            dialog.createDialog(GDialog::SAVE, "Choose TIF file...", {"json"}, this,
-                                [](const fs::path &path, void *ptr) -> void
-                                {
-                                    std::thread([](GPTool *tool, const fs::path &path) -> void { tool->saveJSON(path); }, reinterpret_cast<GPTool *>(ptr), path).detach();
-                                });
-
-        if (ImGui::MenuItem("Exit"))
-            closeApp();
-
-        ImGui::EndMenu();
-    }
-
-    if (ImGui::BeginMenu("Tools"))
-    {
-        if (ImGui::MenuItem("Show mailbox", "Ctrl+M"))
-            mailbox.setActive();
-
-        if (ImGui::MenuItem("Batching", "Ctrl+B"))
-            batch.setActive();
-
-        if (GRender::DPI_FACTOR == 1)
-        {
-            if (ImGui::MenuItem("Set HIDPI"))
-                scaleSizes(2.0f);
-        }
-        else
-        {
-            if (ImGui::MenuItem("Unset HIDPI"))
-                scaleSizes(1.0f);
-        }
-
-        ImGui::EndMenu();
-    }
-
-    if (ImGui::BeginMenu("About"))
-    {
-        if (ImGui::MenuItem("How to cite"))
-            mailbox.createInfo("Refer to paper at https://doi.org/10.1038/s41467-021-26466-7");
-
-        if (ImGui::MenuItem("Documentation"))
-            mailbox.createInfo("View complete documentation at https://github.com/guilmont/GP-Tool");
-
-        ImGui::EndMenu();
-    }
-}
-
-/////////////////////////////////////
+///////////////////////////////////////
+// Input and output functions
 
 void GPTool::openMovie(const fs::path &path)
 {
@@ -483,19 +501,3 @@ void GPTool::saveJSON(const fs::path &path)
 } // saveJSON
 
 
-///////////////////////////////////////
-
-glm::vec2 GPTool::getClickPosition(void)
-{
-    const glm::vec2& pos = viewBuf->getPosition();
-    const glm::vec2& size = viewBuf->getSize();
-    glm::vec2 click = { 2.0f * (mouse.position.x - pos.x) / size.x - 1.0f,
-                       2.0f * (mouse.position.y - pos.y) / size.y - 1.0f };
-
-
-    const GPT::Metadata& meta = reinterpret_cast<MoviePlugin*>(plugins["MOVIE"].get())->getMovie()->getMetadata();
-    float iratio = float(meta.SizeX) / float(meta.SizeY);
-    const glm::vec3& cpos = camera.getPosition();
-
-    return glm::vec2{ click.x * cpos.z + cpos.x, (click.y * cpos.z + cpos.y) * iratio };
-}
