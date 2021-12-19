@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="./css/main.css">
+    <link rel="shortcut icon" href="#">
+    <title>Welcome to GP-Tool</title>
+</head>
+
+<body>
+    <header></header>
+    <main>
+        <div class="explorer"></div>
+
+        <div class="information">
+
+            <img src="./images/screenshot.png" alt="GP-Tool screenshot" width=90%>
+
+            <p>GP-Tool is a set of methods I developed for the analysis of dynamic particles in the living cells. It
+                comprehends of 4 major libraries:</p>
+
+            <ul>
+                <li>MOVIE: Load TIFF files and displays basic metadata along with contrast correction tools. LZW
+                    compression is
+                    natively handled</li>
+
+                <li>TRAJECTORY: Import tracks produced by Icy Software in the XML format and CSV files with columns
+                    "ParticleID,Frame, Position_X, Position_Y" </li>
+
+                <li>ALIGNMENT: Tools to align multi-channeled movies recorded with multiple cameras and corrects for
+                    chromatic aberrations;</li>
+
+                <li>GP-FBM: Uses Gaussian processes and Fractional Brownian motion to measure apparent diffusion
+                    coefficient, anomalous coefficients and more</li>
+
+                <li>DENOISE: Implements a few key denoising algorithms I used from time to time</li>
+            </ul>
+
+
+            <h2> Nature Communications</h2>
+
+            <h3> Precise measurements of chromatin diffusion dynamics by modeling using Gaussian processes
+                GM Oliveira et al</h3>
+
+            <a href="http://doi.org/10.1038/s41467-021-26466-7">Access here</a>
+
+            <p><i>The spatiotemporal organization of chromatin influences many nuclear processes: from chromo-some
+                    segregation to transcriptional regulation. To get a deeper understanding of these processes it is
+                    essential to go beyond static viewpoints of chromosome structures, and to accurately characterize
+                    chromatin mobility and its diffusion properties. Here, we present GP-FBM: a new computational
+                    framework based on Gaussian processes and fractional Brownian motion to analyze and extract
+                    diffusion properties from stochastic trajectories of labeled chromatin loci. GP-FBM is able to
+                    optimally use the higher-order correlations present in the data and therefore outperforms existing
+                    methods. Furthermore, GP-FBM is able to extrapolate trajectories from missing data and account for
+                    substrate movement automatically. Using our method we show that diffusive chromatin diffusion
+                    properties are surprisingly similar in interphase and mitosis in mouse embryonic stem cells.
+                    Moreover, we observe surprising heterogeneity in local chromatin dynamics, which correlates with
+                    transcriptional activity. We also present GP-Tool, a user-friendly graphical interface to facilitate
+                    the use of GP-FBM by the research community for future studies of nuclear dynamics.</i></p>
+
+        </div>
+    </main>
+
+    <script src="./script/main.js"></script>
+</body>
+
+
+</html>

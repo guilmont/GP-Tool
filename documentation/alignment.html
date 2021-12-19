@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="./css/main.css">
+    <link rel="shortcut icon" href="#">
+    <title>Welcome to GP-Tool</title>
+</head>
+
+<body>
+    <header></header>
+    <main>
+        <div class="explorer"></div>
+
+        <div class="information">
+            <h1>Alignment plugin</h1>
+
+            <p>Even though channel alignment is not strictly necessary for inference of diffusion properties as frac-
+                tional Brownian motion is orientation independent and chromatic aberration is negligible for short
+                trajectories, it becomes relevant once we are interested in the average distance between spots.
+                For that reason, GP-Tool includes a plugin that will attempt to calculate a matrix based on generic
+                affine transformations that will match common shapes in both channels. In the left most of the following
+                images, we present a movie in which the dual-camera setup was badly calibrated. On the right, we
+                present the results of an automatic alignment. Differently, the user might setup parameters manually.
+            </p>
+
+            <img src="./images/alignment.png" alt="alignment" width=90%>
+
+            <p>The plugin provides two types of auto-correction aiming for different types of errors. The first will
+                combine translations and rotations in the attempt to correct a system with multiple badly calibrated
+                cameras. Evidently, this type of correction is not necessary in the case of a setup with a single
+                camera. On the other hand, any experimental protocol using multiple wavelengths is subjected to
+                chromatic aberration. Its effect is not so relevant at image's center, but it might become
+                non-negligible towards its edges.</p>
+
+            <p>Finally, the user might opt to save a new TIF-file with aligned channels. We can do that by clicking
+                in button "Save movie".</p>
+
+        </div>
+    </main>
+
+    <script src="./script/main.js"></script>
+</body>
+
+
+</html>

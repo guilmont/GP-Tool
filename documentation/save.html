@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="./css/main.css">
+    <link rel="shortcut icon" href="#">
+    <title>Welcome to GP-Tool</title>
+</head>
+
+<body>
+    <header></header>
+    <main>
+        <div class="explorer"></div>
+
+        <div class="information">
+            <h1>Saving results</h1>
+
+            <p>Once the analysis is complete, the user can save results by navigating to File > Save as... or the key
+                combination "Ctrl + S". By its flexibility, "ease-of-use" and wide range of programming languages that
+                can parse it, the JSON format was chosen. The final file will look as in the next image.</p>
+
+            <img src="./images/savingJSON.png" alt="savingJSON" width=60%>
+
+            <p>In a hierarchical organization, the file will show the original movie name and basic metadata
+                on which the analysis was made. It will present enhanced non-aligned trajectories per channel (the
+                contents of each row are identified) and inferred diffusion parameters. GProcess will always present
+                results determined from individual trajectories. In cells (or groups) containing multiple spots, the
+                coupled analysis will be provided along with substrate data. Finally, the alignment plugin will save
+                its own data, that is, image dimensions and optimal translation, scaling and rotation parameters. For
+                convenience, a ready-to-use transformation matrix is also provided. This matrix can be directly used
+                to alignment trajectories if necessary.</p>
+
+        </div>
+
+    </main>
+
+    <script src="./script/main.js"></script>
+</body>
+
+
+</html>

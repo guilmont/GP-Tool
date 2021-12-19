@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="./css/main.css">
+    <link rel="shortcut icon" href="#">
+    <title>Welcome to GP-Tool</title>
+</head>
+
+<body>
+    <header></header>
+    <main>
+        <div class="explorer"></div>
+
+        <div class="information">
+            <h1>Batching</h1>
+
+            <p>In order to facilitate the analysis of hundreds of movies at a time, the core functions available in GP-
+                Tool are wrapped in shared C++ libraries that can be linked to any C++ code. Depending on public
+                demand, I might write python bindings for these libraries in the future. A template C++ program is
+                provided in the GitHub repository along with a "CMakeLists.txt" which the user might use to compile
+                its own program. I don't propose any standard mechanism to save output data as different types of
+                analysis require alternative results to be saved. That said, popular formats I frequently use are HDF5,
+                JSON and GDM (my own creation and also available in my
+                <a href="http://github.com/guilmont" target="_blank" rel="noopener noreferrer">GitHub page</a>.
+            </p>
+
+            <p>For the sake of effciency in the case of Windows users, I suggest installing WSL2. On my personal
+                computer, I got an improvement of about 40% in terms of speed.</p>
+        </div>
+    </main>
+
+    <script src="./script/main.js"></script>
+</body>
+
+
+</html>
