@@ -1,7 +1,6 @@
-const root = "/";
 
 const config = {
-    title: "GP-Tool: An user friendly graphical interface to apply GP-FBM",
+    title: "GP-Tool: An user friendly graphical interface to apply GP-FBM (page under construction)",
     intro: { header: "Welcome", address: "index.html" },
     started: { header: "Getting started", address: "started.html" },
     plugins: [
