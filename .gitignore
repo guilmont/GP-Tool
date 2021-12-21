@@ -2,6 +2,5 @@
 .vs
 bin
 build
-/assets
 /Methods/tests/batchData_Single
 /Methods/tests/batchData_Coupled

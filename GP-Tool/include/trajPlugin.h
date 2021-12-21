@@ -62,10 +62,7 @@ private:
 
     std::unique_ptr<GPT::Trajectory> m_traj = nullptr;
 
-    uint64_t 
-        maxSpots = 512, // I don't think we need more than that per frame
-        resolution = 30,  // Number of points per spot
-        thickness = 3; // how thick the line is 
+    uint64_t maxSpots = 512; // I don't think we need more than that per frame
 
     std::unique_ptr<Circle> m_circle = nullptr;
     std::unique_ptr<GRender::Quad> m_quad= nullptr;

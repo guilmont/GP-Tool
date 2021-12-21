@@ -1,48 +1,43 @@
 #pragma once
 
-#include <GRender.h>
-
-#ifdef WIN32
-#include <corecrt_math_defines.h>
-#endif
-
+#include "gpch.h"
 
 class Circle
 {
 
 public:
-    Circle(uint32_t numCircles, uint32_t numVertices);
+    Circle(uint32_t numCircles);
     ~Circle(void);
 
-    void setThickness(float val);
-    float getThickness(void) { return thickness; }
-    
-    void draw(const glm::vec3 &position, float radius, const glm::vec4 &color);
+    float thickness = 0.25f; // ratio of the radius
+
+    void draw(const glm::vec2& position, float radius, const glm::vec4& color);
     void submit(void);
 
-private:
-    struct Vertex
+private: // Setup for quad
+    struct QuadVertex
     {
-        glm::vec3 pos;
-        glm::vec4 color;
+        glm::vec3 position;
+        glm::vec2 texCoord;
     };
 
     uint32_t
         vao, // Vertex array object
-        vertex_buffer,
-        index_buffer;
+        quadBuffer,
+        quadIndex;
 
-    uint32_t
-        counter = 0, // Current number of quads
-        maxVertices; // Maximum number of quads
+private: // Setup for circles
+    struct Data
+    {
+        glm::vec4 color;
+        glm::vec2 position;
+        float radius;
+    };
 
-    float thickness = 1.0f;
+    uint32_t counter = 0;
+    uint32_t circleBuffer, numCircles;
+    std::vector<Data> vData;
 
-    std::vector<glm::vec2> unitary;
 
 
-    std::vector<uint32_t> vIndex;
-    std::vector<Vertex> vtxBuffer;
-
-}; // class-object
-
+};

@@ -186,7 +186,7 @@ void MoviePlugin::showProperties(void)
             ImGui::EndCombo();
         }
 
-        if (info[ch].lut_name.compare("None") != 0)
+        if (info[ch].lut_name.compare("None") != 0 && histo[ch])
         {
             const glm::vec2 &size = histo[ch]->getSize();
             ImGui::Image((void *)(uintptr_t)histo[ch]->getID(), {size.x, size.y});

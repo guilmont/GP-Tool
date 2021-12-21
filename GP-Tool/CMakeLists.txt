@@ -30,15 +30,12 @@ if (GP_PRECOMPILED_HEADERS)
 	target_precompile_headers(${PROJECT_NAME} PRIVATE "include/gpch.h")
 endif()
 
-file(COPY ${PROJECT_SOURCE_DIR}/assets/ DESTINATION ${CMAKE_SOURCE_DIR}/${ASSETS_DIR})
-
-
 install(TARGETS ${PROJECT_NAME} 
 	CONFIGURATIONS Release
 		DESTINATION "bin"
 )
 
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/assets 
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/${ASSETS_DIR} 
 	CONFIGURATIONS Release 
 		DESTINATION "."
 )

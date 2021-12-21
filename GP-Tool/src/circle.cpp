@@ -1,101 +1,98 @@
 #include "circle.h"
 
-Circle::Circle(uint32_t numCircles, uint32_t numVertices) : maxVertices(numVertices * numCircles)
+Circle::Circle(uint32_t numCircles) : numCircles(numCircles)
 {
-
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
 
-    // Copying buffer to gpu
-    glGenBuffers(1, &vertex_buffer);
-    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-    glBufferData(GL_ARRAY_BUFFER, maxVertices * sizeof(Vertex), nullptr, GL_DYNAMIC_DRAW);
-
-    // layout for buffer
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void *)offsetof(Vertex, pos));
-    glEnableVertexAttribArray(0);
-
-    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void *)offsetof(Vertex, color));
-    glEnableVertexAttribArray(1);
+    /****************************************************************/
+    // Let's setup the quad first
 
     // Preparing index array
-    uint32_t ct = 0;
-    vIndex.resize(2*numVertices * numCircles);
-    for (uint32_t k = 0; k < numCircles; k++)
-    {
-        uint32_t loc = ct >> 1;
-        for (uint32_t l = 0; l < numVertices-1; l++)
-        {
-            vIndex[ct++] = loc + l;
-            vIndex[ct++] = loc + l + 1;
-        }
+    uint32_t vIndex[] = {0, 1, 2, 0, 2, 3};
+    glGenBuffers(1, &quadIndex);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, quadIndex);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(vIndex), vIndex, GL_STATIC_DRAW);
 
-        vIndex[ct++] = loc+numVertices-1;
-        vIndex[ct++] = loc;
+    // Setting up the vertices
+    std::array<QuadVertex, 4> vBuffer;
+    vBuffer[0] = {{-0.5f, -0.5f, 0.00f}, {0.0f, 0.0f}};
+    vBuffer[1] = {{+0.5f, -0.5f, 0.00f}, {1.0f, 0.0f}};
+    vBuffer[2] = {{+0.5f, +0.5f, 0.00f}, {1.0f, 1.0f}};
+    vBuffer[3] = {{-0.5f, +0.5f, 0.00f}, {0.0f, 1.0f}};
 
-    }
+    glGenBuffers(1, &quadBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, quadBuffer);
+    glBufferData(GL_ARRAY_BUFFER, 4 * sizeof(QuadVertex), vBuffer.data(), GL_DYNAMIC_DRAW);
 
-    glGenBuffers(1, &index_buffer);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, vIndex.size() * sizeof(uint32_t), vIndex.data(), GL_STATIC_DRAW);
+    // layout for buffer
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(QuadVertex), (const void *)offsetof(QuadVertex, position));
+    glEnableVertexAttribArray(0);
 
-    // Allocating memory for vertex buffer
-    vtxBuffer.resize(maxVertices);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(QuadVertex), (const void *)offsetof(QuadVertex, texCoord));
+    glEnableVertexAttribArray(1);
 
-    // Generating unitary circle as template for later
-    float dAng = 2.0f * float(M_PI) / float(numVertices);
+    /****************************************************************/
+    // Now we prepare the terrain for the circles
 
-    unitary.resize(numVertices);
-    for (uint32_t k = 0; k < numVertices; k++)
-    {
-        float angle = float(k) * dAng;
-        unitary[k] = { cos(angle), sin(angle) };
-    }
+    vData.resize(numCircles);
+
+    glGenBuffers(1, &circleBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, circleBuffer);
+    glBufferData(GL_ARRAY_BUFFER, numCircles * sizeof(Data), nullptr, GL_DYNAMIC_DRAW);
+
+    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Data), (const void *)offsetof(Data, color));
+    glEnableVertexAttribArray(2);
+
+    glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(Data), (const void *)offsetof(Data, position));
+    glEnableVertexAttribArray(3);
+
+    glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(Data), (const void *)offsetof(Data, radius));
+    glEnableVertexAttribArray(4);
+
+    // Setup step for instancing
+    glVertexAttribDivisor(2, 1);
+    glVertexAttribDivisor(3, 1);
+    glVertexAttribDivisor(4, 1);
 
 }
 
 Circle::~Circle(void)
 {
-    if (vao> 0)
+    if (vao > 0)
     {
-        glDeleteBuffers(1, &index_buffer);
-        glDeleteBuffers(1, &vertex_buffer);
+        glDeleteBuffers(1, &quadIndex);
+        glDeleteBuffers(1, &quadBuffer);
+        glDeleteBuffers(1, &circleBuffer);
         glDeleteVertexArrays(1, &vao);
         
-        index_buffer = vertex_buffer = vao = 0;
+        quadIndex = quadBuffer = circleBuffer = 0;
     }
 }
 
-void Circle::setThickness(float val)
+void Circle::draw(const glm::vec2 &position, float radius, const glm::vec4 &color)
 {
-    assert(val > 0.0f);  // Otherwise it doesn't make sense
-    thickness = val;
+    assert(counter < numCircles); 
+    vData[counter++] = {color, position, radius};
 }
 
-void Circle::draw(const glm::vec3 &position, float radius, const glm::vec4 &color)
-{
-    assert(counter < maxVertices); // To make sure that we didn't exceed the maximum size
-
-    for (glm::vec2& var : unitary)
-        vtxBuffer[counter++] = {{radius * var.x + position.x, radius * var.y + position.y, 0.0f},color};
-}
 
 void Circle::submit(void)
 {
-    // Binding buffers
     glBindVertexArray(vao);
-    glad_glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-    glad_glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
 
-    // Let's send our data to the GPU
-    glBufferSubData(GL_ARRAY_BUFFER, 0, counter * sizeof(Vertex), vtxBuffer.data());
+    // Updating circle positions
+    glBindBuffer(GL_ARRAY_BUFFER, circleBuffer);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, counter * sizeof(Data), vData.data());
+
+    // Binding quad
+    glBindBuffer(GL_ARRAY_BUFFER, quadBuffer);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, quadIndex);
 
     // Issueing the draw call
-    glad_glLineWidth(thickness);
-    glDrawElements(GL_LINES, 2 * counter, GL_UNSIGNED_INT, 0);
+    glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr, int32_t(counter));
 
-    // Resetting counter to zero for next round
+    // Resetting
+    glBindVertexArray(0);
     counter = 0;
-
-} // drawObject
-
+}

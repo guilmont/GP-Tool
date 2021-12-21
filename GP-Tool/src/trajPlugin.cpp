@@ -74,31 +74,32 @@ void TrajPlugin::showProperties(void)
         ImGui::Spacing();
 
         /////////////////////
-        tool->fonts.text("Display:", "bold");
+        if (m_circle)
+        {
+            tool->fonts.text("Display:", "bold");
 
-        ImGui::Text("Max spots: ");
-        ImGui::SameLine();
-        ImGui::PushItemWidth(0.5f * widthAvail);
-        
-        if (SliderU64("##maxspot", &maxSpots, 1, 1024))
-            m_circle = std::make_unique<Circle>(uint32_t(maxSpots), uint32_t(resolution));
+            ImGui::Text("Max spots: ");
+            ImGui::SameLine();
+            ImGui::PushItemWidth(0.5f * widthAvail);
+            
+            if (SliderU64("##maxspot", &maxSpots, 1, 1024))
+                m_circle = std::make_unique<Circle>(uint32_t(maxSpots));
 
-        ImGui::PopItemWidth();
+            ImGui::PopItemWidth();
 
-        
-        ImGui::Text("Thickness: ");
-        ImGui::SameLine();
-        ImGui::PushItemWidth(0.5f * widthAvail);
-        
-        if (SliderU64("##thickspot", &thickness, 1, 10))
-            m_circle->setThickness(float(thickness));
-
-        ImGui::PopItemWidth();
+            ImGui::Text("Thickness: ");
+            ImGui::SameLine();
+            ImGui::PushItemWidth(0.5f * widthAvail);
+            ImGui::DragFloat("##thickness", &(m_circle->thickness), 0.05f, 0.05f, 1.0f, "%.2f");
+            ImGui::PopItemWidth();
+        }
 
         /////////////////////
         ImGui::Spacing();
         ImGui::Spacing();
         tool->fonts.text("ROI:", "bold");
+        ImGui::SameLine();
+        ImGui::Text("(Ctrl + click)");
 
         ImGui::Text("Color:");
         ImGui::SameLine();
@@ -226,10 +227,8 @@ void TrajPlugin::update(float deltaTime)
     {
         firstTime = false;
         // Setup GPU side of story only works when opengl is fully setup
-        m_circle = std::make_unique<Circle>(uint32_t(maxSpots), uint32_t(resolution));
-        m_circle->setThickness(float(thickness));
 
-
+        m_circle = std::make_unique<Circle>(uint32_t(maxSpots));
         m_quad = std::make_unique<GRender::Quad>(1); // For drawing roi
     }
 
@@ -264,7 +263,7 @@ void TrajPlugin::update(float deltaTime)
 
             const MatXd &mat = track.traj.at(ct);
             for (uint64_t k = 0; k < uint64_t(mat.rows()); k++)
-                if (uint64_t(mat(k, 0)) == frame)
+                if (uint64_t(mat(k, GPT::Track::FRAME)) == frame)
                 {
                     double 
                         x = mat(k, GPT::Track::POSX),
@@ -277,13 +276,15 @@ void TrajPlugin::update(float deltaTime)
 
 
                     float
-                        px = -0.5f + float(nx) / float(size.x),
-                        py = -0.5f + float(ny) / float(size.y);
+                        px = float(nx) / float(size.x),
+                        py = float(ny) / float(size.y);
 
-                    m_circle->draw({px, py, 0.01f}, float(r), cor);
+                    m_circle->draw({px, py}, float(r), cor);
 
                     if (++nPts == maxSpots)
                         goto excess;
+
+                    break; // we don't need to look remaining frames
                 }
         }
     }
@@ -292,19 +293,20 @@ excess:
     glm::mat4 trans = tool->camera.getViewMatrix();
     trans = glm::scale(trans, {1.0f, float(meta.SizeY) / float(meta.SizeX), 1.0f});
 
-    tool->viewBuf->bind();
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+    // Drawing circles
+    tool->viewBuf->bind();
     tool->shader.useProgram("circles");
     tool->shader.setMatrix4f("u_transform", glm::value_ptr(trans));
+    tool->shader.setFloat("u_thickness", m_circle->thickness);
     m_circle->submit();
 
-
+    // Drawing roi
     int32_t nPoints = int32_t(roi.getNumPoints());
     if (nPoints > 0)
     {
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
         tool->shader.useProgram("roi");
         tool->shader.setMatrix4f("u_transform", glm::value_ptr(trans));
 
@@ -314,11 +316,12 @@ excess:
 
         m_quad->draw({ 0.0f, 0.0f, 0.005f }, { 1.0f, 1.0f }, 0.0f, glm::vec4(1.0));
         m_quad->submit();
-
-        glDisable(GL_BLEND);
-
     }
+
     tool->viewBuf->unbind();
+
+    glDisable(GL_BLEND);
+
 
 } // update
 
