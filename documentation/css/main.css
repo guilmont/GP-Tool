@@ -16,8 +16,12 @@ header {
     border: 2pt solid rgb(25, 69, 105);
 }
 
-header h1{
-    font-size: 1rem;
+h1{
+    font-size: 1.6rem;
+}
+
+h2 {
+    font-size: 1.3rem;
 }
 
 main {
