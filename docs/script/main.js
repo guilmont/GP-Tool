@@ -1,3 +1,5 @@
+// const root = "/";
+const root = "/GP-Tool/docs/";
 
 const config = {
     title: "GP-Tool: An user friendly graphical interface to apply GP-FBM (page under construction)",
@@ -29,12 +31,12 @@ const config = {
 
     txt = document.createElement("a");
     txt.innerHTML = config.intro.header;
-    txt.href = config.intro.address;
+    txt.href = root + config.intro.address;
     explorer.append(txt)
 
     txt = document.createElement("a");
     txt.innerHTML = config.started.header;
-    txt.href = config.started.address;
+    txt.href = root + config.started.address;
     explorer.append(txt)
 
     // Creating table with all the plugins
@@ -49,7 +51,7 @@ const config = {
     config.plugins.forEach(element => {
         let txt = document.createElement("a");
         txt.innerText = element.header;
-        txt.href = element.address;
+        txt.href = root + element.address;
         loc.append(txt)
     });
 
@@ -58,14 +60,14 @@ const config = {
     //  Batching content
     txt = document.createElement('a');
     txt.innerText = config.batch.header;
-    txt.href = config.batch.address;
+    txt.href = root + config.batch.address;
     txt.style = "padding-top: 1rem;"
     explorer.append(txt)
 
     // Saving content
     txt = document.createElement("a")
     txt.innerText = config.save.header;
-    txt.href = config.save.address;
+    txt.href = root + config.save.address;
     explorer.append(txt)
 
 })()
