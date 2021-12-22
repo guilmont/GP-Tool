@@ -37,7 +37,7 @@ p {
 }
 
 ol, ul {
-    padding-bottom: 2.0rem;
+    padding-bottom: 1.0rem;
 }
 
 ul {
@@ -53,12 +53,8 @@ li {
 }
 
 a {
-    color: white;
-    text-decoration: none;
-}
-
-a:hover {
-    color:rgb(209, 209, 209)
+    color:rgb(49, 139, 212);
+    font-weight: bold;
 }
 
 img {
@@ -78,6 +74,14 @@ div.explorer {
 
 div.explorer a {
     display: block;
+    color: white;
+    text-decoration: none;
+    font-weight: normal;
+}
+
+
+div.explorer a:hover {
+    color:rgb(209, 209, 209)
 }
 
 div.information {

@@ -19,18 +19,53 @@
         <div class="information">
             <h1>Batching</h1>
 
-            <p>In order to facilitate the analysis of hundreds of movies at a time, the core functions available in GP-
-                Tool are wrapped in shared C++ libraries that can be linked to any C++ code. Depending on public
-                demand, I might write python bindings for these libraries in the future. A template C++ program is
-                provided in the GitHub repository along with a "CMakeLists.txt" which the user might use to compile
-                its own program. I don't propose any standard mechanism to save output data as different types of
-                analysis require alternative results to be saved. That said, popular formats I frequently use are HDF5,
-                JSON and GDM (my own creation and also available in my
-                <a href="http://github.com/guilmont" target="_blank" rel="noopener noreferrer">GitHub page</a>.
-            </p>
+            <p>In order to facilitate the analysis of hundreds of movies at a time, GP-Tool offers the option of batch analysis. For a generic execution, the user can undergo the path <i>"Tools > Batching"</i> or yet the key combination <i>"Ctrl+B"</i>. The following window will be presented:</p>
 
-            <p>For the sake of effciency in the case of Windows users, I suggest installing WSL2. On my personal
-                computer, I got an improvement of about 40% in terms of speed.</p>
+            <img src="./images/batchingGUI.png" alt="batchingGUI" width=60%>
+
+            <p>This window presents some initial configurations that need to be set.</p>
+
+            <ul>
+                <li><b>Main path:</b> Address in which .tif files are located. Upon execution, GP-Tool will recursively search for all the movies located within this main path.</li>
+
+                <li><b>Output path:</b> The file path to which all results will be saved. For convenience, GP-Tool will store all its results in JSON format. Ideally, this file shouldn't exist already, otherwise it will be rewritten.</li>
+
+                <li><b>Numberof channels:</b> Number of channels present in the movie. It will be later used to setup alignment configurations and number of trajectory files to be loaded.</li>
+
+                <li><b>Number of threads:</b> Determines the number of movies to be run in parallel. Beware of the amount of RAM present in your computer and the size of each (uncompressed) movie. It is also worth noticing that more threads isn't necessarily faster, as it also depends on the bandwith of your HD when loading multiple movies at the same time.</li>
+            </ul>
+
+
+            <p>Once this pre-setup is concluded, we can move on to choose which plugins will be used in the analysis. Only openned plugins will run.</p>
+
+            <ul>
+                <li><b>Alignment:</b> This plugin is only visible when movies present 2 or more channels. There are 2 possible ways to run this plugin: individual and bundled. Individual will run the alignment algorithm for each movie, whilst bundled will collect a few frames from all movies and run altogether. The second option is usually preferred for movies with low signal to noise ratio. The user can also choose which corrections are to be made by checking correspondent boxes.</li>
+
+                <li><b>Trajectories:</b> In order to run enhancement algorithms, the user must setup initially an expected diameter for tracked spots. After that, the user must determine which suffices are used for track files for each channel. In essence, the batching script will find track files by removing ".tif" from the movie path and replacing by designed suffix. For instance,
+                    <ul>
+                        <li>Movie &RightArrow; /home/gmo/Documents/movie.tif</li>
+                        <li>Suffix :: Channel 0 &RightArrow; _CH0.xml >> /home/gmo/Documents/movie_CH0.xml</li>
+                    </ul>
+                </li>
+
+                <li><b>GP-FBM:</b> The user can choose between 2 types of analysis:
+                    <ol>
+                        <li> "Single analysis" will calculated diffusion properties for each trajectory individually. The user can also choose to save interpolated trajecotries, that is, GP-FBM will probabilistically assign positions for frames in which the particle is occluded.</li>
+
+                        <li>"Substrate correction" can be only used in the situation where multiple trajecotries are loaded. Using movement cross-correlation among all loaded particles, GP-FBM will attempt to correct diffusion parameters for substrate movement assuming that all particles should move independentky other than by a common background. The user can also choose to save the inferred substrate movement.</li>
+                    </ol>
+                </li>
+            </ul>
+
+
+            <p>When all the configurations are properly set, the user can click "Run" at the bottom. Before analysis start, all the implied files will be checked. Are movies corrupted? Are all the track files found? This checking stage can take a few minutes. Once all the files are verified, analysis will begin and a progress bar will be presented in the mailbox (<i>"Tools > Show mailbox"</i> or <i>"Ctrl+M"</i>).</p>
+
+            <h3 style="margin-top: 2rem;">C++ API</h3>
+
+            <p>Even though the graphical interface provided is quite useful, it is also quite generic. For that reason, I propose using the shared C++ libraries containing the API for all the functionality above presented. This libraries can be linked from any C++ code using CMake. You can find <a href="https://github.com/guilmont/GP-Tool/tree/master/batch_example" target="_blank">here</a>, a template C++ program in which I reproduce in part this generic pipeline used for the graphical interface. Differently, I use my own library called <a href="https://github.com/guilmont/GDManager" target="_blank">GDManager</a> to store the results.</p>
+
+            <p>For the sake of effciency in the case of Windows users, I suggest installing WSL2 (Linux sub-system). On my personal computer, I got an improvement of about 40% in terms of speed.</p>
+
         </div>
     </main>
 
