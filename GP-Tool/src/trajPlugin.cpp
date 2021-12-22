@@ -314,7 +314,7 @@ excess:
         tool->shader.setVec4f("roiColor", glm::value_ptr(roi.getColor()));
         tool->shader.setVec2fArray("vecRoi", roi.getData(), nPoints);
 
-        m_quad->draw({ 0.0f, 0.0f, 0.005f }, { 1.0f, 1.0f }, 0.0f, glm::vec4(1.0));
+        m_quad->draw({ 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f }, 0.0f, glm::vec4(1.0));
         m_quad->submit();
     }
 

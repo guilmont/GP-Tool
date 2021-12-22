@@ -30,7 +30,7 @@
 
                 <li><b>Output path:</b> The file path to which all results will be saved. For convenience, GP-Tool will store all its results in JSON format. Ideally, this file shouldn't exist already, otherwise it will be rewritten.</li>
 
-                <li><b>Numberof channels:</b> Number of channels present in the movie. It will be later used to setup alignment configurations and number of trajectory files to be loaded.</li>
+                <li><b>Number of channels:</b> Number of channels present in the movie. It will be later used to setup alignment configurations and number of trajectory files to be loaded.</li>
 
                 <li><b>Number of threads:</b> Determines the number of movies to be run in parallel. Beware of the amount of RAM present in your computer and the size of each (uncompressed) movie. It is also worth noticing that more threads isn't necessarily faster, as it also depends on the bandwith of your HD when loading multiple movies at the same time.</li>
             </ul>
@@ -41,7 +41,7 @@
             <ul>
                 <li><b>Alignment:</b> This plugin is only visible when movies present 2 or more channels. There are 2 possible ways to run this plugin: individual and bundled. Individual will run the alignment algorithm for each movie, whilst bundled will collect a few frames from all movies and run altogether. The second option is usually preferred for movies with low signal to noise ratio. The user can also choose which corrections are to be made by checking correspondent boxes.</li>
 
-                <li><b>Trajectories:</b> In order to run enhancement algorithms, the user must setup initially an expected diameter for tracked spots. After that, the user must determine which suffices are used for track files for each channel. In essence, the batching script will find track files by removing ".tif" from the movie path and replacing by designed suffix. For instance,
+                <li><b>Trajectories:</b> In order to run enhancement algorithms, the user must setup initially an expected diameter for tracked spots. After that, the user must determine which suffices are used for track files for each channel. The script expects that ".xml" is an ICY track file and that ".csv" has the shape as described <a href="./trajectory.html" target="_blank">here</a>. In essence, the batching script will find track files by removing ".tif" from the movie path and replacing by designed suffix. For instance,
                     <ul>
                         <li>Movie &RightArrow; /home/gmo/Documents/movie.tif</li>
                         <li>Suffix :: Channel 0 &RightArrow; _CH0.xml >> /home/gmo/Documents/movie_CH0.xml</li>
