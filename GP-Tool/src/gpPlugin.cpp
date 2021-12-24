@@ -511,8 +511,7 @@ void GPPlugin::winAvgView(void)
     ///////////////////////////////////////////////////////
     // Creating ImGui windows
     ImGui::Begin("Avg trajectory", &(avgView.show));
-
-    ImGui::SetWindowSize({ 890.0f * GRender::DPI_FACTOR, 500.0f * GRender::DPI_FACTOR });
+    ImGui::SetWindowSize({ 890.0f * GRender::DPI_FACTOR, 500.0f * GRender::DPI_FACTOR }, ImGuiCond_Once);
 
     const ImVec2 avail = ImGui::GetContentRegionAvail();
     const ImVec2 size = {0.99f * avail.x, 0.99f * avail.y};
@@ -561,7 +560,7 @@ void GPPlugin::winSubstrate(void)
 
     // Proceeding to the window
     ImGui::Begin("Substrate", &(subView.show));
-    ImGui::SetWindowSize({ 800.0f * GRender::DPI_FACTOR, 800.0f * GRender::DPI_FACTOR });
+    ImGui::SetWindowSize({ 890.0f * GRender::DPI_FACTOR, 500.0f * GRender::DPI_FACTOR }, ImGuiCond_Once);
 
     tool->fonts.text("Cell " + std::to_string(subView.gpID) + ":", "bold");
 
@@ -700,7 +699,7 @@ void GPPlugin::winPlotSubstrate(void)
     ///////////////////////////////////////////////////////
     // Creating ImGui windows
     ImGui::Begin("Substrate movement", &(subPlotView.show));
-    ImGui::SetWindowSize({ 890.0f * GRender::DPI_FACTOR, 500.0f * GRender::DPI_FACTOR });
+    ImGui::SetWindowSize({ 890.0f * GRender::DPI_FACTOR, 500.0f * GRender::DPI_FACTOR }, ImGuiCond_Once);
 
     const float avail = ImGui::GetContentRegionAvailWidth();
     const ImVec2 size = {0.99f * avail, 0.6f * avail};
@@ -727,7 +726,7 @@ void GPPlugin::winPlotSubstrate(void)
 void GPPlugin::winDistributions(void)
 {
     ImGui::Begin("Distributions", &(distribView.show));
-    ImGui::SetWindowSize({ 900.0f * GRender::DPI_FACTOR, 600.0f * GRender::DPI_FACTOR });
+    ImGui::SetWindowSize({ 900.0f * GRender::DPI_FACTOR, 600.0f * GRender::DPI_FACTOR }, ImGuiCond_Once);
 
     static int bins = 50;
     binOption(bins); // helper function
