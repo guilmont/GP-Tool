@@ -9,28 +9,45 @@ void Roi::addPosition(const glm::vec2& pos)
 	position.push_back(pos.y);
 }
 
+int64_t Roi::findClosest(const glm::vec2& pos)
+{
+    int64_t id = 0;
+    float dist = INFINITY;
+	for (uint64_t k = 0; k < position.size(); k += 2)
+    {
+        float dx = pos.x - position[k], dy = pos.y - position[k+1];
+        float loc = dx*dx + dy*dy;
+        if (loc < dist)
+        {
+            id = k;
+            dist = loc;
+        }
+    }
+
+    if (dist < 0.001)
+        return id;
+    else
+        return -1;
+}
+
 void Roi::removePosition(const glm::vec2& pos)
 {
-	for (uint64_t k = 0; k < position.size(); k += 2)
-		if (abs(pos.x - position[k]) < threshold && abs(pos.y - position[k+1]) < threshold)
-		{
-			position.erase(position.begin() + k + 1);
-			position.erase(position.begin() + k);
-
-			return;
-		}
+    int64_t id = findClosest(pos);
+    if (id >= 0)
+    {
+        position.erase(position.begin() + id + 1);
+        position.erase(position.begin() + id);
+    }
 }
 
 void Roi::movePosition(const glm::vec2& pos)
 {
-	for (uint64_t k = 0; k < position.size(); k += 2)
-		if (abs(pos.x - position[k]) < threshold && abs(pos.y - position[k + 1]) < threshold)
-		{
-			position[k] = pos.x;
-			position[k+1] = pos.y;
-
-			return;
-		}
+   int64_t id = findClosest(pos);
+    if (id >= 0)
+    {
+        position[id] = pos.x;
+		position[id+1] = pos.y;
+    }
 }
 
 bool Roi::contains(const glm::vec2& pos)

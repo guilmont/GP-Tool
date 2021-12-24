@@ -59,6 +59,4 @@ private:
     bool viewport_hover = false;
     bool showImGuiDemo = false;
 
-    glm::vec2 getClickPosition(void);
-
 };

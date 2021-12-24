@@ -111,10 +111,9 @@ void MoviePlugin::updateDisplay(void)
 
 void MoviePlugin::showProperties(void)
 {
+    const GPT::Metadata &meta = movie->getMetadata();
 
     ImGui::Begin("Properties");
-
-    const GPT::Metadata &meta = movie->getMetadata();
 
     tool->fonts.text("Name: ", "bold");
     ImGui::SameLine();
@@ -153,7 +152,19 @@ void MoviePlugin::showProperties(void)
     ImGui::Separator();
     ImGui::Spacing();
 
-    if (SliderU64("Frame", &current_frame, 0, meta.SizeT - 1))
+    glm::vec2 uv = mouseToImageCoordinates();
+
+    // So we only present values within the image
+    uv.x = std::max(0.0f, std::min(float(meta.SizeX), uv.x));
+    uv.y = std::max(0.0f, std::min(float(meta.SizeY), uv.y));
+    tool->fonts.text("Mouse:", "bold");
+    ImGui::SameLine();
+    ImGui::Text("%.2f xx %.2f", uv.x, uv.y);
+
+
+    tool->fonts.text("Frame:", "bold");
+    ImGui::SameLine();
+    if (SliderU64("##Frame", &current_frame, 0, meta.SizeT - 1))
         updateDisplay();
 
     ImGui::Spacing();
@@ -303,7 +314,6 @@ void MoviePlugin::update(float deltaTime)
 
 void MoviePlugin::calcHistogram(uint64_t channel)
 {
-
     Info *loc = &info[channel];
 
     float minValue = loc->minMaxValue.x,
@@ -381,4 +391,26 @@ bool MoviePlugin::saveJSON(Json::Value &json)
         json["channels"].append(meta.nameCH[k]);
 
     return true;
+}
+
+glm::vec2 MoviePlugin::mouseToImageCoordinates(void)
+{
+    // As the image itself doesn't move, only the camera, we will calculate the edges of the quad in screen space
+    // After we convert to texture and image space
+
+    glm::vec2 ms = (tool->mouse.position - tool->viewBuf->getPosition()) / tool->viewBuf->getSize();
+    glm::vec2 uni = 2.0f * ms  - glm::vec2{1.0f, 1.0f};
+
+    // Transform
+    const GPT::Metadata& meta = movie->getMetadata();
+
+    glm::mat4 trf = tool->camera.getViewMatrix();
+    trf = glm::scale(trf, {1.0f, float(meta.SizeY) / float(meta.SizeX), 1.0f});
+    float z = tool->camera.getPosition().z;
+
+    glm::vec2 bot = (trf * glm::vec4{-0.5f, -0.5f, 0.0f, 1.0f}) / z;
+    glm::vec2 top = (trf * glm::vec4{0.5f, 0.5f, 0.0f, 1.0f}) / z;
+
+    glm::vec2 uv = (uni - bot) / (top - bot);
+    return glm::vec2{uv.x * meta.SizeX, uv.y * meta.SizeY};
 }

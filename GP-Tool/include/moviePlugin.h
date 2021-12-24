@@ -41,11 +41,14 @@ public:
     GPT::Movie *getMovie(void) { return movie.get(); }
     bool successful(void) const { return success; }
 
+    glm::vec2 mouseToImageCoordinates(void);
+    
 private:
     void calcHistogram(uint64_t channel);
     void updateTexture(uint64_t channel);
     
     std::unique_ptr<GRender::Quad> quad = nullptr;
+
 
 
 private:

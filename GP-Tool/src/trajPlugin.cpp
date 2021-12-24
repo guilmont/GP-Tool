@@ -290,6 +290,29 @@ void TrajPlugin::update(float deltaTime)
     }
 
 excess: 
+    bool
+        ctrl = tool->keyboard[GKey::LEFT_CONTROL] == GEvent::PRESS || tool->keyboard[GKey::RIGHT_CONTROL] == GEvent::PRESS,
+        ctrlRep = tool->keyboard[GKey::LEFT_CONTROL] == GEvent::REPEAT || tool->keyboard[GKey::RIGHT_CONTROL] == GEvent::REPEAT;
+        
+        if (ctrlRep | ctrl)
+        {
+            glm::vec2 pos = mov->mouseToImageCoordinates() / glm::vec2{meta.SizeX, meta.SizeY};
+
+            // Adding vertex to roi
+            if (tool->mouse[GMouse::LEFT] == GEvent::RELEASE)
+                roi.addPosition(pos);
+
+            // Removing vertex from roi
+            else if (tool->mouse[GMouse::RIGHT] == GEvent::RELEASE)
+                roi.removePosition(pos);
+
+            // Moving roi vertex
+            else if (tool->mouse[GMouse::MIDDLE] == GEvent::PRESS || tool->mouse[GMouse::MIDDLE] == GEvent::REPEAT)
+                roi.movePosition(pos);
+        }
+
+
+
     glm::mat4 trans = tool->camera.getViewMatrix();
     trans = glm::scale(trans, {1.0f, float(meta.SizeY) / float(meta.SizeX), 1.0f});
 

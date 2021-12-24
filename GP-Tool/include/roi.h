@@ -22,7 +22,8 @@ public:
 
 private:
 	const uint64_t maxPoints = 40;   // 2 times the number of points for XY
-	const float threshold = 0.005f;  // Clicking selection area around point
+
+	int64_t findClosest(const glm::vec2& pos);
 
 
 	glm::vec4 color = { 1.0f, 0.5f, 0.1f, 0.1f };

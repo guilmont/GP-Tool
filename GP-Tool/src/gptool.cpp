@@ -126,38 +126,6 @@ void GPTool::onUserUpdate(float deltaTime)
             }
         }
 
-
-        // Trajectory roi stuff
-        if (plugins["TRAJECTORY"] && (ctrlRep | ctrl))
-        {
-            bool active = plugins["TRAJECTORY"]->isActive(); // if trajectories are loaded
-
-            // Adding vertex to roi
-            if ((mouse[GMouse::LEFT] == GEvent::RELEASE) & active)
-            {
-                glm::vec2 click = getClickPosition();  // Reference to viewport
-                click = { click.x + 0.5f, click.y + 0.5f }; // Converting to image coordinates
-                reinterpret_cast<TrajPlugin*>(plugins["TRAJECTORY"].get())->roi.addPosition(click);
-            }
-
-            // Removing vertex from roi
-            else if ((mouse[GMouse::RIGHT] == GEvent::RELEASE) & active)
-            {
-                glm::vec2 click = getClickPosition();
-                click = { click.x + 0.5f, click.y + 0.5f };
-
-                reinterpret_cast<TrajPlugin*>(plugins["TRAJECTORY"].get())->roi.removePosition(click);
-            }
-
-            // Moving roi vertex
-            else if (mouse[GMouse::MIDDLE] == GEvent::PRESS || mouse[GMouse::MIDDLE] == GEvent::REPEAT)
-            {
-                glm::vec2 click = getClickPosition();
-                click = { click.x + 0.5f, click.y + 0.5f };
-                reinterpret_cast<TrajPlugin*>(plugins["TRAJECTORY"].get())->roi.movePosition(click);
-            }
-        }
-
         // zoom
         if (mouse.wheel.y > 0.0f)
             camera.moveFront(deltaTime);
@@ -393,21 +361,6 @@ void GPTool::addPlugin(const std::string &name, Plugin *plugin) { plugins[name].
 Plugin *GPTool::getPlugin(const std::string &name) { return plugins[name].get(); }
 
 void GPTool::setActive(const std::string &name) { pActive = plugins[name].get(); }
-
-glm::vec2 GPTool::getClickPosition(void)
-{
-    const glm::vec2& pos = viewBuf->getPosition();
-    const glm::vec2& size = viewBuf->getSize();
-    glm::vec2 click = { 2.0f * (mouse.position.x - pos.x) / size.x - 1.0f,
-                       2.0f * (mouse.position.y - pos.y) / size.y - 1.0f };
-
-
-    const GPT::Metadata& meta = reinterpret_cast<MoviePlugin*>(plugins["MOVIE"].get())->getMovie()->getMetadata();
-    float iratio = float(meta.SizeX) / float(meta.SizeY);
-    const glm::vec3& cpos = camera.getPosition();
-
-    return glm::vec2{ click.x * cpos.z + cpos.x, (click.y * cpos.z + cpos.y) * iratio };
-}
 
 ///////////////////////////////////////
 // Input and output functions
