@@ -11,7 +11,7 @@ public:
 
     float thickness = 0.25f; // ratio of the radius
 
-    void draw(const glm::vec2& position, float radius, const glm::vec4& color);
+    void draw(const glm::vec2& position, float radius, const glm::vec4& color, bool selected);
     void submit(void);
 
 private: // Setup for quad
@@ -32,6 +32,7 @@ private: // Setup for circles
         glm::vec4 color;
         glm::vec2 position;
         float radius;
+        float selected;
     };
 
     uint32_t counter = 0;

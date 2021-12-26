@@ -28,7 +28,7 @@ GP-Tool is a set of methods I developed for the analysis of dynamic particles in
 - GP-FBM: Uses Gaussian processes and Fractional Brownian motion to measure apparent diffusion coefficient, anomalous coefficients and more
 - DENOISE: Implements a few key denoising algorithms I used from time to time
 
-For more information, consider the following journal publication and/or <a href="https://guilmont.github.io/GP-Tool/">online documentation</a> (under construction).
+For more information, consider the following journal publication and/or <a href="https://guilmont.github.io/GP-Tool/" target="_blank">online documentation</a> (under construction).
 
 
 <!-- PUBLICATION -->

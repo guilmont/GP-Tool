@@ -129,7 +129,7 @@ void GPPlugin::showProperties(void)
 
             // TODO: Correct trajectory for alignment when necessary
             uint64_t k = 0;
-            for (auto &[on, cor] : ui[tr])
+            for (auto &[on, cor, sel] : ui[tr])
             {
                 if (on)
                 {
@@ -211,12 +211,12 @@ void GPPlugin::showProperties(void)
             // Setting everything to false
             const uint64_t nTracks = uint64_t(vTrack->getNumTracks());
             for (uint64_t ch = 0; ch < nTracks; ch++)
-                for (auto &[show, color] : ui[ch])
+                for (auto &[show, color, sel] : ui[ch])
                     show = false;
 
             // Activating only important ones
             for (auto [ch, pt] : gshow.gp->partID)
-                ui[ch][pt].first = true;
+                std::get<0>(ui[ch][pt]) = true;
         }
 
         ImGui::SameLine();

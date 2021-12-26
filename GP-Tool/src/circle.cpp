@@ -50,10 +50,14 @@ Circle::Circle(uint32_t numCircles) : numCircles(numCircles)
     glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(Data), (const void *)offsetof(Data, radius));
     glEnableVertexAttribArray(4);
 
+    glVertexAttribPointer(5, 1, GL_FLOAT, GL_FALSE, sizeof(Data), (const void *)offsetof(Data, selected));
+    glEnableVertexAttribArray(5);
+
     // Setup step for instancing
     glVertexAttribDivisor(2, 1);
     glVertexAttribDivisor(3, 1);
     glVertexAttribDivisor(4, 1);
+    glVertexAttribDivisor(5, 1);
 
 }
 
@@ -70,10 +74,10 @@ Circle::~Circle(void)
     }
 }
 
-void Circle::draw(const glm::vec2 &position, float radius, const glm::vec4 &color)
+void Circle::draw(const glm::vec2 &position, float radius, const glm::vec4 &color, bool selected)
 {
     assert(counter < numCircles); 
-    vData[counter++] = {color, position, radius};
+    vData[counter++] = {color, position, radius, (selected ? 1.0f : 0.0f)};
 }
 
 

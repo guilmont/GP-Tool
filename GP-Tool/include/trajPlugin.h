@@ -9,7 +9,7 @@
 #include "gptool.h"
 class GPTool;
 
-using UITraj = std::vector<std::pair<bool, glm::vec4>>;
+using UITraj = std::vector<std::tuple<bool, glm::vec4, bool>>;
 
 
 class TrajPlugin : public Plugin
@@ -28,8 +28,6 @@ public:
 
     const GPT::Trajectory *getTrajectory(void) { return m_traj.get(); }
     UITraj *getUITrajectory(void) { return uitraj; }
-
-    Roi roi;
     
 private:
     struct
@@ -56,7 +54,24 @@ private:
     void winDetail(void);
     void winPlots(void);
 
-private:
+private:  // Selection tools
+    enum SelectionTool : int32_t
+    {
+        ROI,
+        INDIVIDUAL
+    }; 
+
+    int32_t toolId = SelectionTool::ROI; 
+
+    Roi roi;
+    void selectUsingRoi(void);
+    void selectUsingIndividual(bool value);
+    void setAll(bool select);
+
+    void findAndSetSpot(const glm::vec2& pos, bool value);
+
+
+private: // Main member variables and functions
     GPT::Movie *movie = nullptr;
     GPTool *tool = nullptr;
 
