@@ -61,14 +61,14 @@ private:  // Selection tools
         INDIVIDUAL
     }; 
 
-    int32_t toolId = SelectionTool::ROI; 
+    int32_t toolId = SelectionTool::INDIVIDUAL; 
 
     Roi roi;
     void selectUsingRoi(void);
     void selectUsingIndividual(bool value);
     void setAll(bool select);
 
-    void findAndSetSpot(const glm::vec2& pos, bool value);
+    void findAndSetSpot(const glm::vec2& pos);
 
 
 private: // Main member variables and functions

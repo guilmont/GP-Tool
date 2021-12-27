@@ -70,8 +70,7 @@ void TrajPlugin::showProperties(void)
         if (ImGui::Button("Re-load"))
             enhanceTracks();
 
-        ImGui::Spacing();
-        ImGui::Spacing();
+        ImGui::Dummy({-1.0f, 5.0f * GRender::DPI_FACTOR});
 
         /////////////////////
         if (m_circle)
@@ -92,59 +91,63 @@ void TrajPlugin::showProperties(void)
             ImGui::PushItemWidth(0.5f * widthAvail);
             ImGui::DragFloat("##thickness", &(m_circle->thickness), 0.05f, 0.05f, 1.0f, "%.2f");
             ImGui::PopItemWidth();
-        }
 
-        /////////////////////
-        ImGui::Text("Selection tool:");
+            /////////////////////
+            ImGui::Dummy({-1.0f, 5.0f * GRender::DPI_FACTOR});
 
-            // Choosing which filters to use
-        std::vector<const char*> toolNames = { "ROI", "Individual" };
+            tool->fonts.text("Selection tool:", "bold");
 
-        if (ImGui::BeginCombo("##sectionCombo", toolNames[toolId]))
-        {
-            for (uint64_t k = 0; k < toolNames.size(); k++)
+                // Choosing which filters to use
+            std::vector<const char*> toolNames = { "ROI", "Individual" };
+
+            if (ImGui::BeginCombo("##sectionCombo", toolNames[toolId]))
             {
-                const bool is_selected = (toolId == k);
-                if (ImGui::Selectable(toolNames[k], is_selected))
-                    toolId = k;
+                for (uint64_t k = 0; k < toolNames.size(); k++)
+                {
+                    const bool is_selected = (toolId == k);
+                    if (ImGui::Selectable(toolNames[k], is_selected))
+                        toolId = k;
 
-                // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-                if (is_selected)
-                    ImGui::SetItemDefaultFocus();
+                    // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                    if (is_selected)
+                        ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndCombo();
             }
-            ImGui::EndCombo();
+
+
+            if (toolId == SelectionTool::ROI)
+            {
+                ImGui::Text("Color:");
+                ImGui::SameLine();
+                ImGui::ColorEdit4("##colorRoi", glm::value_ptr(roi.getColor()));
+
+                ImGui::Spacing();
+
+                if (ImGui::Button("Select") && (roi.getNumPoints() >= 3))
+                    selectUsingRoi();
+
+                ImGui::SameLine();
+                if (ImGui::Button("Clear"))
+                    roi.clear();
+            }
+
+            else
+            {
+                if (ImGui::Button("Select"))
+                    selectUsingIndividual(true);
+
+                ImGui::SameLine();
+                if (ImGui::Button("Clear"))
+                    selectUsingIndividual(false);
+            }
         }
 
-
-        if (toolId == SelectionTool::ROI)
-        {
-            ImGui::Text("Color:");
-            ImGui::SameLine();
-            ImGui::ColorEdit4("##colorRoi", glm::value_ptr(roi.getColor()));
-
-            ImGui::Spacing();
-
-            if (ImGui::Button("Select") && (roi.getNumPoints() >= 3))
-                selectUsingRoi();
-
-            ImGui::SameLine();
-            if (ImGui::Button("Clear"))
-                roi.clear();
-        }
-
-        else
-        {
-            if (ImGui::Button("Select"))
-                selectUsingIndividual(true);
-
-            ImGui::SameLine();
-            if (ImGui::Button("Clear"))
-                selectUsingIndividual(false);
-        }
-        /////////////////////
+        ///////////////////////////////////////////////////
+        ///////////////////////////////////////////////////
 
 
-        ImGui::Dummy({-1.0f, 5.0f});
+        ImGui::Dummy({-1.0f, 5.0f * GRender::DPI_FACTOR});
 
         ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
         if (ImGui::BeginTabBar("TrajTabBar", tab_bar_flags))
@@ -316,19 +319,12 @@ excess:
                 
                 // Selecting spot
                 else
-                    findAndSetSpot(pos, true);
+                    findAndSetSpot(pos);
             }
 
-            else if (tool->mouse[GMouse::RIGHT] == GEvent::RELEASE)
-            {
-                // Removing vertex from roi
-                if (toolId == SelectionTool::ROI)
-                    roi.removePosition(pos);
-                
-                // Unselecting spot
-                else
-                    findAndSetSpot(pos, false);
-            }
+            // Removing vertex from roi
+            else if ((tool->mouse[GMouse::RIGHT] == GEvent::RELEASE) && (toolId == SelectionTool::ROI))
+                roi.removePosition(pos);
 
             // Moving roi vertex
             else if (tool->mouse[GMouse::MIDDLE] == GEvent::PRESS || tool->mouse[GMouse::MIDDLE] == GEvent::REPEAT)
@@ -543,10 +539,15 @@ void TrajPlugin::setAll(bool select)
     }
 }
 
-void TrajPlugin::findAndSetSpot(const glm::vec2& pos, bool value)
+void TrajPlugin::findAndSetSpot(const glm::vec2& pos)
 {
     const GPT::Metadata& meta = movie->getMetadata();
     uint64_t currentFrame = reinterpret_cast<MoviePlugin*>(tool->getPlugin("MOVIE"))->current_frame;
+    
+    float
+        width = float(meta.SizeX),
+        height = float(meta.SizeY);
+
 
     for (uint64_t ch = 0; ch < meta.SizeC; ch++)
     {
@@ -554,17 +555,17 @@ void TrajPlugin::findAndSetSpot(const glm::vec2& pos, bool value)
         for (uint64_t k = 0; k < nTracks; k++)
         {
             const MatXd& mat = m_traj->getTrack(ch).traj[k];
-            glm::vec2 loc = { mat(currentFrame, GPT::Track::POSX) / float(meta.SizeX),
-                                mat(currentFrame, GPT::Track::POSY) / float(meta.SizeY) };
+            glm::vec2 loc = { mat(currentFrame, GPT::Track::POSX) / width,
+                              mat(currentFrame, GPT::Track::POSY) / height };
             
-            glm::vec2 rad = { mat(currentFrame, GPT::Track::SIZEX) / float(meta.SizeX),
-                                mat(currentFrame, GPT::Track::SIZEY) / float(meta.SizeY) };
+            float rad = 0.5f * glm::length(glm::vec2{ mat(currentFrame, GPT::Track::SIZEX) / width,
+                                                      mat(currentFrame, GPT::Track::SIZEY) / height });
 
-            glm::vec2 dist = glm::abs(loc - pos) / rad;
+            float dist = glm::distance(loc, pos);
             
-            if((dist.x < 1.0f) && (dist.y <= 1.0f)) // it was clicked within the displayed boundaries of the spot
+            if(dist <= rad) // it was clicked within the displayed boundaries of the spot
             {
-                std::get<2>(uitraj[ch][k]) = value;
+                std::get<2>(uitraj[ch][k]) = !std::get<2>(uitraj[ch][k]);
                 return;
             }
         }
