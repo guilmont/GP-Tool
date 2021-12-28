@@ -19,31 +19,24 @@
         <div class="information">
             <h1>Movie plugin</h1>
 
-            <p>Once GP-Tool is opened, the user can load TIFF movies via Files > Open movies... or by the key com-
-                bination "Ctrl+O". There are 3 formats of metadata that GP-Tool can parse: basic ImageJ, extended
-                ImageJ and OME. GP-Tool can also handle movies compressed via LZW algorithm.</p>
+            <p>With the Movie plugin, the user can load TIFF movies with 2 different mechanisms:</p>
 
-            <img src="./images/movieLoad.png" alt="loadMovies" width=60%>
+            <ul>
+                <li><i>Files > Open movie...</i></li>
+                <li>Ctrl + O</li>
+            </ul>
 
-            <p>This selection will open the following file dialog, where the user will be able to navigate until the
-                desired movie. For convenience, we can write or paste the address directly at the path box (red arrow)
-                or drag the file/folder into GP-Tool main window. Open the movie by simply clicking on it.</p>
+            <p>Either option will open the following file dialog, where the user will be able to navigate until the desired movie. For convenience, we can write or paste the address directly at the path box (red arrow) or drag the file/folder into GP-Tool main window. Open the movie by simply clicking on it.</p>
 
             <img src="./images/openDialog.png" alt="openDialog" width=60%>
 
-            <p>Loading the movie might take several seconds depending on size, compression and computer in use.
-                Once the movie is finally loaded, the user will be presented with an interactive view port, where we can
-                zoom in or out and move the image around. Similarly, the properties panel will display basic metadata
-                if available. These are movie name, acquisition date, number of bits, image height and width, the
-                3number of frames, calibration from pixels into pertinent units and the name of each channel. We also
-                have a slider from which we can change the frame displayed in the view port.</p>
+            <p>Loading the movie might take several seconds depending on size, compression and computer in use. There are 3 formats of metadata that GP-Tool can parse: basic ImageJ, extended ImageJ and OME. GP-Tool can also handle movies compressed via LZW algorithm. </p>
+
+            <p>Once the movie is finally loaded, the user will be presented with an interactive viewport. Similarly, the properties panel will display basic metadata if available. These are movie name, acquisition date, number of bits, image height and width, the number of frames, calibration from pixels into pertinent units and the name of each channel. We also have the mouse pointer location in pixels relative to the image present in the viewport. Furthermore, a slider with which we can change the frame displayed in the viewport. Differently, the user can navigate frames with left-right arrows once the mouse cursor is placed within the boundaries of the viewport.</p>
 
             <img src="./images/moviePlugin.png" alt="moviePlugin" width=60%>
 
-            <p>The color map allows the user to choose from a selection of colors, which look-up table will be
-                use for each channel. Differently, we also can opt for none, hence hiding the corresponding channel.
-                Finally, by dragging darker rectangles in either side of histogram widgets, we can set different and
-                channel independent contrast.</p>
+            <p>The color map allows the user to choose from a selection of colors, which look-up table will be use for each channel. Differently, we also can opt for none, hence hiding the corresponding channel. Finally, by dragging darker rectangles in either side of histogram widget, we can set different contrast ranges for each channel independently.</p>
 
         </div>
     </main>
