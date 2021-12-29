@@ -1,5 +1,5 @@
-const root = "/";
-// const root = "/GP-Tool/";
+// const root = "/";
+const root = "/GP-Tool/";
 
 const config = {
     title: "GP-Tool: An user friendly graphical interface to apply GP-FBM (page under construction)",
