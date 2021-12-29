@@ -1,5 +1,5 @@
-// const root = "/";
-const root = "/GP-Tool/";
+const root = "/";
+// const root = "/GP-Tool/";
 
 const config = {
     title: "GP-Tool: An user friendly graphical interface to apply GP-FBM (page under construction)",
@@ -14,6 +14,7 @@ const config = {
     ],
     batch: { header: "Batching", address: "batch.html" },
     save: { header: "Saving", address: "save.html" },
+    test: { header: "Library tests", address: "tests.html" },
 };
 
 
@@ -68,6 +69,12 @@ const config = {
     txt = document.createElement("a")
     txt.innerText = config.save.header;
     txt.href = root + config.save.address;
+    explorer.append(txt)
+
+    // Test content
+    txt = document.createElement("a")
+    txt.innerText = config.test.header;
+    txt.href = root + config.test.address;
     explorer.append(txt)
 
 })()

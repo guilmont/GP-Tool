@@ -202,19 +202,22 @@ TEST(Images, enhancement)
     arq.close();
 
     // Running some basic tests
+    // 1)The absolute z-score of the mean should be smaller than 1.0
+    // 2) The estimated error (algorithm) should be similar or greater than real error
+
     double mu, dev, error;
     mu = enhanced.col(GPT::Track::POSX).mean(), 
     dev = sqrt((enhanced.col(GPT::Track::POSX).array() - mu).square().mean());
     error = enhanced.col(GPT::Track::ERRX).mean();
-    EXPECT_LE(mu * sqrt(double(nImages)) / dev, 1.0) << "Enhancement :: Error in X is too great";
-    EXPECT_GE(1.96 * error, dev) << " Enhancement :: Estimated error is to small";
+    EXPECT_LE(abs(mu) * (sqrt(double(nImages)) / dev), 1.0) << "Enhancement :: Error in X is too great";
+    EXPECT_GE(1.96 * error, dev) << " Enhancement :: Estimated error is too small";
 
 
     mu = enhanced.col(GPT::Track::POSY).mean();
     dev = sqrt((enhanced.col(GPT::Track::POSY).array() - mu).square().mean());
     error = enhanced.col(GPT::Track::ERRY).mean();
-    EXPECT_LE(mu * sqrt(double(nImages)) / dev, 1.0) << "Enhancement :: Error in Y is too great";
-    EXPECT_GE(1.96 * error, dev) << " Enhancement :: Estimated error is to small";
+    EXPECT_LE(abs(mu) * (sqrt(double(nImages)) / dev), 1.0) << "Enhancement :: Error in Y is too great";
+    EXPECT_GE(1.96 * error, dev) << " Enhancement :: Estimated error is too small";
 
 
 

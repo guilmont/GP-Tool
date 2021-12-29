@@ -8,9 +8,9 @@ enable_testing()
 project(GPTests)
 
 ## Tests the methods written for aligning images
-add_executable(testAlign testAlign.cpp testHeader.h)
-target_link_libraries(testAlign PUBLIC gtest_main GPMethods jsoncpp)
-target_compile_definitions(testAlign PRIVATE GTEST_PATH="${PROJECT_SOURCE_DIR}/output")
+add_executable(testAlign testImages.cpp testHeader.h)
+target_link_libraries(testImages PUBLIC gtest_main GPMethods jsoncpp)
+target_compile_definitions(testImages PRIVATE GTEST_PATH="${PROJECT_SOURCE_DIR}/output")
 
 ## Tests the algorithms written using Gaussian Processes and Fractional Brownian Motion
 add_executable(testGP testGP.cpp testHeader.h)

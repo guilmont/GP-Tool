@@ -19,32 +19,32 @@
         <div class="information">
             <h1>Getting started</h1>
 
-            GP-Tool was written and tested on Linux and Windows. As I no longer posses a Mac computer, I don't have the means to tested it, but it should be possible compile and use it in principle. For these reason, in the next sections I present how to get started in Windows and Linux.
+            <p>GP-Tool was written and tested on Linux and Windows. I developped the libraries so it should be compatible with MacOS as well, but I don't have the means to test it. For this reason, I provided pre-build packages for Windows and Linux, but I also invite the user to compile from source if those options are not sufficient. In the next sections, I present both options.</p>
 
             <h2>Binary packages</h2>
 
-            <p>Installation packages generated using CPack via CMake are provided for Windows (64 bits) and Linux (Arch distribution). Both packages can be found <a href="https://github.com/guilmont/GP-Tool/tree/master/packages"> here</a>. The installation procedure consists of simply uncompressing the contents of this package.</p>
+            <p>Installation packages generated using CPack via CMake are provided for Windows (64 bits) and Linux (Arch distribution). Both packages can be found <a href="https://github.com/guilmont/GP-Tool/tree/master/packages"> here</a>. The installation procedure consists of simply uncompressing the contents of pertinent package.</p>
 
-            <p>I'm aware that the Windows package might run under problems concerning security, as it is an third party binary file to be executed. In some cases it is a simple matter of getting permission from the administrator to execute. Unfortunately, Windows will block independently of granted permissions in other situations. I'm studying a solution for this second issue. In the meantime, I suggested compiling GP-Tool from source as explained in the following section.</p>
+            <p>I'm aware that the Windows package might be blocked under concerns of security, as it is a third party binary file to be executed. In some cases it is a simple matter of getting permission from the administrator to execute. Unfortunately, I encountered situations in which that doesn't solve the issue and Windows throws a BEX64 exception code. I'm studying a solution for this and welcome any suggestions. In the meantime, I suggested compiling GP-Tool from source as explained in the following section.</p>
 
-            <p>Considering the Linux binary package. It works fine under Linux distros parented into the Arch Linux family. It is possible that it might not work under the Debian family, for example. Unfortunately, for those cases, the user might need to compile GP-Tool from source code as explained in the following section.</p>
+            <p>Considering the Linux binary package. It works fine under Linux distros derived from Arch Linux (it was compiled with Manjaro). It is possible that it might not work under the Debian family, like Ubuntu. Unfortunately, for those cases, the user might need to compile GP-Tool from source code as explained in a following section. The same applies for MacOS users.</p>
 
 
             <h2>Compiling from source code</h2>
 
-            <p>The procedure to install GP-Tool under Linux, Windows and MacOS are very similar. In all cases, the user will need to have pre-installed a modern version CMak, an OS specific compiler and Git. <a href="https://cmake.org/download/" target="_blank">CMake</a> is an open-source cross-platform software to build programs and libraries. Popular choices of compilers are GCC/G++ for Linux, clang for MacOS and MSVC for Windows. Just be sure to have a relatively modern compiler as the standard c++17 is required for compilation. Finally, <a href="https://git-scm.com/downloads" target="_blank">Git</a> is a development tracker that we will use to clone the source code from GitHub.</p>
+            <p>The procedure to build and install GP-Tool under Linux, Windows and MacOS are very similar. In all cases, the user will need to have pre-installed a modern version of CMake, an OS specific compiler and Git. <a href="https://cmake.org/download/" target="_blank">CMake</a> is an open-source cross-platform software to build programs and libraries. Popular choices of compilers are gcc/g++ for Linux, clang for MacOS and MSVC for Windows. Independent of the OS used, the compiler must accept the standard c++17, as it is required for compilation. Finally, <a href="https://git-scm.com/downloads" target="_blank">Git</a> is a software development tracker that we will use to clone the source code from GitHub.</p>
 
-            <p>With the list of pre-requisites fullfiled, the user navigate to any directory of preference using the the terminal and clone the GitHub repository along with all its dependencies using the following command:</p>
+            <p>With the list of pre-requisites fullfiled, using the terminal, navigate to any directory of preference and clone the GitHub repository along with all its dependencies using the following command:</p>
 
             <div class="code">
                 <p>git clone --recurse-submodules -j4 https://github.com/guilmont/GP-Tool.git</p>
             </div>
 
-            <p>Once the cloning is completed, use the explorer and navigate until cloned folder. There create a folder called "build", in which CMake will do its magic. From here, the commands will differ slightly, hence I will split in subsections.</p>
+            <p>Once the cloning is completed, create a folder called "build", in which CMake will do its magic. From here, the commands will differ slightly from OS to OS, hence I will split in subsections.</p>
 
             <h3>Linux and MacOS</h3>
 
-            <p>Using the terminal, navigate until recently created bulid folder. There are only to options that are relevant for the average user, hence I'll focus on those: CMAKE_INSTALL_PREFIX and CMAKE_BUILD_TYPE. In the terminal write:</p>
+            <p>There are only two options that are relevant for the average user, hence I'll focus on those: CMAKE_INSTALL_PREFIX and CMAKE_BUILD_TYPE. Write in the command line:</p>
 
             <div class="code">
                 <p>cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=whatever_path_you_want_to_install</p>
@@ -72,9 +72,11 @@
             <p>I'm travelling and away from my Windows machine. Once I'm back, I'll provide the guided steps ;)</p>
 
 
+            <hr>
+
             <h2>Hi-DPI screens</h2>
 
-            <p>For users with HI-DPI screens, GP-Tool provides a configuration for scale up the size of all the components by a factor 2. To enable this feature, click on "Set HIDPI" under Tools in the GP-Tool menu bar.</p>
+            <p>For users with HI-DPI screens, GP-Tool provides a configuration for scaling up the size of all the components by a factor 2. To enable this feature, click on "Set HIDPI" under Tools in the GP-Tool menu bar.</p>
 
         </div>
     </main>

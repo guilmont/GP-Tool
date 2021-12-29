@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="./css/main.css">
+    <link rel="shortcut icon" href="#">
+    <title>Welcome to GP-Tool</title>
+</head>
+
+<body>
+    <header></header>
+    <main>
+        <div class="explorer"></div>
+
+        <div class="information">
+            <h1>Library tests</h1>
+
+            <p>All the core libraries developed were tested using the Google Tests framework. These tests are not compiled by default, but can be build by setting the option BUILD_GOOGLETESTS with CMake. Beware that these tests won't be installed along with GP-Tool as it is meant for development purposes. The testing code can be under under <a href="https://github.com/guilmont/GP-Tool/tree/dev/Methods/tests" target="_blank">Methods/tests</a>. In the following sections I present some of the most essential tests, but more can found in the previous cited addres.</p>
+
+            <h2>Alignment</h2>
+
+            <p>To test the alignment library we generate an image contening several gaussian shaped spots placed in random locations. This very image is then translated, rotated and rescaled to simulate problems we usually observe throughout experiments and used as a second channel. Later on, Poisson noise is included in both channels. Keeping track of the simulated and distorted positions, we apply the alignment algorithm and compare the distance distribution before and after correction. Of course, the expected distribution should be a delta in zero.</p>
+
+            <img src="./images/testAlignment.png" alt="testAlignment" width=95%>
+
+            <p>The results presented demonstrate that the algorithm brings down the expected error to the subpixel levels even in a relatively low signal to noise ratio. </p>
+
+
+            <h2>Localization enhancement</h2>
+
+            <p>To test if the enhancement algorithm is correct, I generate small images with noisy Gaussian shaped spots and compare the estimated localization and error with actual position and measured error. Being a sthocastic method, we consider that this algorithm is correct if the absolute z-score of the mean localization is inferior to a standard deviation of the mean assuming the population distribution is centered at zero. Also, we expected that the measured error is within the distribution range (95%) of the estimated error. In the following plot we show a histogram of errors between set and enhanced localizations. Optimally, this distribution is centered at zero and as narrow as possible.</p>
+
+            <img src="./images/testEnhancement.png" alt="testEnhancement" width=40%>
+
+            <h2>Diffusion properties</h2>
+
+            <h3>Single trajectories</h3>
+
+            <p>Testing if the estimation of the apparent diffusion and anomalous coefficient is straight foward. In the testing function we genretate 100 trajectories using Gaussian process sampling with a fractional Brownian motion covariance matrix. Then, we apply the GP-FBM library and compare the results. The test passes if the relative error calculated for both coefficients is inferior to 5%. In the following image we show the distribution of relative errors.</p>
+
+            <img src="./images/testSingle.png" alt="testSingle" width=40%>
+
+            <h3>Substrate correction</h3>
+
+            <p>Similarly to the case of single trajectories, now we generate 100 samples of 3 trajectories and consider one of them as substrate, hence adding its displacement to all the others. Having 2 trajectories subjected to the same background motion, we submit them into our GP-FBM library and compare the results with the set values. Once again, we pass the test if the average error for all coefficients are inferior to 5%. In the following image, we show the distribution of error for all the trajectories similated.</p>
+
+            <img src="./images/testSubstrate.png" alt="testSubstrate" width=95%>
+
+        </div>
+    </main>
+
+    <script src="./script/main.js"></script>
+</body>
+
+
+</html>
