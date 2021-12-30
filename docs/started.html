@@ -25,7 +25,7 @@
 
             <p>Installation packages generated using CPack via CMake are provided for Windows (64 bits) and Linux (Arch distribution). Both packages can be found <a href="https://github.com/guilmont/GP-Tool/tree/master/packages"> here</a>. The installation procedure consists of simply uncompressing the contents of pertinent package.</p>
 
-            <p>I'm aware that the Windows package might be blocked under concerns of security, as it is a third party binary file to be executed. In some cases it is a simple matter of getting permission from the administrator to execute. Unfortunately, I encountered situations in which that doesn't solve the issue and Windows throws a BEX64 exception code. I'm studying a solution for this and welcome any suggestions. In the meantime, I suggested compiling GP-Tool from source as explained in the following section.</p>
+            <p>I'm aware that the Windows package might be blocked under concerns of security, as it is a third party binary file to be executed. In some cases it is a simple matter of getting permission from the administrator to execute. Unfortunately, I encountered situations in which that doesn't solve the issue and Windows throws a BEX64 exception code. I'm studying a solution for this and welcome any suggestions. In the meantime, I suggest compiling GP-Tool from source as explained in the following section.</p>
 
             <p>Considering the Linux binary package. It works fine under Linux distros derived from Arch Linux (it was compiled with Manjaro). It is possible that it might not work under the Debian family, like Ubuntu. Unfortunately, for those cases, the user might need to compile GP-Tool from source code as explained in a following section. The same applies for MacOS users.</p>
 
@@ -65,11 +65,21 @@
 
             <img src="./images/linuxSourceMake.png" alt="linuxSourceMake" width=95%>
 
-            <p>Once installation is completed, simply navigate using the terminal or the explorer to the bin folder within the installation prefix and open the executable.</p>
+            <p>Once installation is completed, simply navigate using the terminal or the explorer to the bin folder within the installation prefix and open the executable. If the user try to open GP-Tool from the command line like so</p>
+
+            <div class="code">
+                <p>./GP-Tool</p>
+            </div>
+
+            <p>It is possible that an exception error will be throw. A quick solution for this problem is to open GP-Tool using its full path. A possible shortcut is</p>
+
+            <div class="code">
+                <p>$PWD/GP-Tool</p>
+            </div>
 
             <h3>Windows</h3>
 
-            <p>I'm travelling and away from my Windows machine. Once I'm back, I'll provide the guided steps ;)</p>
+            <p>I'm travelling and away from my Windows machine. Once I'm back, I'll provide the guiding steps ;)</p>
 
 
             <hr>

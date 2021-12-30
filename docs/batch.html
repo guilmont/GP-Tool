@@ -19,7 +19,7 @@
         <div class="information">
             <h1>Batching</h1>
 
-            <p>In order to facilitate the analysis of hundreds of movies at a time, GP-Tool offers the option of batch analysis. For a generic execution, the user can undergo the path <i>"Tools > Batching"</i> or yet the key combination <i>"Ctrl+B"</i>. The following window will be presented:</p>
+            <p>In order to facilitate the analysis of hundreds of movies at a time, GP-Tool offers the option to batch analysis. For a generic execution, the user can undergo the path <i>"Tools > Batching"</i> or yet the key combination <i>"Ctrl+B"</i>. The following window will be presented:</p>
 
             <img src="./images/batchingGUI.png" alt="batchingGUI" width=60%>
 
@@ -52,7 +52,7 @@
                     <ol>
                         <li> "Single analysis" will calculated diffusion properties for each trajectory individually. The user can also choose to save interpolated trajecotries, that is, GP-FBM will probabilistically assign positions for frames in which the particle is occluded.</li>
 
-                        <li>"Substrate correction" can be only used in the situation where multiple trajecotries are loaded. Using movement cross-correlation among all loaded particles, GP-FBM will attempt to correct diffusion parameters for substrate movement assuming that all particles should move independentky other than by a common background. The user can also choose to save the inferred substrate movement.</li>
+                        <li>"Substrate correction" can be only used in the situation where multiple trajecotries are loaded. Using movement cross-correlation among all loaded particles, GP-FBM will attempt to correct diffusion parameters for substrate movement assuming that all particles should move independently other than by a common background. The user can also choose to save the inferred substrate movement.</li>
                     </ol>
                 </li>
             </ul>
@@ -62,9 +62,9 @@
 
             <h3 style="margin-top: 2rem;">C++ API</h3>
 
-            <p>Even though the graphical interface provided is quite useful, it is also quite generic. For that reason, I propose using the shared C++ libraries containing the API for all the functionality above presented. This libraries can be linked from any C++ code using CMake. You can find <a href="https://github.com/guilmont/GP-Tool/tree/master/batch_example" target="_blank">here</a>, a template C++ program in which I reproduce in part this generic pipeline used for the graphical interface. Differently, I use my own library called <a href="https://github.com/guilmont/GDManager" target="_blank">GDManager</a> to store the results.</p>
+            <p>Even though the graphical interface provided is quite useful, it is also quite generic. For that reason, I propose using the shared C++ libraries containing the API for all the functionality above presented. These libraries can be linked from any C++ code using CMake. You can find <a href="https://github.com/guilmont/GP-Tool/tree/master/batch_example" target="_blank">here</a>, a template C++ program in which I reproduce in part this generic pipeline used for the graphical interface. Differently, I use my own library called <a href="https://github.com/guilmont/GDManager" target="_blank">GDManager</a> to store the results.</p>
 
-            <p>For the sake of effciency in the case of Windows users, I suggest installing WSL2 (Linux sub-system). On my personal computer, I got an improvement of about 40% in terms of speed.</p>
+            <p>For the sake of efficiency in the case of Windows users, I suggest installing WSL2 (Linux sub-system). On my personal computer, I got an improvement of about 40% in terms of speed.</p>
 
         </div>
     </main>
