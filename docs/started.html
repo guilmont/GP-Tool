@@ -42,18 +42,21 @@
 
             <p>Once the cloning is completed, create a folder called "build", in which CMake will do its magic. From here, the commands will differ slightly from OS to OS, hence I will split in subsections.</p>
 
+            <!-- ---------------------------------------------------- -->
+            <!-- ---------------------------------------------------- -->
+
             <h3>Linux and MacOS</h3>
 
             <p>There are only two options that are relevant for the average user, hence I'll focus on those: CMAKE_INSTALL_PREFIX and CMAKE_BUILD_TYPE. Write in the command line:</p>
 
             <div class="code">
-                <p>cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=whatever_path_you_want_to_install</p>
+                <p>cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="whatever path you want to install"</p>
             </div>
 
             <p>Then press enter. An example of path for installation would be "/home/user/Desktop/GP-Tool", so GP-Tool will be installed in the Desktop. For example...</p>
 
 
-            <img src="./images/linuxSource.png" alt="linuxSource" width=95%>
+            <img src="./images/linuxSource.png" alt="linuxSource" width=80%>
 
             <p>Then, to compile and install GP-Tool:</p>
 
@@ -63,7 +66,7 @@
 
             <p>Like so...</p>
 
-            <img src="./images/linuxSourceMake.png" alt="linuxSourceMake" width=95%>
+            <img src="./images/linuxSourceMake.png" alt="linuxSourceMake" width=80%>
 
             <p>Once installation is completed, simply navigate using the terminal or the explorer to the bin folder within the installation prefix and open the executable. If the user try to open GP-Tool from the command line like so</p>
 
@@ -77,10 +80,36 @@
                 <p>$PWD/GP-Tool</p>
             </div>
 
+            <p>For developpers and users of the C++ API, I would suggest to compile GP-Tool with other configurations as well, like Debug and RelWithDebInfo. I prepared the CMake script to generate configuration specific packages upon installation, so libraries won't be overwritten. On top of that, the advanced user might be interested to include the package paths to the bash environment.</p>
+
+            <!-- ---------------------------------------------------- -->
+            <!-- ---------------------------------------------------- -->
+
             <h3>Windows</h3>
 
-            <p>I'm travelling and away from my Windows machine. Once I'm back, I'll provide the guiding steps ;)</p>
+            <p>Once all the cloning is finished and CMake and MSVC are installed, building and installing GP-Tool is quite simple. Open the command line in the folder to which GP-Tool was cloned. A quick shortcut for that is openning said folder in explorer and entering "cmd" in the address bar. Once there, create a build folder, navigate into it and type the following command to build</p>
 
+            <div class="code">
+                <p>cmake .. -DCMAKE_INSTALL_PREFIX="whatever path you want to install"</p>
+            </div>
+
+            <P>CMAKE_INSTALL_PREFIX is the path in which you want GP-Tool to be installed. As an example, the Desktop.</P>
+
+            <img src="./images/startedWindowsBuild.png" alt="startedWindowsBuild" width=80%>
+
+            <p>Once the build procedure is finished. You can install GP-Tool with the following command:</p>
+
+            <div class="code">
+                <p>cmake --build . --config Release --target install -j</p>
+            </div>
+
+            <p>Which will compile all the libraries and install the software to previously defined path.</p>
+
+            <img src="./images/startedWindowsInstall.png" alt="startedWindowsInstall" width=80%>
+
+            <p>To open GP-Tool, you can double click the executable GP-Tool present within the bin directory in the installation path. Differently, one can open from the command line by entering GP-Tool from within said bin directory.</p>
+
+            <p>For developpers and users of the C++ API, I would suggest to compile GP-Tool with other configurations as well, like Debug and RelWithDebInfo. I prepared the CMake script to generate configuration specific packages upon installation, so libraries won't be overwritten. On top of that, the advanced user might be interested to include the package to the Windows environment, just search for "Edit the system environment variables" in the Control Panel.</p>
 
             <hr>
 

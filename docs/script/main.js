@@ -2,7 +2,7 @@
 const root = "/GP-Tool/";
 
 const config = {
-    title: "GP-Tool: An user friendly graphical interface to apply GP-FBM (page under construction)",
+    title: "GP-Tool: An user friendly graphical interface to apply GP-FBM",
     intro: { header: "Welcome", address: "index.html" },
     started: { header: "Getting started", address: "started.html" },
     plugins: [
@@ -76,5 +76,17 @@ const config = {
     txt.innerText = config.test.header;
     txt.href = root + config.test.address;
     explorer.append(txt)
+
+
+    txt = document.createElement("p")
+    txt.innerText = "developed by";
+    txt.style="position: absolute; bottom: 2.3rem; left: 0rem; color: white; ;";
+    explorer.append(txt)
+
+    txt = document.createElement("p")
+    txt.innerText = "GM Oliveira (2020-2021)";
+    txt.style="position: absolute; bottom: 1rem; left: 0rem; color: white; font-weight: bold;";
+    explorer.append(txt)
+
 
 })()
