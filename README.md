@@ -72,10 +72,8 @@ In order of execution (approx):
 
 - GP-Tool: API for saving interpolated trajectories
 - GP-Tool: Display movies metadata
-- GP-Tool + GPMethods: Improve documentation
 - GPMethods: Importing other popular file formats containing tracked trajectories
 - GPMethods: Wrapper bindings for python (if popularly requested)
-
 
 
 
