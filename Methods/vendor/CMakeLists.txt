@@ -20,7 +20,7 @@ install(DIRECTORY "eigen/Eigen/src/Jacobi" DESTINATION ${EIGEN_DEST})
 install(DIRECTORY "eigen/Eigen/src/misc" DESTINATION ${EIGEN_DEST})
 install(DIRECTORY "eigen/Eigen/src/plugins" DESTINATION ${EIGEN_DEST})
 
-
+install(TARGETS eigen EXPORT ${GP_EXPORT})
 
 ###########################################################
 ## PUGIXML ################################################
@@ -35,7 +35,10 @@ set_target_properties(pugixml PROPERTIES POSITION_INDEPENDENT_CODE ON)
 install(FILES "pugixml/pugiconfig.hpp" "pugixml/pugixml.hpp" 
         DESTINATION "include/pugixml")
 
-
+install(TARGETS pugixml 
+        EXPORT ${GP_EXPORT}
+        ARCHIVE DESTINATION "lib/static"        
+)
 
 #########################################################
 ## GoogleTests #########################################
@@ -51,4 +54,3 @@ endif()
 
 ###########################################################
 
-install(TARGETS eigen pugixml EXPORT ${GP_EXPORT})
